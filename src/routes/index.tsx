@@ -10,10 +10,10 @@ import tireAgro from "@/assets/tire-agro.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "RodaMax — Cubiertas y neumáticos al mejor precio" },
-      { name: "description", content: "Tienda online de cubiertas para autos, camionetas, camiones y maquinaria agrícola. Buscá por medida y comprá con descuentos promocionales." },
-      { property: "og:title", content: "RodaMax — Cubiertas y neumáticos" },
-      { property: "og:description", content: "Tienda online de cubiertas para autos, camionetas, camiones y maquinaria agrícola." },
+      { title: "Le Radial — Cubiertas y neumáticos en Posadas, Misiones" },
+      { name: "description", content: "Venta de cubiertas para autos, camionetas, camiones y maquinaria agrícola en Posadas, Misiones. Buscá por medida y consultá precios actualizados." },
+      { property: "og:title", content: "Le Radial — Cubiertas en Posadas, Misiones" },
+      { property: "og:description", content: "Cubiertas para autos, camionetas, camiones y agro. Posadas, Misiones — Argentina." },
     ],
   }),
   component: Index,
@@ -27,22 +27,22 @@ const categories = [
 ];
 
 const products = [
-  { brand: "ROADMAX", model: "GREEN-TOURING", size: "175/70R13 82T", price: 320000, img: tireCar },
-  { brand: "ROADMAX", model: "ALL-TERRAIN A/T", size: "265/65R17 112T", price: 890000, img: tireSuv },
-  { brand: "TITANGRIP", model: "URBAN PRO", size: "185/65R14 86H", price: 410000, img: tireCar },
-  { brand: "TITANGRIP", model: "MUD-X M/T", size: "31x10.5R15 109Q", price: 1150000, img: tireSuv },
-  { brand: "HEAVYLINE", model: "CARGO STEER", size: "295/80R22.5", price: 2250000, img: tireTruck },
-  { brand: "AGROTRAC", model: "FIELD MASTER", size: "18.4-34", price: 4980000, img: tireAgro },
-  { brand: "ROADMAX", model: "ECO DRIVE", size: "195/55R15 85V", price: 455000, img: tireCar },
-  { brand: "TITANGRIP", model: "SPORT GT", size: "225/45R17 94W", price: 720000, img: tireCar },
+  { brand: "ROADMAX", model: "GREEN-TOURING", size: "175/70R13 82T", price: 89000, img: tireCar },
+  { brand: "ROADMAX", model: "ALL-TERRAIN A/T", size: "265/65R17 112T", price: 215000, img: tireSuv },
+  { brand: "TITANGRIP", model: "URBAN PRO", size: "185/65R14 86H", price: 112000, img: tireCar },
+  { brand: "TITANGRIP", model: "MUD-X M/T", size: "31x10.5R15 109Q", price: 298000, img: tireSuv },
+  { brand: "HEAVYLINE", model: "CARGO STEER", size: "295/80R22.5", price: 620000, img: tireTruck },
+  { brand: "AGROTRAC", model: "FIELD MASTER", size: "18.4-34", price: 1350000, img: tireAgro },
+  { brand: "ROADMAX", model: "ECO DRIVE", size: "195/55R15 85V", price: 125000, img: tireCar },
+  { brand: "TITANGRIP", model: "SPORT GT", size: "225/45R17 94W", price: 195000, img: tireCar },
 ];
 
 const widths = ["Todos","145","155","165","175","185","195","205","215","225","235","245","255","265","275","285","295","305"];
 const heights = ["Todos","30","35","40","45","50","55","60","65","70","75","80"];
 const rims = ["Todos","13","14","15","16","17","18","19","20","21","22"];
 
-function formatGs(n: number) {
-  return "₲ " + n.toLocaleString("es-PY");
+function formatArs(n: number) {
+  return "$ " + n.toLocaleString("es-AR");
 }
 
 function Index() {
@@ -57,7 +57,7 @@ function Index() {
         <div className="container mx-auto flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
             <MapPin className="h-3.5 w-3.5 text-primary" />
-            <span>Envíos a todo el país · Retiro en sucursales</span>
+            <span>Posadas, Misiones · Envíos a toda la Argentina</span>
           </div>
           <div className="hidden gap-4 md:flex">
             <span>Lun a Vie 8:00 – 18:00</span>
@@ -70,16 +70,16 @@ function Index() {
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-4">
           <a href="/" className="flex items-baseline gap-1">
-            <span className="text-3xl font-black tracking-tighter text-primary">RODA</span>
-            <span className="text-3xl font-black tracking-tighter text-secondary">MAX</span>
+            <span className="text-3xl font-black tracking-tighter text-primary">LE</span>
+            <span className="text-3xl font-black tracking-tighter text-secondary">RADIAL</span>
             <span className="ml-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:inline">cubiertas</span>
           </a>
           <div className="hidden items-center gap-6 lg:flex">
-            <a href="tel:0800110080" className="flex items-center gap-2 text-sm font-semibold">
+            <a href="tel:+543764000000" className="flex items-center gap-2 text-sm font-semibold">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
                 <Phone className="h-4 w-4" />
               </span>
-              0800 11 00 80
+              (376) 4-000000
             </a>
             <button className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
               <ShoppingCart className="h-5 w-5" /> Mi Carrito
@@ -220,7 +220,7 @@ function Index() {
                   <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary">{p.model}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
                   <div className="mt-auto pt-4">
-                    <p className="text-lg font-black text-secondary">{formatGs(p.price)}</p>
+                    <p className="text-lg font-black text-secondary">{formatArs(p.price)}</p>
                     <button className="mt-3 w-full rounded-full bg-secondary py-2 text-xs font-bold uppercase tracking-wider text-secondary-foreground transition hover:bg-primary">
                       Agregar al carrito
                     </button>
@@ -235,8 +235,8 @@ function Index() {
       {/* Benefits */}
       <section className="container mx-auto grid gap-6 px-4 py-16 md:grid-cols-3">
         {[
-          { icon: Truck, title: "Envío a todo el país", desc: "Coordinamos con transportadoras de confianza para llegar a cualquier ciudad." },
-          { icon: ShoppingCart, title: "Compra 100% online", desc: "Reservá tu cubierta en minutos y retirá en sucursal o recibí en casa." },
+          { icon: Truck, title: "Envíos a toda la Argentina", desc: "Coordinamos con transportadoras de confianza desde Posadas a cualquier provincia." },
+          { icon: ShoppingCart, title: "Compra 100% online", desc: "Reservá tu cubierta en minutos y retirá en local o recibí en tu domicilio." },
           { icon: Users, title: "Plan revendedores", desc: "Precios mayoristas y soporte dedicado para gomerías y talleres." },
         ].map((b) => (
           <div key={b.title} className="rounded-2xl border bg-card p-6">
@@ -254,10 +254,10 @@ function Index() {
         <div className="container mx-auto grid gap-8 px-4 py-12 md:grid-cols-4">
           <div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black tracking-tighter text-primary">RODA</span>
-              <span className="text-2xl font-black tracking-tighter">MAX</span>
+              <span className="text-2xl font-black tracking-tighter text-primary">LE</span>
+              <span className="text-2xl font-black tracking-tighter">RADIAL</span>
             </div>
-            <p className="mt-3 text-sm opacity-70">Cubiertas y neumáticos para autos, camionetas, camiones y agro.</p>
+            <p className="mt-3 text-sm opacity-70">Cubiertas y neumáticos para autos, camionetas, camiones y agro. Posadas, Misiones.</p>
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Categorías</h4>
@@ -268,17 +268,18 @@ function Index() {
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Empresa</h4>
             <ul className="space-y-2 text-sm opacity-80">
-              <li>Sucursales</li><li>Revendedores</li><li>Contacto</li>
+              <li>Sucursal Posadas</li><li>Revendedores</li><li>Contacto</li>
             </ul>
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Atención</h4>
-            <p className="text-sm opacity-80">0800 11 00 80</p>
-            <p className="text-sm opacity-80">hola@rodamax.com</p>
+            <p className="text-sm opacity-80">(376) 4-000000</p>
+            <p className="text-sm opacity-80">hola@leradial.com.ar</p>
+            <p className="mt-2 text-sm opacity-80">Posadas, Misiones — Argentina</p>
           </div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
-          © {new Date().getFullYear()} RodaMax · Todos los derechos reservados
+          © {new Date().getFullYear()} Le Radial · Todos los derechos reservados
         </div>
       </footer>
     </div>
