@@ -223,7 +223,8 @@ function Index() {
                   <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
                     Promo
                   </span>
-                  <img src={p.img} alt={`${p.brand} ${p.model}`} loading="lazy" width={600} height={600} className="h-full w-full object-cover transition group-hover:scale-105" />
+                  <img src={p.image_url || categoryImg[p.category] || tireCar} alt={`${p.brand} ${p.model}`} loading="lazy" width={600} height={600} className="h-full w-full object-cover transition group-hover:scale-105" />
+
                 </div>
                 <div className="flex flex-1 flex-col p-4">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
