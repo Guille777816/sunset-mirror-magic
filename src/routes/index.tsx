@@ -9,11 +9,13 @@ import tireAgro from "@/assets/tire-agro.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
+export const Route = createFileRoute("/")({
+  head: () => ({
     meta: [
-      { title: "RodaMax — Cubiertas y neumáticos al mejor precio" },
-      { name: "description", content: "Tienda online de cubiertas para autos, camionetas, camiones y maquinaria agrícola. Buscá por medida y comprá con descuentos promocionales." },
-      { property: "og:title", content: "RodaMax — Cubiertas y neumáticos" },
-      { property: "og:description", content: "Tienda online de cubiertas para autos, camionetas, camiones y maquinaria agrícola." },
+      { title: "Le Radial — Cubiertas y neumáticos en Posadas, Misiones" },
+      { name: "description", content: "Venta de cubiertas para autos, camionetas, camiones y maquinaria agrícola en Posadas, Misiones. Buscá por medida y consultá precios actualizados." },
+      { property: "og:title", content: "Le Radial — Cubiertas en Posadas, Misiones" },
+      { property: "og:description", content: "Cubiertas para autos, camionetas, camiones y agro. Posadas, Misiones — Argentina." },
     ],
   }),
   component: Index,
@@ -28,16 +30,17 @@ const categories = [
 
 const products = [
   { brand: "ROADMAX", model: "GREEN-TOURING", size: "175/70R13 82T", price: 320000, img: tireCar },
-  { brand: "ROADMAX", model: "ALL-TERRAIN A/T", size: "265/65R17 112T", price: 890000, img: tireSuv },
-  { brand: "TITANGRIP", model: "URBAN PRO", size: "185/65R14 86H", price: 410000, img: tireCar },
-  { brand: "TITANGRIP", model: "MUD-X M/T", size: "31x10.5R15 109Q", price: 1150000, img: tireSuv },
-  { brand: "HEAVYLINE", model: "CARGO STEER", size: "295/80R22.5", price: 2250000, img: tireTruck },
-  { brand: "AGROTRAC", model: "FIELD MASTER", size: "18.4-34", price: 4980000, img: tireAgro },
-  { brand: "ROADMAX", model: "ECO DRIVE", size: "195/55R15 85V", price: 455000, img: tireCar },
-  { brand: "TITANGRIP", model: "SPORT GT", size: "225/45R17 94W", price: 720000, img: tireCar },
+const products = [
+  { brand: "ROADMAX", model: "GREEN-TOURING", size: "175/70R13 82T", price: 89000, img: tireCar },
+  { brand: "ROADMAX", model: "ALL-TERRAIN A/T", size: "265/65R17 112T", price: 215000, img: tireSuv },
+  { brand: "TITANGRIP", model: "URBAN PRO", size: "185/65R14 86H", price: 112000, img: tireCar },
+  { brand: "TITANGRIP", model: "MUD-X M/T", size: "31x10.5R15 109Q", price: 298000, img: tireSuv },
+  { brand: "HEAVYLINE", model: "CARGO STEER", size: "295/80R22.5", price: 620000, img: tireTruck },
+  { brand: "AGROTRAC", model: "FIELD MASTER", size: "18.4-34", price: 1350000, img: tireAgro },
+  { brand: "ROADMAX", model: "ECO DRIVE", size: "195/55R15 85V", price: 125000, img: tireCar },
+  { brand: "TITANGRIP", model: "SPORT GT", size: "225/45R17 94W", price: 195000, img: tireCar },
 ];
 
-const widths = ["Todos","145","155","165","175","185","195","205","215","225","235","245","255","265","275","285","295","305"];
 const heights = ["Todos","30","35","40","45","50","55","60","65","70","75","80"];
 const rims = ["Todos","13","14","15","16","17","18","19","20","21","22"];
 
@@ -45,9 +48,10 @@ function formatGs(n: number) {
   return "₲ " + n.toLocaleString("es-PY");
 }
 
-function Index() {
-  const [w, setW] = useState("Todos");
-  const [h, setH] = useState("Todos");
+function formatArs(n: number) {
+  return "$ " + n.toLocaleString("es-AR");
+}
+
   const [r, setR] = useState("Todos");
 
   return (
