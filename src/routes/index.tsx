@@ -1,11 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin } from "lucide-react";
 import heroTire from "@/assets/hero-tire.jpg";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
 import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { listPublicProducts } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,35 +24,41 @@ export const Route = createFileRoute("/")({
 });
 
 const categories = [
-  { name: "Autos", img: tireCar },
-  { name: "Camionetas", img: tireSuv },
-  { name: "Camiones", img: tireTruck },
-  { name: "Agrícolas", img: tireAgro },
+  { name: "Autos", img: tireCar, slug: "autos" },
+  { name: "Camionetas", img: tireSuv, slug: "camionetas" },
+  { name: "Camiones", img: tireTruck, slug: "camiones" },
+  { name: "Agrícolas", img: tireAgro, slug: "agricolas" },
 ];
 
-const products = [
-  { brand: "ROADMAX", model: "GREEN-TOURING", size: "175/70R13 82T", price: 89000, img: tireCar },
-  { brand: "ROADMAX", model: "ALL-TERRAIN A/T", size: "265/65R17 112T", price: 215000, img: tireSuv },
-  { brand: "TITANGRIP", model: "URBAN PRO", size: "185/65R14 86H", price: 112000, img: tireCar },
-  { brand: "TITANGRIP", model: "MUD-X M/T", size: "31x10.5R15 109Q", price: 298000, img: tireSuv },
-  { brand: "HEAVYLINE", model: "CARGO STEER", size: "295/80R22.5", price: 620000, img: tireTruck },
-  { brand: "AGROTRAC", model: "FIELD MASTER", size: "18.4-34", price: 1350000, img: tireAgro },
-  { brand: "ROADMAX", model: "ECO DRIVE", size: "195/55R15 85V", price: 125000, img: tireCar },
-  { brand: "TITANGRIP", model: "SPORT GT", size: "225/45R17 94W", price: 195000, img: tireCar },
-];
+const categoryImg: Record<string, string> = {
+  autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
+};
 
 const widths = ["Todos","145","155","165","175","185","195","205","215","225","235","245","255","265","275","285","295","305"];
 const heights = ["Todos","30","35","40","45","50","55","60","65","70","75","80"];
 const rims = ["Todos","13","14","15","16","17","18","19","20","21","22"];
 
 function formatArs(n: number) {
-  return "$ " + n.toLocaleString("es-AR");
+  return "$ " + Number(n).toLocaleString("es-AR");
 }
 
 function Index() {
   const [w, setW] = useState("Todos");
   const [h, setH] = useState("Todos");
   const [r, setR] = useState("Todos");
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setAuthed(!!s));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProducts = useServerFn(listPublicProducts);
+  const { data: products = [] } = useQuery({
+    queryKey: ["public-products"],
+    queryFn: () => fetchProducts(),
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
