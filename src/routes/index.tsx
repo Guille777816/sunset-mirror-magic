@@ -230,14 +230,14 @@ function Index() {
                   <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
                   <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary">{p.model}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
+                  <div className="mt-auto pt-4">
                     <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
-
-                    <p className="text-lg font-black text-secondary">{formatArs(p.price)}</p>
                     <button className="mt-3 w-full rounded-full bg-secondary py-2 text-xs font-bold uppercase tracking-wider text-secondary-foreground transition hover:bg-primary">
                       Agregar al carrito
                     </button>
                   </div>
                 </div>
+
               </article>
             ))}
           </div>
