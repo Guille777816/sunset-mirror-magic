@@ -62,6 +62,48 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          address: string
+          email: string
+          hero_description: string
+          hero_eyebrow: string
+          hero_subtitle: string
+          hero_title: string
+          id: string
+          phone: string
+          promo_banner: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          address?: string
+          email?: string
+          hero_description?: string
+          hero_eyebrow?: string
+          hero_subtitle?: string
+          hero_title?: string
+          id?: string
+          phone?: string
+          promo_banner?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Update: {
+          address?: string
+          email?: string
+          hero_description?: string
+          hero_eyebrow?: string
+          hero_subtitle?: string
+          hero_title?: string
+          id?: string
+          phone?: string
+          promo_banner?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
