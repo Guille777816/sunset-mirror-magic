@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin } from "lucide-react";
+import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, ChevronRight } from "lucide-react";
 import heroTire from "@/assets/hero-tire.jpg";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
@@ -24,20 +24,21 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const categories = [
-  { name: "Autos", img: tireCar, slug: "autos" },
-  { name: "Camionetas", img: tireSuv, slug: "camionetas" },
-  { name: "Camiones", img: tireTruck, slug: "camiones" },
-  { name: "Agrícolas", img: tireAgro, slug: "agricolas" },
+const CATEGORY_CONFIG = [
+  { slug: "autos",        label: "Autos",        img: tireCar },
+  { slug: "camionetas",   label: "Camionetas",   img: tireSuv },
+  { slug: "camiones",     label: "Camiones",     img: tireTruck },
+  { slug: "agricolas",    label: "Agrícolas",    img: tireAgro },
+  { slug: "industriales", label: "Industriales", img: tireTruck },
 ];
 
 const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
 
-const widths = ["Todos","145","155","165","175","185","195","205","215","225","235","245","255","265","275","285","295","305"];
+const widths =  ["Todos","145","155","165","175","185","195","205","215","225","235","245","255","265","275","285","295","305"];
 const heights = ["Todos","30","35","40","45","50","55","60","65","70","75","80"];
-const rims = ["Todos","13","14","15","16","17","18","19","20","21","22"];
+const rims =    ["Todos","13","14","15","16","17","18","19","20","21","22"];
 
 function formatArs(n: number) {
   return "$ " + Number(n).toLocaleString("es-AR");
@@ -49,6 +50,7 @@ function Index() {
   const [r, setR] = useState("Todos");
   const [searchActive, setSearchActive] = useState(false);
   const [authed, setAuthed] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
@@ -66,10 +68,12 @@ function Index() {
 
   const phone = settings?.phone ?? "(376) 4-000000";
   const phoneHref = "tel:" + (settings?.phone ?? "").replace(/\s/g, "");
+  const whatsappHref = `https://wa.me/${settings?.whatsapp ?? "5493764000000"}`;
 
-  const filtered = useMemo(() => {
-    if (!searchActive) return products;
-    return products.filter((p: any) => {
+  // Search filter
+  const searchResults = useMemo(() => {
+    if (!searchActive) return [];
+    return (products as any[]).filter((p) => {
       const size = String(p.size || "");
       if (w !== "Todos" && !size.includes(w)) return false;
       if (h !== "Todos" && !size.includes(h)) return false;
@@ -77,6 +81,23 @@ function Index() {
       return true;
     });
   }, [products, w, h, r, searchActive]);
+
+  // Products grouped by category (only categories that have products)
+  const categoriesWithProducts = useMemo(() => {
+    return CATEGORY_CONFIG.map((cat) => ({
+      ...cat,
+      products: (products as any[]).filter((p) => p.category === cat.slug),
+    })).filter((cat) => cat.products.length > 0);
+  }, [products]);
+
+  // Handle nav category click
+  function handleCategoryNav(slug: string) {
+    setSearchActive(false);
+    setActiveCategory(slug);
+    setTimeout(() => {
+      document.getElementById(`cat-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -128,13 +149,21 @@ function Index() {
             <Phone className="h-5 w-5" /> {phone}
           </a>
         </div>
-        {/* Nav */}
+        {/* Nav — categorías clickeables */}
         <nav className="border-t bg-muted">
           <div className="container mx-auto flex items-center justify-between overflow-x-auto px-4">
-            {["Autos","Camionetas","Camiones","Agrícolas","Industriales","Lonas"].map((c) => (
-              <a key={c} href="#categorias" className="whitespace-nowrap px-4 py-3 text-sm font-semibold uppercase tracking-wide text-secondary hover:text-primary">
-                {c}
-              </a>
+            {CATEGORY_CONFIG.map((c) => (
+              <button
+                key={c.slug}
+                onClick={() => handleCategoryNav(c.slug)}
+                className={`whitespace-nowrap px-4 py-3 text-sm font-semibold uppercase tracking-wide transition ${
+                  activeCategory === c.slug
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                {c.label}
+              </button>
             ))}
           </div>
         </nav>
@@ -142,24 +171,17 @@ function Index() {
 
       {/* Hero */}
       <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
-        <img
-          src={heroTire}
-          alt="Cubierta off-road"
-          width={1600}
-          height={700}
-          className="absolute inset-0 h-full w-full object-cover opacity-50"
-        />
+        <img src={heroTire} alt="Cubierta off-road" width={1600} height={700}
+          className="absolute inset-0 h-full w-full object-cover opacity-50" />
         <div className="relative container mx-auto px-4 py-20 md:py-32">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">{settings?.hero_eyebrow ?? "Nueva línea 2026"}</p>
           <h1 className="max-w-2xl text-4xl font-black uppercase leading-[0.95] text-white md:text-6xl">
             {settings?.hero_title ?? "Brutus A/T"}
             <span className="mt-2 block text-primary">{settings?.hero_subtitle ?? "Dominio total del terreno"}</span>
           </h1>
-          <p className="mt-5 max-w-xl text-base text-white/80 md:text-lg">
-            {settings?.hero_description ?? ""}
-          </p>
+          <p className="mt-5 max-w-xl text-base text-white/80 md:text-lg">{settings?.hero_description ?? ""}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#productos" className="rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-105">
+            <a href="#categorias" className="rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-105">
               Ver productos
             </a>
             <a href="#buscador" className="rounded-full border border-white/30 px-7 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-white/10">
@@ -169,7 +191,7 @@ function Index() {
         </div>
       </section>
 
-      {/* Search by size */}
+      {/* Buscador */}
       <section id="buscador" className="bg-muted py-12">
         <div className="container mx-auto px-4">
           <h2 className="mb-6 text-center text-2xl font-bold text-secondary md:text-3xl">
@@ -183,7 +205,8 @@ function Index() {
               <button
                 onClick={() => {
                   setSearchActive(true);
-                  document.getElementById("productos")?.scrollIntoView({ behavior: "smooth" });
+                  setActiveCategory(null);
+                  document.getElementById("resultados-busqueda")?.scrollIntoView({ behavior: "smooth" });
                 }}
                 className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-[1.02]"
               >
@@ -202,7 +225,28 @@ function Index() {
         </div>
       </section>
 
-      {/* Alert strip */}
+      {/* Resultados de búsqueda */}
+      {searchActive && (
+        <section id="resultados-busqueda" className="bg-background py-12">
+          <div className="container mx-auto px-4">
+            <div className="mb-6">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Resultados</p>
+              <h2 className="mt-1 text-2xl font-black text-secondary">{searchResults.length} producto(s) encontrado(s)</h2>
+            </div>
+            {searchResults.length === 0 ? (
+              <div className="rounded-2xl bg-muted p-10 text-center text-muted-foreground">
+                No encontramos cubiertas con esa medida. Probá ajustar los filtros o consultanos directamente.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {searchResults.map((p: any) => <ProductCard key={p.id} p={p} />)}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Banner */}
       <section className="bg-primary py-6 text-primary-foreground">
         <div className="container mx-auto grid gap-3 px-4 text-center text-sm md:grid-cols-3 md:text-left">
           <div className="flex items-center justify-center gap-2 md:justify-start">
@@ -220,82 +264,69 @@ function Index() {
         </div>
       </section>
 
-      {/* Categories */}
+      {/* Categorías visuales */}
       <section id="categorias" className="container mx-auto px-4 py-16">
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Categorías</p>
-            <h2 className="mt-1 text-3xl font-black text-secondary md:text-4xl">Encontrá tu cubierta</h2>
-          </div>
+        <div className="mb-8">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Categorías</p>
+          <h2 className="mt-1 text-3xl font-black text-secondary md:text-4xl">Encontrá tu cubierta</h2>
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {categories.map((c) => (
-            <a key={c.name} href="#productos" className="group relative overflow-hidden rounded-2xl border bg-card p-5 transition hover:-translate-y-1 hover:shadow-[var(--shadow-primary)]">
-              <div className="aspect-square overflow-hidden rounded-xl bg-muted">
-                <img src={c.img} alt={c.name} loading="lazy" width={600} height={600} className="h-full w-full object-cover transition group-hover:scale-110" />
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-secondary">{c.name}</h3>
-                <span className="text-primary opacity-0 transition group-hover:opacity-100">→</span>
-              </div>
-            </a>
-          ))}
+          {CATEGORY_CONFIG.filter(c => c.slug !== "industriales").map((c) => {
+            const count = (products as any[]).filter((p) => p.category === c.slug).length;
+            return (
+              <button
+                key={c.slug}
+                onClick={() => handleCategoryNav(c.slug)}
+                className="group relative overflow-hidden rounded-2xl border bg-card p-5 text-left transition hover:-translate-y-1 hover:shadow-[var(--shadow-primary)]"
+              >
+                <div className="aspect-square overflow-hidden rounded-xl bg-muted">
+                  <img src={c.img} alt={c.label} loading="lazy" width={600} height={600}
+                    className="h-full w-full object-cover transition group-hover:scale-110" />
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-secondary">{c.label}</h3>
+                    {count > 0 && <p className="text-xs text-muted-foreground">{count} producto{count !== 1 ? "s" : ""}</p>}
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-primary opacity-0 transition group-hover:opacity-100" />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      {/* Products */}
-      <section id="productos" className="bg-muted py-16">
-        <div className="container mx-auto px-4">
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
-                {searchActive ? "Resultados de tu búsqueda" : "Cubiertas para autos"}
-              </p>
-              <h2 className="mt-1 text-3xl font-black text-secondary md:text-4xl">
-                {searchActive ? `${filtered.length} producto(s)` : "Destacados"}
-              </h2>
+      {/* Productos por categoría */}
+      {!searchActive && categoriesWithProducts.map((cat) => (
+        <section
+          key={cat.slug}
+          id={`cat-${cat.slug}`}
+          className={`py-14 ${cat.slug === "autos" || cat.slug === "camiones" ? "bg-muted" : "bg-background"}`}
+        >
+          <div className="container mx-auto px-4">
+            <div className="mb-6 flex items-end justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{cat.label}</p>
+                <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">
+                  {cat.products.length} producto{cat.products.length !== 1 ? "s" : ""}
+                </h2>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {cat.products.map((p: any) => <ProductCard key={p.id} p={p} />)}
             </div>
           </div>
-          {filtered.length === 0 ? (
-            <div className="rounded-2xl bg-card p-10 text-center text-muted-foreground">
-              No encontramos cubiertas con esa medida. Probá ajustar los filtros o consultanos directamente.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {filtered.map((p: any) => (
-                <Link
-                  key={p.id}
-                  to="/producto/$id"
-                  params={{ id: p.id }}
-                  className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1"
-                >
-                  <div className="relative aspect-square overflow-hidden bg-muted">
-                    {p.is_featured && (
-                      <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-                        Promo
-                      </span>
-                    )}
-                    <img src={p.image_url || categoryImg[p.category] || tireCar} alt={`${p.brand} ${p.model}`} loading="lazy" width={600} height={600} className="h-full w-full object-cover transition group-hover:scale-105" />
-                  </div>
-                  <div className="flex flex-1 flex-col p-4">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
-                    <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary">{p.model}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
-                    <div className="mt-auto pt-4">
-                      <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
-                      <div className="mt-3 w-full rounded-full bg-secondary py-2 text-center text-xs font-bold uppercase tracking-wider text-secondary-foreground transition group-hover:bg-primary">
-                        Ver detalle
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+        </section>
+      ))}
 
-      {/* Benefits */}
+      {/* Estado vacío */}
+      {!searchActive && categoriesWithProducts.length === 0 && (
+        <section className="py-20 text-center text-muted-foreground">
+          <p>No hay productos publicados aún.</p>
+        </section>
+      )}
+
+      {/* Beneficios */}
       <section className="container mx-auto grid gap-6 px-4 py-16 md:grid-cols-3">
         {[
           { icon: Truck, title: "Envíos a toda la Argentina", desc: "Coordinamos con transportadoras de confianza desde Posadas a cualquier provincia." },
@@ -325,13 +356,21 @@ function Index() {
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Categorías</h4>
             <ul className="space-y-2 text-sm opacity-80">
-              <li>Autos</li><li>Camionetas</li><li>Camiones</li><li>Agrícolas</li>
+              {CATEGORY_CONFIG.map((c) => (
+                <li key={c.slug}>
+                  <button onClick={() => handleCategoryNav(c.slug)} className="hover:text-primary hover:opacity-100">
+                    {c.label}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Empresa</h4>
             <ul className="space-y-2 text-sm opacity-80">
-              <li>Sucursal Posadas</li><li>Revendedores</li><li>Contacto</li>
+              <li>Sucursal Posadas</li>
+              <li>Revendedores</li>
+              <li>Contacto</li>
             </ul>
           </div>
           <div>
@@ -339,6 +378,14 @@ function Index() {
             <p className="text-sm opacity-80">{phone}</p>
             <p className="text-sm opacity-80">{settings?.email ?? "hola@leradial.com.ar"}</p>
             <p className="mt-2 text-sm opacity-80">{settings?.address ?? "Posadas, Misiones — Argentina"}</p>
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white"
+            >
+              WhatsApp
+            </a>
           </div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
@@ -346,6 +393,43 @@ function Index() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function ProductCard({ p }: { p: any }) {
+  return (
+    <Link
+      to="/producto/$id"
+      params={{ id: p.id }}
+      className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1"
+    >
+      <div className="relative aspect-square overflow-hidden bg-muted">
+        {p.is_featured && (
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+            Promo
+          </span>
+        )}
+        <img
+          src={p.image_url || categoryImg[p.category] || tireCar}
+          alt={`${p.brand} ${p.model}`}
+          loading="lazy"
+          width={600}
+          height={600}
+          className="h-full w-full object-cover transition group-hover:scale-105"
+        />
+      </div>
+      <div className="flex flex-1 flex-col p-4">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
+        <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary">{p.model}</h3>
+        <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
+        <div className="mt-auto pt-4">
+          <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
+          <div className="mt-3 w-full rounded-full bg-secondary py-2 text-center text-xs font-bold uppercase tracking-wider text-secondary-foreground transition group-hover:bg-primary">
+            Ver detalle
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 }
 
