@@ -9,6 +9,7 @@ import {
   deleteProduct,
   checkIsAdmin,
 } from "@/lib/products.functions";
+import { getSettings, updateSettings } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -108,13 +109,17 @@ function AdminPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <Link to="/" className="text-xs text-muted-foreground hover:text-primary">← Sitio</Link>
-            <h1 className="mt-1 text-3xl font-black text-secondary">Panel de productos</h1>
+            <h1 className="mt-1 text-3xl font-black text-secondary">Panel de administración</h1>
           </div>
           <button
             onClick={() => setEditing({ ...empty })}
             className="rounded-full bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)]"
           >+ Nuevo producto</button>
         </div>
+
+        <SettingsPanel />
+
+        <h2 className="mb-3 mt-8 text-xl font-bold text-secondary">Productos</h2>
 
         <div className="overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)]">
           <table className="w-full text-sm">
