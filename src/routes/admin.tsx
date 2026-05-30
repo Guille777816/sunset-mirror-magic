@@ -9,6 +9,7 @@ import {
   deleteProduct,
   checkIsAdmin,
 } from "@/lib/products.functions";
+import { getSettings, updateSettings } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -108,13 +109,17 @@ function AdminPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <Link to="/" className="text-xs text-muted-foreground hover:text-primary">← Sitio</Link>
-            <h1 className="mt-1 text-3xl font-black text-secondary">Panel de productos</h1>
+            <h1 className="mt-1 text-3xl font-black text-secondary">Panel de administración</h1>
           </div>
           <button
             onClick={() => setEditing({ ...empty })}
             className="rounded-full bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)]"
           >+ Nuevo producto</button>
         </div>
+
+        <SettingsPanel />
+
+        <h2 className="mb-3 mt-8 text-xl font-bold text-secondary">Productos</h2>
 
         <div className="overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)]">
           <table className="w-full text-sm">
@@ -227,5 +232,69 @@ function Field({ label, col2, children }: { label: string; col2?: boolean; child
       <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">{label}</span>
       {children}
     </label>
+  );
+}
+
+type Settings = {
+  phone: string; whatsapp: string; email: string; address: string;
+  hero_eyebrow: string; hero_title: string; hero_subtitle: string; hero_description: string;
+  promo_banner: string;
+};
+
+function SettingsPanel() {
+  const qc = useQueryClient();
+  const fetchS = useServerFn(getSettings);
+  const saveS = useServerFn(updateSettings);
+  const { data } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
+  const [s, setS] = useState<Settings | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data && !s) setS({
+      phone: data.phone, whatsapp: data.whatsapp, email: data.email, address: data.address,
+      hero_eyebrow: data.hero_eyebrow, hero_title: data.hero_title, hero_subtitle: data.hero_subtitle,
+      hero_description: data.hero_description, promo_banner: data.promo_banner,
+    });
+  }, [data, s]);
+
+  const mut = useMutation({
+    mutationFn: (v: Settings) => saveS({ data: v }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      setMsg("Guardado ✓");
+      setTimeout(() => setMsg(null), 2500);
+    },
+  });
+
+  if (!s) return null;
+  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS({ ...s, [k]: v });
+
+  return (
+    <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-secondary">Datos del sitio</h2>
+          <p className="text-xs text-muted-foreground">Estos datos aparecen en el header, el hero y el banner promocional.</p>
+        </div>
+        {msg && <span className="text-sm font-semibold text-primary">{msg}</span>}
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Field label="Teléfono visible"><input className={input} value={s.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
+        <Field label="WhatsApp (solo números, ej: 5493764000000)"><input className={input} value={s.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} /></Field>
+        <Field label="Email"><input className={input} value={s.email} onChange={(e) => set("email", e.target.value)} /></Field>
+        <Field label="Dirección"><input className={input} value={s.address} onChange={(e) => set("address", e.target.value)} /></Field>
+        <Field label="Hero — texto chico (eyebrow)" col2><input className={input} value={s.hero_eyebrow} onChange={(e) => set("hero_eyebrow", e.target.value)} /></Field>
+        <Field label="Hero — título"><input className={input} value={s.hero_title} onChange={(e) => set("hero_title", e.target.value)} /></Field>
+        <Field label="Hero — subtítulo"><input className={input} value={s.hero_subtitle} onChange={(e) => set("hero_subtitle", e.target.value)} /></Field>
+        <Field label="Hero — descripción" col2><textarea className={input + " min-h-[70px] rounded-2xl py-2"} value={s.hero_description} onChange={(e) => set("hero_description", e.target.value)} /></Field>
+        <Field label="Banner promocional (franja naranja)" col2><input className={input} value={s.promo_banner} onChange={(e) => set("promo_banner", e.target.value)} /></Field>
+      </div>
+      {mut.error && <p className="mt-3 text-sm text-destructive">{String((mut.error as any)?.message ?? mut.error)}</p>}
+      <div className="mt-4 flex justify-end">
+        <button onClick={() => mut.mutate(s)} disabled={mut.isPending} className="rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60">
+          {mut.isPending ? "Guardando..." : "Guardar cambios"}
+        </button>
+      </div>
+    </div>
   );
 }

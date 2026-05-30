@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin } from "lucide-react";
@@ -10,6 +10,7 @@ import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
+import { getSettings } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -46,6 +47,7 @@ function Index() {
   const [w, setW] = useState("Todos");
   const [h, setH] = useState("Todos");
   const [r, setR] = useState("Todos");
+  const [searchActive, setSearchActive] = useState(false);
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
@@ -55,10 +57,26 @@ function Index() {
   }, []);
 
   const fetchProducts = useServerFn(listPublicProducts);
+  const fetchSettings = useServerFn(getSettings);
   const { data: products = [] } = useQuery({
     queryKey: ["public-products"],
     queryFn: () => fetchProducts(),
   });
+  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => fetchSettings() });
+
+  const phone = settings?.phone ?? "(376) 4-000000";
+  const phoneHref = "tel:" + (settings?.phone ?? "").replace(/\s/g, "");
+
+  const filtered = useMemo(() => {
+    if (!searchActive) return products;
+    return products.filter((p: any) => {
+      const size = String(p.size || "");
+      if (w !== "Todos" && !size.includes(w)) return false;
+      if (h !== "Todos" && !size.includes(h)) return false;
+      if (r !== "Todos" && !new RegExp(`\\b${r}\\b|R${r}\\b`).test(size)) return false;
+      return true;
+    });
+  }, [products, w, h, r, searchActive]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -67,7 +85,7 @@ function Index() {
         <div className="container mx-auto flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
             <MapPin className="h-3.5 w-3.5 text-primary" />
-            <span>Posadas, Misiones · Envíos a toda la Argentina</span>
+            <span>{settings?.address ?? "Posadas, Misiones · Envíos a toda la Argentina"}</span>
           </div>
           <div className="hidden gap-4 md:flex">
             <span>Lun a Vie 8:00 – 18:00</span>
@@ -85,15 +103,12 @@ function Index() {
             <span className="ml-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:inline">cubiertas</span>
           </a>
           <div className="hidden items-center gap-6 lg:flex">
-            <a href="tel:+543764000000" className="flex items-center gap-2 text-sm font-semibold">
+            <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
                 <Phone className="h-4 w-4" />
               </span>
-              (376) 4-000000
+              {phone}
             </a>
-            <button className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
-              <ShoppingCart className="h-5 w-5" /> Mi Carrito
-            </button>
             {authed ? (
               <>
                 <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
@@ -108,11 +123,10 @@ function Index() {
                 <User className="h-5 w-5" /> Login
               </Link>
             )}
-
           </div>
-          <button className="lg:hidden">
-            <ShoppingCart className="h-6 w-6" />
-          </button>
+          <a href={phoneHref} className="lg:hidden flex items-center gap-2 text-sm font-bold text-primary">
+            <Phone className="h-5 w-5" /> {phone}
+          </a>
         </div>
         {/* Nav */}
         <nav className="border-t bg-muted">
@@ -136,13 +150,13 @@ function Index() {
           className="absolute inset-0 h-full w-full object-cover opacity-50"
         />
         <div className="relative container mx-auto px-4 py-20 md:py-32">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">Nueva línea 2026</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">{settings?.hero_eyebrow ?? "Nueva línea 2026"}</p>
           <h1 className="max-w-2xl text-4xl font-black uppercase leading-[0.95] text-white md:text-6xl">
-            Brutus A/T
-            <span className="mt-2 block text-primary">Dominio total del terreno</span>
+            {settings?.hero_title ?? "Brutus A/T"}
+            <span className="mt-2 block text-primary">{settings?.hero_subtitle ?? "Dominio total del terreno"}</span>
           </h1>
           <p className="mt-5 max-w-xl text-base text-white/80 md:text-lg">
-            Diseñada para ofrecer un equilibrio entre rendimiento y durabilidad en una amplia gama de condiciones de velocidad y terreno.
+            {settings?.hero_description ?? ""}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#productos" className="rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-105">
@@ -165,10 +179,24 @@ function Index() {
             <Select label="Ancho" value={w} onChange={setW} options={widths} />
             <Select label="Alto" value={h} onChange={setH} options={heights} />
             <Select label="Aro" value={r} onChange={setR} options={rims} />
-            <div className="flex items-end">
-              <button className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-8 font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-[1.02] md:w-auto">
+            <div className="flex items-end gap-2">
+              <button
+                onClick={() => {
+                  setSearchActive(true);
+                  document.getElementById("productos")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-[1.02]"
+              >
                 <Search className="h-4 w-4" /> Buscar
               </button>
+              {searchActive && (
+                <button
+                  onClick={() => { setSearchActive(false); setW("Todos"); setH("Todos"); setR("Todos"); }}
+                  className="h-12 rounded-full border px-4 text-xs font-bold uppercase text-secondary"
+                >
+                  Limpiar
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -179,7 +207,7 @@ function Index() {
         <div className="container mx-auto grid gap-3 px-4 text-center text-sm md:grid-cols-3 md:text-left">
           <div className="flex items-center justify-center gap-2 md:justify-start">
             <AlertTriangle className="h-5 w-5 shrink-0" />
-            <span><strong>Precios promocionales</strong> con descuentos especiales.</span>
+            <span>{settings?.promo_banner ?? "Precios promocionales con descuentos especiales."}</span>
           </div>
           <div className="flex items-center justify-center gap-2 md:justify-start">
             <ShoppingCart className="h-5 w-5 shrink-0" />
@@ -220,36 +248,50 @@ function Index() {
         <div className="container mx-auto px-4">
           <div className="mb-8 flex items-end justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Cubiertas para autos</p>
-              <h2 className="mt-1 text-3xl font-black text-secondary md:text-4xl">Destacados</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                {searchActive ? "Resultados de tu búsqueda" : "Cubiertas para autos"}
+              </p>
+              <h2 className="mt-1 text-3xl font-black text-secondary md:text-4xl">
+                {searchActive ? `${filtered.length} producto(s)` : "Destacados"}
+              </h2>
             </div>
-            <a href="#" className="hidden text-sm font-semibold text-primary hover:underline md:inline">Ver todos →</a>
           </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((p, i) => (
-              <article key={i} className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1">
-                <div className="relative aspect-square overflow-hidden bg-muted">
-                  <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-                    Promo
-                  </span>
-                  <img src={p.image_url || categoryImg[p.category] || tireCar} alt={`${p.brand} ${p.model}`} loading="lazy" width={600} height={600} className="h-full w-full object-cover transition group-hover:scale-105" />
-
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
-                  <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary">{p.model}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
-                  <div className="mt-auto pt-4">
-                    <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
-                    <button className="mt-3 w-full rounded-full bg-secondary py-2 text-xs font-bold uppercase tracking-wider text-secondary-foreground transition hover:bg-primary">
-                      Agregar al carrito
-                    </button>
+          {filtered.length === 0 ? (
+            <div className="rounded-2xl bg-card p-10 text-center text-muted-foreground">
+              No encontramos cubiertas con esa medida. Probá ajustar los filtros o consultanos directamente.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {filtered.map((p: any) => (
+                <Link
+                  key={p.id}
+                  to="/producto/$id"
+                  params={{ id: p.id }}
+                  className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1"
+                >
+                  <div className="relative aspect-square overflow-hidden bg-muted">
+                    {p.is_featured && (
+                      <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                        Promo
+                      </span>
+                    )}
+                    <img src={p.image_url || categoryImg[p.category] || tireCar} alt={`${p.brand} ${p.model}`} loading="lazy" width={600} height={600} className="h-full w-full object-cover transition group-hover:scale-105" />
                   </div>
-                </div>
-
-              </article>
-            ))}
-          </div>
+                  <div className="flex flex-1 flex-col p-4">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
+                    <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary">{p.model}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
+                    <div className="mt-auto pt-4">
+                      <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
+                      <div className="mt-3 w-full rounded-full bg-secondary py-2 text-center text-xs font-bold uppercase tracking-wider text-secondary-foreground transition group-hover:bg-primary">
+                        Ver detalle
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -294,9 +336,9 @@ function Index() {
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Atención</h4>
-            <p className="text-sm opacity-80">(376) 4-000000</p>
-            <p className="text-sm opacity-80">hola@leradial.com.ar</p>
-            <p className="mt-2 text-sm opacity-80">Posadas, Misiones — Argentina</p>
+            <p className="text-sm opacity-80">{phone}</p>
+            <p className="text-sm opacity-80">{settings?.email ?? "hola@leradial.com.ar"}</p>
+            <p className="mt-2 text-sm opacity-80">{settings?.address ?? "Posadas, Misiones — Argentina"}</p>
           </div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
