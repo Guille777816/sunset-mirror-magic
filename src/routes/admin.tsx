@@ -517,6 +517,7 @@ function Field({ label, col2, children }: { label: string; col2?: boolean; child
 /* ─────────────────── SETTINGS PANEL ─────────────────── */
 type Settings = {
   phone: string; whatsapp: string; email: string; address: string;
+  business_name: string; cuit: string; instagram: string; facebook: string; hours: string;
   hero_eyebrow: string; hero_title: string; hero_subtitle: string; hero_description: string;
   promo_banner: string;
 };
@@ -532,6 +533,11 @@ function SettingsPanel() {
   useEffect(() => {
     if (data && !s) setS({
       phone: data.phone, whatsapp: data.whatsapp, email: data.email, address: data.address,
+      business_name: (data as any).business_name ?? "",
+      cuit: (data as any).cuit ?? "",
+      instagram: (data as any).instagram ?? "",
+      facebook: (data as any).facebook ?? "",
+      hours: (data as any).hours ?? "",
       hero_eyebrow: data.hero_eyebrow, hero_title: data.hero_title, hero_subtitle: data.hero_subtitle,
       hero_description: data.hero_description, promo_banner: data.promo_banner,
     });
@@ -551,6 +557,18 @@ function SettingsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Datos de la empresa */}
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+        <h3 className="mb-4 text-base font-bold text-secondary">Datos de la empresa</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Razón social / Nombre comercial"><input className={input} value={s.business_name} onChange={(e) => set("business_name", e.target.value)} /></Field>
+          <Field label="CUIT"><input className={input} placeholder="30-12345678-9" value={s.cuit} onChange={(e) => set("cuit", e.target.value)} /></Field>
+          <Field label="Instagram (URL o @usuario)"><input className={input} value={s.instagram} onChange={(e) => set("instagram", e.target.value)} /></Field>
+          <Field label="Facebook (URL)"><input className={input} value={s.facebook} onChange={(e) => set("facebook", e.target.value)} /></Field>
+          <Field label="Horario de atención" col2><input className={input} value={s.hours} onChange={(e) => set("hours", e.target.value)} /></Field>
+        </div>
+      </div>
+
       {/* Contacto */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
         <h3 className="mb-4 text-base font-bold text-secondary">Contacto y dirección</h3>
