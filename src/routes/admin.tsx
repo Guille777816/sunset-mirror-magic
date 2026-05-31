@@ -239,11 +239,15 @@ function AdminPage() {
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${p.is_active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
                           {p.is_active ? "Activo" : "Oculto"}
                         </span>
-                        {p.is_featured && (
-                          <span className="ml-1 rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-bold uppercase text-secondary">★</span>
-                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => saveMut.mutate({ ...p, price_ars: Number(p.price_ars), is_featured: !p.is_featured })}
+                          title={p.is_featured ? "Quitar de promo" : "Marcar como promo"}
+                          className={`mr-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold ${p.is_featured ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-primary/20"}`}
+                        >
+                          ★ {p.is_featured ? "Promo" : "Promo"}
+                        </button>
                         <button
                           onClick={() => setEditing({ ...p, price_ars: Number(p.price_ars) })}
                           className="mr-2 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
@@ -517,6 +521,7 @@ function Field({ label, col2, children }: { label: string; col2?: boolean; child
 /* ─────────────────── SETTINGS PANEL ─────────────────── */
 type Settings = {
   phone: string; whatsapp: string; email: string; address: string;
+  business_name: string; cuit: string; instagram: string; facebook: string; hours: string;
   hero_eyebrow: string; hero_title: string; hero_subtitle: string; hero_description: string;
   promo_banner: string;
 };
@@ -532,6 +537,11 @@ function SettingsPanel() {
   useEffect(() => {
     if (data && !s) setS({
       phone: data.phone, whatsapp: data.whatsapp, email: data.email, address: data.address,
+      business_name: (data as any).business_name ?? "",
+      cuit: (data as any).cuit ?? "",
+      instagram: (data as any).instagram ?? "",
+      facebook: (data as any).facebook ?? "",
+      hours: (data as any).hours ?? "",
       hero_eyebrow: data.hero_eyebrow, hero_title: data.hero_title, hero_subtitle: data.hero_subtitle,
       hero_description: data.hero_description, promo_banner: data.promo_banner,
     });
@@ -551,6 +561,18 @@ function SettingsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Datos de la empresa */}
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+        <h3 className="mb-4 text-base font-bold text-secondary">Datos de la empresa</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Razón social / Nombre comercial"><input className={input} value={s.business_name} onChange={(e) => set("business_name", e.target.value)} /></Field>
+          <Field label="CUIT"><input className={input} placeholder="30-12345678-9" value={s.cuit} onChange={(e) => set("cuit", e.target.value)} /></Field>
+          <Field label="Instagram (URL o @usuario)"><input className={input} value={s.instagram} onChange={(e) => set("instagram", e.target.value)} /></Field>
+          <Field label="Facebook (URL)"><input className={input} value={s.facebook} onChange={(e) => set("facebook", e.target.value)} /></Field>
+          <Field label="Horario de atención" col2><input className={input} value={s.hours} onChange={(e) => set("hours", e.target.value)} /></Field>
+        </div>
+      </div>
+
       {/* Contacto */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
         <h3 className="mb-4 text-base font-bold text-secondary">Contacto y dirección</h3>

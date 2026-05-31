@@ -65,12 +65,17 @@ export type Database = {
       site_settings: {
         Row: {
           address: string
+          business_name: string
+          cuit: string
           email: string
+          facebook: string
           hero_description: string
           hero_eyebrow: string
           hero_subtitle: string
           hero_title: string
+          hours: string
           id: string
+          instagram: string
           phone: string
           promo_banner: string
           updated_at: string
@@ -78,12 +83,17 @@ export type Database = {
         }
         Insert: {
           address?: string
+          business_name?: string
+          cuit?: string
           email?: string
+          facebook?: string
           hero_description?: string
           hero_eyebrow?: string
           hero_subtitle?: string
           hero_title?: string
+          hours?: string
           id?: string
+          instagram?: string
           phone?: string
           promo_banner?: string
           updated_at?: string
@@ -91,12 +101,17 @@ export type Database = {
         }
         Update: {
           address?: string
+          business_name?: string
+          cuit?: string
           email?: string
+          facebook?: string
           hero_description?: string
           hero_eyebrow?: string
           hero_subtitle?: string
           hero_title?: string
+          hours?: string
           id?: string
+          instagram?: string
           phone?: string
           promo_banner?: string
           updated_at?: string
