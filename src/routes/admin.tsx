@@ -239,11 +239,15 @@ function AdminPage() {
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${p.is_active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
                           {p.is_active ? "Activo" : "Oculto"}
                         </span>
-                        {p.is_featured && (
-                          <span className="ml-1 rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-bold uppercase text-secondary">★</span>
-                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => saveMut.mutate({ ...p, price_ars: Number(p.price_ars), is_featured: !p.is_featured })}
+                          title={p.is_featured ? "Quitar de promo" : "Marcar como promo"}
+                          className={`mr-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold ${p.is_featured ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-primary/20"}`}
+                        >
+                          ★ {p.is_featured ? "Promo" : "Promo"}
+                        </button>
                         <button
                           onClick={() => setEditing({ ...p, price_ars: Number(p.price_ars) })}
                           className="mr-2 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
