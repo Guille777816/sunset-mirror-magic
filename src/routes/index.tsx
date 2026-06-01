@@ -82,13 +82,13 @@ function Index() {
     });
   }, [products, w, h, r, searchActive]);
 
-  // Products grouped by category (only categories that have products)
-  const categoriesWithProducts = useMemo(() => {
-    return CATEGORY_CONFIG.map((cat) => ({
-      ...cat,
-      products: (products as any[]).filter((p) => p.category === cat.slug),
-    })).filter((cat) => cat.products.length > 0);
-  }, [products]);
+  // Solo productos destacados (promo) en la portada, divididos en 2 carruseles
+  const featured = useMemo(
+    () => (products as any[]).filter((p) => p.is_featured),
+    [products]
+  );
+  const featuredTop = useMemo(() => featured.slice(0, Math.ceil(featured.length / 2)), [featured]);
+  const featuredBottom = useMemo(() => featured.slice(Math.ceil(featured.length / 2)), [featured]);
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
