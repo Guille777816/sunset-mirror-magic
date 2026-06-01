@@ -279,6 +279,7 @@ function Index() {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {CATEGORY_CONFIG.filter(c => c.slug !== "industriales").map((c) => {
             const count = (products as any[]).filter((p) => p.category === c.slug).length;
+            const customImg = (settings as any)?.category_images?.[c.slug];
             return (
               <button
                 key={c.slug}
@@ -286,7 +287,7 @@ function Index() {
                 className="group relative overflow-hidden rounded-2xl border bg-card p-5 text-left transition hover:-translate-y-1 hover:shadow-[var(--shadow-primary)]"
               >
                 <div className="aspect-square overflow-hidden rounded-xl bg-muted">
-                  <img src={c.img} alt={c.label} loading="lazy" width={600} height={600}
+                  <img src={customImg || c.img} alt={c.label} loading="lazy" width={600} height={600}
                     className="h-full w-full object-cover transition group-hover:scale-110" />
                 </div>
                 <div className="mt-4 flex items-center justify-between">
