@@ -177,7 +177,7 @@ function Index() {
 
       {/* Hero */}
       <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
-        <img src={heroTire} alt="Cubierta off-road" width={1600} height={700}
+        <img src={settings?.hero_image_url || heroTire} alt="Cubierta off-road" width={1600} height={700}
           className="absolute inset-0 h-full w-full object-cover opacity-50" />
         <div className="relative container mx-auto px-4 py-20 md:py-32">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">{settings?.hero_eyebrow ?? "Nueva línea 2026"}</p>
