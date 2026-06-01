@@ -623,6 +623,14 @@ function SettingsPanel() {
         </div>
       </div>
 
+      {/* Imágenes de categorías (portada) */}
+      <CategoryImagesPanel
+        value={s.category_images}
+        onChange={(next) => set("category_images", next)}
+      />
+
+
+
       {/* Datos de la empresa */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
         <h3 className="mb-4 text-base font-bold text-secondary">Datos de la empresa</h3>
