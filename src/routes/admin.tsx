@@ -483,16 +483,24 @@ function ProductForm({
           <Field label="Descripción" col2>
             <textarea className={input + " min-h-[70px] rounded-2xl py-2"} value={p.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
           </Field>
+          <Field label="URL de imagen (pegá un enlace https://...)" col2>
+            <input
+              className={input}
+              placeholder="https://ejemplo.com/foto.jpg"
+              value={p.image_url ?? ""}
+              onChange={(e) => set("image_url", e.target.value || null)}
+            />
+          </Field>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={p.is_active} onChange={(e) => set("is_active", e.target.checked)} /> Activo (visible en el sitio)
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={p.is_featured} onChange={(e) => set("is_featured", e.target.checked)} /> ★ Destacado
+            <input type="checkbox" checked={p.is_featured} onChange={(e) => set("is_featured", e.target.checked)} /> ★ Destacado (Promo)
           </label>
         </div>
         {p.id && (
           <p className="mt-3 rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
-            💡 Para subir o cambiar la imagen, usá la pestaña <strong>Imágenes</strong> del panel.
+            💡 También podés subir la foto desde tu computadora en la pestaña <strong>Imágenes</strong>.
           </p>
         )}
         {error && <p className="mt-3 text-sm text-destructive">{String(error?.message ?? error)}</p>}
