@@ -533,6 +533,7 @@ type Settings = {
   hero_eyebrow: string; hero_title: string; hero_subtitle: string; hero_description: string;
   promo_banner: string;
   logo_url: string; hero_image_url: string;
+  category_images: Record<string, string>;
 };
 
 function SettingsPanel() {
