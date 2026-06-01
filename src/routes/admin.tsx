@@ -556,6 +556,7 @@ function SettingsPanel() {
       hero_description: data.hero_description, promo_banner: data.promo_banner,
       logo_url: (data as any).logo_url ?? "",
       hero_image_url: (data as any).hero_image_url ?? "",
+      category_images: (data as any).category_images ?? {},
     });
   }, [data, s]);
 
