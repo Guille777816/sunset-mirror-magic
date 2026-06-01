@@ -296,33 +296,20 @@ function Index() {
         </div>
       </section>
 
-      {/* Productos por categoría */}
-      {!searchActive && categoriesWithProducts.map((cat) => (
-        <section
-          key={cat.slug}
-          id={`cat-${cat.slug}`}
-          className={`py-14 ${cat.slug === "autos" || cat.slug === "camiones" ? "bg-muted" : "bg-background"}`}
-        >
-          <div className="container mx-auto px-4">
-            <div className="mb-6 flex items-end justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{cat.label}</p>
-                <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">
-                  {cat.products.length} producto{cat.products.length !== 1 ? "s" : ""}
-                </h2>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {cat.products.map((p: any) => <ProductCard key={p.id} p={p} />)}
-            </div>
-          </div>
-        </section>
-      ))}
+      {/* Carruseles de PROMO en la portada */}
+      {!searchActive && featured.length > 0 && (
+        <>
+          <PromoCarousel id="promo-top" eyebrow="Promo destacada" title="Ofertas seleccionadas" items={featuredTop} bg="bg-muted" />
+          {featuredBottom.length > 0 && (
+            <PromoCarousel id="promo-bottom" eyebrow="Más promos" title="Aprovechá ahora" items={featuredBottom} bg="bg-background" />
+          )}
+        </>
+      )}
 
       {/* Estado vacío */}
-      {!searchActive && categoriesWithProducts.length === 0 && (
+      {!searchActive && featured.length === 0 && (
         <section className="py-20 text-center text-muted-foreground">
-          <p>No hay productos publicados aún.</p>
+          <p>Todavía no hay productos en promoción. Marcalos como ★ Promo desde el panel admin.</p>
         </section>
       )}
 
