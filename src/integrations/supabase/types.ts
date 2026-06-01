@@ -71,11 +71,13 @@ export type Database = {
           facebook: string
           hero_description: string
           hero_eyebrow: string
+          hero_image_url: string
           hero_subtitle: string
           hero_title: string
           hours: string
           id: string
           instagram: string
+          logo_url: string
           phone: string
           promo_banner: string
           updated_at: string
@@ -89,11 +91,13 @@ export type Database = {
           facebook?: string
           hero_description?: string
           hero_eyebrow?: string
+          hero_image_url?: string
           hero_subtitle?: string
           hero_title?: string
           hours?: string
           id?: string
           instagram?: string
+          logo_url?: string
           phone?: string
           promo_banner?: string
           updated_at?: string
@@ -107,11 +111,13 @@ export type Database = {
           facebook?: string
           hero_description?: string
           hero_eyebrow?: string
+          hero_image_url?: string
           hero_subtitle?: string
           hero_title?: string
           hours?: string
           id?: string
           instagram?: string
+          logo_url?: string
           phone?: string
           promo_banner?: string
           updated_at?: string
