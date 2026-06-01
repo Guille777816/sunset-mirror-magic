@@ -737,3 +737,122 @@ function AssetUploader({
     </div>
   );
 }
+
+/* ─────────────────── CATEGORY IMAGES ─────────────────── */
+function CategoryImagesPanel({
+  value,
+  onChange,
+}: {
+  value: Record<string, string>;
+  onChange: (next: Record<string, string>) => void;
+}) {
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const cats = [
+    { slug: "autos", label: "Autos" },
+    { slug: "camionetas", label: "Camionetas" },
+    { slug: "camiones", label: "Camiones" },
+    { slug: "agricolas", label: "Agrícolas" },
+  ];
+
+  async function upload(slug: string, file: File) {
+    setUploading(slug);
+    setMsg(null);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `category-${slug}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("site-assets")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+      const url = urlData.publicUrl + "?t=" + Date.now();
+      onChange({ ...value, [slug]: url });
+      setMsg(`Imagen de ${slug} actualizada — recordá Guardar cambios ↓`);
+    } catch (e: any) {
+      setMsg("Error: " + (e?.message ?? "no se pudo subir"));
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+      <h3 className="mb-1 text-base font-bold text-secondary">Imágenes de categorías (portada)</h3>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Cambiá la foto que aparece en cada tarjeta de categoría en la página de inicio.
+      </p>
+      {msg && (
+        <div className="mb-4 rounded-xl bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">{msg}</div>
+      )}
+      <div className="grid gap-4 md:grid-cols-4">
+        {cats.map((c) => (
+          <CategoryImageCard
+            key={c.slug}
+            label={c.label}
+            url={value[c.slug] || ""}
+            uploading={uploading === c.slug}
+            onFile={(f) => upload(c.slug, f)}
+            onClear={() => {
+              const next = { ...value };
+              delete next[c.slug];
+              onChange(next);
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CategoryImageCard({
+  label, url, uploading, onFile, onClear,
+}: {
+  label: string; url: string; uploading: boolean;
+  onFile: (f: File) => void; onClear: () => void;
+}) {
+  const ref = useRef<HTMLInputElement | null>(null);
+  return (
+    <div className="rounded-xl border bg-background p-3">
+      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-secondary">{label}</p>
+      <div className="mb-2 aspect-square overflow-hidden rounded-lg bg-muted">
+        {url ? (
+          <img src={url} alt={label} className="h-full w-full object-cover" />
+        ) : (
+          <div className="grid h-full w-full place-items-center text-[10px] text-muted-foreground">
+            Imagen por defecto
+          </div>
+        )}
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+          e.target.value = "";
+        }}
+      />
+      <div className="flex gap-1">
+        <button
+          disabled={uploading}
+          onClick={() => ref.current?.click()}
+          className="flex flex-1 items-center justify-center gap-1 rounded-full bg-primary py-1.5 text-[11px] font-bold uppercase text-primary-foreground disabled:opacity-60"
+        >
+          <Upload className="h-3 w-3" /> {uploading ? "..." : url ? "Cambiar" : "Subir"}
+        </button>
+        {url && (
+          <button
+            onClick={onClear}
+            className="rounded-full border px-2 py-1.5 text-[11px] font-bold text-muted-foreground hover:text-destructive"
+            title="Usar imagen por defecto"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
