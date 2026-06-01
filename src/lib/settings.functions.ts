@@ -30,6 +30,7 @@ const settingsSchema = z.object({
   promo_banner: z.string().max(300),
   logo_url: z.string().max(500).default(""),
   hero_image_url: z.string().max(500).default(""),
+  category_images: z.record(z.string(), z.string().max(500)).default({}),
 });
 
 export const updateSettings = createServerFn({ method: "POST" })
