@@ -82,13 +82,13 @@ function Index() {
     });
   }, [products, w, h, r, searchActive]);
 
-  // Products grouped by category (only categories that have products)
-  const categoriesWithProducts = useMemo(() => {
-    return CATEGORY_CONFIG.map((cat) => ({
-      ...cat,
-      products: (products as any[]).filter((p) => p.category === cat.slug),
-    })).filter((cat) => cat.products.length > 0);
-  }, [products]);
+  // Solo productos destacados (promo) en la portada, divididos en 2 carruseles
+  const featured = useMemo(
+    () => (products as any[]).filter((p) => p.is_featured),
+    [products]
+  );
+  const featuredTop = useMemo(() => featured.slice(0, Math.ceil(featured.length / 2)), [featured]);
+  const featuredBottom = useMemo(() => featured.slice(Math.ceil(featured.length / 2)), [featured]);
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
@@ -118,10 +118,16 @@ function Index() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-4">
-          <a href="/" className="flex items-baseline gap-1">
-            <span className="text-3xl font-black tracking-tighter text-primary">LE</span>
-            <span className="text-3xl font-black tracking-tighter text-secondary">RADIAL</span>
-            <span className="ml-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:inline">cubiertas</span>
+          <a href="/" className="flex items-center gap-2">
+            {settings?.logo_url ? (
+              <img src={settings.logo_url} alt={settings?.business_name || "Logo"} className="h-12 w-auto max-w-[200px] object-contain" />
+            ) : (
+              <>
+                <span className="text-3xl font-black tracking-tighter text-primary">LE</span>
+                <span className="text-3xl font-black tracking-tighter text-secondary">RADIAL</span>
+                <span className="ml-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:inline">cubiertas</span>
+              </>
+            )}
           </a>
           <div className="hidden items-center gap-6 lg:flex">
             <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
@@ -171,7 +177,7 @@ function Index() {
 
       {/* Hero */}
       <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
-        <img src={heroTire} alt="Cubierta off-road" width={1600} height={700}
+        <img src={settings?.hero_image_url || heroTire} alt="Cubierta off-road" width={1600} height={700}
           className="absolute inset-0 h-full w-full object-cover opacity-50" />
         <div className="relative container mx-auto px-4 py-20 md:py-32">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">{settings?.hero_eyebrow ?? "Nueva línea 2026"}</p>
@@ -296,33 +302,20 @@ function Index() {
         </div>
       </section>
 
-      {/* Productos por categoría */}
-      {!searchActive && categoriesWithProducts.map((cat) => (
-        <section
-          key={cat.slug}
-          id={`cat-${cat.slug}`}
-          className={`py-14 ${cat.slug === "autos" || cat.slug === "camiones" ? "bg-muted" : "bg-background"}`}
-        >
-          <div className="container mx-auto px-4">
-            <div className="mb-6 flex items-end justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{cat.label}</p>
-                <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">
-                  {cat.products.length} producto{cat.products.length !== 1 ? "s" : ""}
-                </h2>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {cat.products.map((p: any) => <ProductCard key={p.id} p={p} />)}
-            </div>
-          </div>
-        </section>
-      ))}
+      {/* Carruseles de PROMO en la portada */}
+      {!searchActive && featured.length > 0 && (
+        <>
+          <PromoCarousel id="promo-top" eyebrow="Promo destacada" title="Ofertas seleccionadas" items={featuredTop} bg="bg-muted" />
+          {featuredBottom.length > 0 && (
+            <PromoCarousel id="promo-bottom" eyebrow="Más promos" title="Aprovechá ahora" items={featuredBottom} bg="bg-background" />
+          )}
+        </>
+      )}
 
       {/* Estado vacío */}
-      {!searchActive && categoriesWithProducts.length === 0 && (
+      {!searchActive && featured.length === 0 && (
         <section className="py-20 text-center text-muted-foreground">
-          <p>No hay productos publicados aún.</p>
+          <p>Todavía no hay productos en promoción. Marcalos como ★ Promo desde el panel admin.</p>
         </section>
       )}
 
@@ -445,5 +438,40 @@ function Select({ label, value, onChange, options }: { label: string; value: str
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
     </label>
+  );
+}
+
+function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow: string; title: string; items: any[]; bg: string }) {
+  const scrollerRef = (typeof window !== "undefined") ? (null as any) : null;
+  function scroll(dir: -1 | 1) {
+    const el = document.getElementById(`${id}-scroller`);
+    if (!el) return;
+    el.scrollBy({ left: dir * (el.clientWidth * 0.85), behavior: "smooth" });
+  }
+  return (
+    <section id={id} className={`py-12 ${bg}`}>
+      <div className="container mx-auto px-4">
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{eyebrow}</p>
+            <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{title}</h2>
+          </div>
+          <div className="hidden gap-2 md:flex">
+            <button onClick={() => scroll(-1)} aria-label="Anterior" className="grid h-10 w-10 place-items-center rounded-full border bg-card hover:bg-primary hover:text-primary-foreground transition">‹</button>
+            <button onClick={() => scroll(1)} aria-label="Siguiente" className="grid h-10 w-10 place-items-center rounded-full border bg-card hover:bg-primary hover:text-primary-foreground transition">›</button>
+          </div>
+        </div>
+        <div
+          id={`${id}-scroller`}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]"
+        >
+          {items.map((p) => (
+            <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[32%] lg:w-[24%]">
+              <ProductCard p={p} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

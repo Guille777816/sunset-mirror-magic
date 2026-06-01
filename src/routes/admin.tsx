@@ -483,16 +483,24 @@ function ProductForm({
           <Field label="Descripción" col2>
             <textarea className={input + " min-h-[70px] rounded-2xl py-2"} value={p.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
           </Field>
+          <Field label="URL de imagen (pegá un enlace https://...)" col2>
+            <input
+              className={input}
+              placeholder="https://ejemplo.com/foto.jpg"
+              value={p.image_url ?? ""}
+              onChange={(e) => set("image_url", e.target.value || null)}
+            />
+          </Field>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={p.is_active} onChange={(e) => set("is_active", e.target.checked)} /> Activo (visible en el sitio)
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={p.is_featured} onChange={(e) => set("is_featured", e.target.checked)} /> ★ Destacado
+            <input type="checkbox" checked={p.is_featured} onChange={(e) => set("is_featured", e.target.checked)} /> ★ Destacado (Promo)
           </label>
         </div>
         {p.id && (
           <p className="mt-3 rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
-            💡 Para subir o cambiar la imagen, usá la pestaña <strong>Imágenes</strong> del panel.
+            💡 También podés subir la foto desde tu computadora en la pestaña <strong>Imágenes</strong>.
           </p>
         )}
         {error && <p className="mt-3 text-sm text-destructive">{String(error?.message ?? error)}</p>}
@@ -524,6 +532,7 @@ type Settings = {
   business_name: string; cuit: string; instagram: string; facebook: string; hours: string;
   hero_eyebrow: string; hero_title: string; hero_subtitle: string; hero_description: string;
   promo_banner: string;
+  logo_url: string; hero_image_url: string;
 };
 
 function SettingsPanel() {
@@ -533,6 +542,7 @@ function SettingsPanel() {
   const { data } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
   const [s, setS] = useState<Settings | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [uploadingAsset, setUploadingAsset] = useState<"logo" | "hero" | null>(null);
 
   useEffect(() => {
     if (data && !s) setS({
@@ -544,6 +554,8 @@ function SettingsPanel() {
       hours: (data as any).hours ?? "",
       hero_eyebrow: data.hero_eyebrow, hero_title: data.hero_title, hero_subtitle: data.hero_subtitle,
       hero_description: data.hero_description, promo_banner: data.promo_banner,
+      logo_url: (data as any).logo_url ?? "",
+      hero_image_url: (data as any).hero_image_url ?? "",
     });
   }, [data, s]);
 
@@ -556,11 +568,59 @@ function SettingsPanel() {
     },
   });
 
+  async function handleAssetUpload(kind: "logo" | "hero", file: File) {
+    if (!s) return;
+    setUploadingAsset(kind);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${kind}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+      const url = urlData.publicUrl + "?t=" + Date.now();
+      const next = { ...s, [kind === "logo" ? "logo_url" : "hero_image_url"]: url };
+      setS(next);
+      await saveS({ data: next });
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      setMsg(`${kind === "logo" ? "Logo" : "Portada"} actualizado ✓`);
+      setTimeout(() => setMsg(null), 2500);
+    } catch (e: any) {
+      setMsg("Error: " + (e?.message ?? "no se pudo subir"));
+    } finally {
+      setUploadingAsset(null);
+    }
+  }
+
   if (!s) return null;
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS({ ...s, [k]: v });
 
   return (
     <div className="space-y-6">
+      {/* Identidad visual: logo + portada */}
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+        <h3 className="mb-4 text-base font-bold text-secondary">Identidad visual</h3>
+        <div className="grid gap-6 md:grid-cols-2">
+          <AssetUploader
+            title="Logo de la empresa"
+            hint="PNG con fondo transparente recomendado. Se muestra en el encabezado del sitio."
+            currentUrl={s.logo_url}
+            uploading={uploadingAsset === "logo"}
+            onFile={(f) => handleAssetUpload("logo", f)}
+            onUrlChange={(v) => set("logo_url", v)}
+            previewClass="h-20 object-contain bg-muted"
+          />
+          <AssetUploader
+            title="Foto de portada (Hero)"
+            hint="Imagen grande del banner principal. Recomendado: 1600×700px."
+            currentUrl={s.hero_image_url}
+            uploading={uploadingAsset === "hero"}
+            onFile={(f) => handleAssetUpload("hero", f)}
+            onUrlChange={(v) => set("hero_image_url", v)}
+            previewClass="h-32 object-cover"
+          />
+        </div>
+      </div>
+
       {/* Datos de la empresa */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
         <h3 className="mb-4 text-base font-bold text-secondary">Datos de la empresa</h3>
@@ -586,7 +646,7 @@ function SettingsPanel() {
 
       {/* Hero */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
-        <h3 className="mb-4 text-base font-bold text-secondary">Sección Hero (banner principal)</h3>
+        <h3 className="mb-4 text-base font-bold text-secondary">Textos del Hero (banner principal)</h3>
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="Texto chico (eyebrow)" col2><input className={input} value={s.hero_eyebrow} onChange={(e) => set("hero_eyebrow", e.target.value)} /></Field>
           <Field label="Título"><input className={input} value={s.hero_title} onChange={(e) => set("hero_title", e.target.value)} /></Field>
@@ -616,6 +676,54 @@ function SettingsPanel() {
           {mut.isPending ? "Guardando..." : "Guardar cambios"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function AssetUploader({
+  title, hint, currentUrl, uploading, onFile, onUrlChange, previewClass,
+}: {
+  title: string; hint: string; currentUrl: string; uploading: boolean;
+  onFile: (f: File) => void; onUrlChange: (v: string) => void; previewClass: string;
+}) {
+  const ref = useRef<HTMLInputElement | null>(null);
+  return (
+    <div className="rounded-xl border bg-background p-4">
+      <p className="text-sm font-bold text-secondary">{title}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+      <div className="my-3 flex items-center justify-center overflow-hidden rounded-lg bg-muted">
+        {currentUrl ? (
+          <img src={currentUrl} alt={title} className={`max-w-full ${previewClass}`} />
+        ) : (
+          <div className="grid h-20 w-full place-items-center text-xs text-muted-foreground">Sin imagen</div>
+        )}
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+          e.target.value = "";
+        }}
+      />
+      <div className="flex gap-2">
+        <button
+          disabled={uploading}
+          onClick={() => ref.current?.click()}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary py-2 text-xs font-bold uppercase text-primary-foreground disabled:opacity-60"
+        >
+          <Upload className="h-3 w-3" /> {uploading ? "Subiendo..." : "Subir imagen"}
+        </button>
+      </div>
+      <input
+        className={input + " mt-2 text-xs"}
+        placeholder="o pegá URL https://..."
+        value={currentUrl}
+        onChange={(e) => onUrlChange(e.target.value)}
+      />
     </div>
   );
 }

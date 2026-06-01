@@ -28,6 +28,8 @@ const settingsSchema = z.object({
   hero_subtitle: z.string().max(160),
   hero_description: z.string().max(600),
   promo_banner: z.string().max(300),
+  logo_url: z.string().max(500).default(""),
+  hero_image_url: z.string().max(500).default(""),
 });
 
 export const updateSettings = createServerFn({ method: "POST" })
