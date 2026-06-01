@@ -118,10 +118,16 @@ function Index() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-4">
-          <a href="/" className="flex items-baseline gap-1">
-            <span className="text-3xl font-black tracking-tighter text-primary">LE</span>
-            <span className="text-3xl font-black tracking-tighter text-secondary">RADIAL</span>
-            <span className="ml-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:inline">cubiertas</span>
+          <a href="/" className="flex items-center gap-2">
+            {settings?.logo_url ? (
+              <img src={settings.logo_url} alt={settings?.business_name || "Logo"} className="h-12 w-auto max-w-[200px] object-contain" />
+            ) : (
+              <>
+                <span className="text-3xl font-black tracking-tighter text-primary">LE</span>
+                <span className="text-3xl font-black tracking-tighter text-secondary">RADIAL</span>
+                <span className="ml-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:inline">cubiertas</span>
+              </>
+            )}
           </a>
           <div className="hidden items-center gap-6 lg:flex">
             <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
