@@ -66,6 +66,7 @@ export type Database = {
         Row: {
           address: string
           business_name: string
+          category_images: Json
           cuit: string
           email: string
           facebook: string
@@ -86,6 +87,7 @@ export type Database = {
         Insert: {
           address?: string
           business_name?: string
+          category_images?: Json
           cuit?: string
           email?: string
           facebook?: string
@@ -106,6 +108,7 @@ export type Database = {
         Update: {
           address?: string
           business_name?: string
+          category_images?: Json
           cuit?: string
           email?: string
           facebook?: string
