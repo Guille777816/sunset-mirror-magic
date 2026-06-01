@@ -440,3 +440,38 @@ function Select({ label, value, onChange, options }: { label: string; value: str
     </label>
   );
 }
+
+function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow: string; title: string; items: any[]; bg: string }) {
+  const scrollerRef = (typeof window !== "undefined") ? (null as any) : null;
+  function scroll(dir: -1 | 1) {
+    const el = document.getElementById(`${id}-scroller`);
+    if (!el) return;
+    el.scrollBy({ left: dir * (el.clientWidth * 0.85), behavior: "smooth" });
+  }
+  return (
+    <section id={id} className={`py-12 ${bg}`}>
+      <div className="container mx-auto px-4">
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{eyebrow}</p>
+            <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{title}</h2>
+          </div>
+          <div className="hidden gap-2 md:flex">
+            <button onClick={() => scroll(-1)} aria-label="Anterior" className="grid h-10 w-10 place-items-center rounded-full border bg-card hover:bg-primary hover:text-primary-foreground transition">‹</button>
+            <button onClick={() => scroll(1)} aria-label="Siguiente" className="grid h-10 w-10 place-items-center rounded-full border bg-card hover:bg-primary hover:text-primary-foreground transition">›</button>
+          </div>
+        </div>
+        <div
+          id={`${id}-scroller`}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]"
+        >
+          {items.map((p) => (
+            <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[32%] lg:w-[24%]">
+              <ProductCard p={p} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
