@@ -327,10 +327,32 @@ function Index() {
 
       {/* Estado vacío */}
       {!searchActive && featured.length === 0 && (
-        <section className="py-20 text-center text-muted-foreground">
+        <section className="py-12 text-center text-muted-foreground">
           <p>Todavía no hay productos en promoción. Marcalos como ★ Promo desde el panel admin.</p>
         </section>
       )}
+
+      {/* Secciones por categoría */}
+      {!searchActive && CATEGORY_CONFIG.filter(c => c.slug !== "industriales").map((c, idx) => {
+        const items = (products as any[]).filter((p) => p.category === c.slug);
+        if (items.length === 0) return null;
+        return (
+          <section key={c.slug} id={`cat-${c.slug}`} className={idx % 2 === 0 ? "bg-muted py-12" : "bg-background py-12"}>
+            <div className="container mx-auto px-4">
+              <div className="mb-6 flex items-end justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Categoría</p>
+                  <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{c.label}</h2>
+                </div>
+                <span className="text-sm text-muted-foreground">{items.length} producto{items.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {items.map((p) => <ProductCard key={p.id} p={p} />)}
+              </div>
+            </div>
+          </section>
+        );
+      })}
 
       {/* Beneficios */}
       <section className="container mx-auto grid gap-6 px-4 py-16 md:grid-cols-3">
