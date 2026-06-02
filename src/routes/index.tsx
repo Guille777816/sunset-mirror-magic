@@ -153,9 +153,15 @@ function Index() {
               </Link>
             )}
           </div>
-          <a href={phoneHref} className="lg:hidden flex items-center gap-2 text-sm font-bold text-primary">
-            <Phone className="h-5 w-5" /> {phone}
-          </a>
+          <div className="flex items-center gap-3 lg:hidden">
+            <button onClick={cart.open} aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
+              <ShoppingCart className="h-5 w-5" />
+              {cart.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold text-secondary-foreground">{cart.count}</span>}
+            </button>
+            <a href={phoneHref} className="flex items-center gap-1 text-sm font-bold text-primary">
+              <Phone className="h-5 w-5" /> {phone}
+            </a>
+          </div>
         </div>
         {/* Nav — categorías clickeables */}
         <nav className="border-t bg-muted">
