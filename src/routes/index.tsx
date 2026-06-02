@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, ChevronRight } from "lucide-react";
+import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, ChevronRight, Plus } from "lucide-react";
 import heroTire from "@/assets/hero-tire.jpg";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
@@ -11,6 +11,7 @@ import tireAgro from "@/assets/tire-agro.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
 import { getSettings } from "@/lib/settings.functions";
+import { useCart } from "@/lib/cart";
 
 export const Route = createFileRoute("/")({
   head: () => ({
