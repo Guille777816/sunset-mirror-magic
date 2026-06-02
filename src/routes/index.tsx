@@ -52,6 +52,7 @@ function Index() {
   const [searchActive, setSearchActive] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const cart = useCart();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
