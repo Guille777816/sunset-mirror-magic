@@ -151,6 +151,7 @@ function Index() {
               <Link to="/login" className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
                 <User className="h-5 w-5" /> Login
               </Link>
+            )}
             <button onClick={cart.open} aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground hover:scale-105 transition">
               <ShoppingCart className="h-5 w-5" />
               {cart.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold text-secondary-foreground">{cart.count}</span>}
