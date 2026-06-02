@@ -73,7 +73,16 @@ function ProductDetail() {
             <p className="mt-2 text-sm text-muted-foreground">{p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}</p>
             {p.description && <p className="mt-6 whitespace-pre-line text-sm leading-relaxed text-foreground/80">{p.description}</p>}
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href={`https://wa.me/${wa}?text=${msg}`} target="_blank" rel="noopener" className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)]">
+              <button
+                onClick={() => {
+                  cart.add({ id: p.id, brand: p.brand, model: p.model, size: p.size, price_ars: Number(p.price_ars), image_url: p.image_url });
+                  cart.open();
+                }}
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:scale-105 transition"
+              >
+                <Plus className="h-4 w-4" /> Agregar al carrito
+              </button>
+              <a href={`https://wa.me/${wa}?text=${msg}`} target="_blank" rel="noopener" className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-7 py-3 text-sm font-bold uppercase tracking-wider text-secondary">
                 <ShoppingCart className="h-4 w-4" /> Consultar por WhatsApp
               </a>
               {phone && (
