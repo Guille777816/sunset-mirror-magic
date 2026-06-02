@@ -40,6 +40,7 @@ function ProductDetail() {
   const fetchS = useServerFn(getSettings);
   const { data: p, isLoading } = useQuery({ queryKey: ["product", id], queryFn: () => fetchP({ data: { id } }) });
   const { data: s } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
+  const cart = useCart();
 
   if (isLoading) return <div className="p-16 text-center text-muted-foreground">Cargando...</div>;
   if (!p) return (
