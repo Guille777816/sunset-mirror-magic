@@ -425,13 +425,10 @@ function Index() {
 }
 
 function ProductCard({ p }: { p: any }) {
+  const cart = useCart();
   return (
-    <Link
-      to="/producto/$id"
-      params={{ id: p.id }}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1"
-    >
-      <div className="relative aspect-square overflow-hidden bg-muted">
+    <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1">
+      <Link to="/producto/$id" params={{ id: p.id }} className="relative block aspect-square overflow-hidden bg-muted">
         {p.is_featured && (
           <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
             Promo
@@ -445,19 +442,36 @@ function ProductCard({ p }: { p: any }) {
           height={600}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
-      </div>
+      </Link>
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
-        <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary">{p.model}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
+        <Link to="/producto/$id" params={{ id: p.id }} className="block">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
+          <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary hover:text-primary">{p.model}</h3>
+          <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
+        </Link>
         <div className="mt-auto pt-4">
           <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
-          <div className="mt-3 w-full rounded-full bg-secondary py-2 text-center text-xs font-bold uppercase tracking-wider text-secondary-foreground transition group-hover:bg-primary">
-            Ver detalle
+          <div className="mt-3 flex gap-2">
+            <Link
+              to="/producto/$id"
+              params={{ id: p.id }}
+              className="flex-1 rounded-full border border-secondary/20 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-secondary hover:bg-secondary hover:text-secondary-foreground transition"
+            >
+              Ver
+            </Link>
+            <button
+              onClick={() => {
+                cart.add({ id: p.id, brand: p.brand, model: p.model, size: p.size, price_ars: Number(p.price_ars), image_url: p.image_url });
+                cart.open();
+              }}
+              className="flex flex-1 items-center justify-center gap-1 rounded-full bg-primary py-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:scale-[1.02] transition"
+            >
+              <Plus className="h-3 w-3" /> Carrito
+            </button>
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
