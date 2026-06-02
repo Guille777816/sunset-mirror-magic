@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, ChevronRight } from "lucide-react";
+import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, ChevronRight, Plus } from "lucide-react";
 import heroTire from "@/assets/hero-tire.jpg";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
@@ -11,6 +11,7 @@ import tireAgro from "@/assets/tire-agro.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
 import { getSettings } from "@/lib/settings.functions";
+import { useCart } from "@/lib/cart";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,6 +52,7 @@ function Index() {
   const [searchActive, setSearchActive] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const cart = useCart();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
@@ -150,10 +152,20 @@ function Index() {
                 <User className="h-5 w-5" /> Login
               </Link>
             )}
+            <button onClick={cart.open} aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground hover:scale-105 transition">
+              <ShoppingCart className="h-5 w-5" />
+              {cart.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold text-secondary-foreground">{cart.count}</span>}
+            </button>
           </div>
-          <a href={phoneHref} className="lg:hidden flex items-center gap-2 text-sm font-bold text-primary">
-            <Phone className="h-5 w-5" /> {phone}
-          </a>
+          <div className="flex items-center gap-3 lg:hidden">
+            <button onClick={cart.open} aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
+              <ShoppingCart className="h-5 w-5" />
+              {cart.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold text-secondary-foreground">{cart.count}</span>}
+            </button>
+            <a href={phoneHref} className="flex items-center gap-1 text-sm font-bold text-primary">
+              <Phone className="h-5 w-5" /> {phone}
+            </a>
+          </div>
         </div>
         {/* Nav — categorías clickeables */}
         <nav className="border-t bg-muted">
@@ -315,10 +327,32 @@ function Index() {
 
       {/* Estado vacío */}
       {!searchActive && featured.length === 0 && (
-        <section className="py-20 text-center text-muted-foreground">
+        <section className="py-12 text-center text-muted-foreground">
           <p>Todavía no hay productos en promoción. Marcalos como ★ Promo desde el panel admin.</p>
         </section>
       )}
+
+      {/* Secciones por categoría */}
+      {!searchActive && CATEGORY_CONFIG.filter(c => c.slug !== "industriales").map((c, idx) => {
+        const items = (products as any[]).filter((p) => p.category === c.slug);
+        if (items.length === 0) return null;
+        return (
+          <section key={c.slug} id={`cat-${c.slug}`} className={idx % 2 === 0 ? "bg-muted py-12" : "bg-background py-12"}>
+            <div className="container mx-auto px-4">
+              <div className="mb-6 flex items-end justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Categoría</p>
+                  <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{c.label}</h2>
+                </div>
+                <span className="text-sm text-muted-foreground">{items.length} producto{items.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {items.map((p) => <ProductCard key={p.id} p={p} />)}
+              </div>
+            </div>
+          </section>
+        );
+      })}
 
       {/* Beneficios */}
       <section className="container mx-auto grid gap-6 px-4 py-16 md:grid-cols-3">
@@ -391,13 +425,10 @@ function Index() {
 }
 
 function ProductCard({ p }: { p: any }) {
+  const cart = useCart();
   return (
-    <Link
-      to="/producto/$id"
-      params={{ id: p.id }}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1"
-    >
-      <div className="relative aspect-square overflow-hidden bg-muted">
+    <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1">
+      <Link to="/producto/$id" params={{ id: p.id }} className="relative block aspect-square overflow-hidden bg-muted">
         {p.is_featured && (
           <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
             Promo
@@ -411,19 +442,36 @@ function ProductCard({ p }: { p: any }) {
           height={600}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
-      </div>
+      </Link>
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
-        <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary">{p.model}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
+        <Link to="/producto/$id" params={{ id: p.id }} className="block">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
+          <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary hover:text-primary">{p.model}</h3>
+          <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
+        </Link>
         <div className="mt-auto pt-4">
           <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
-          <div className="mt-3 w-full rounded-full bg-secondary py-2 text-center text-xs font-bold uppercase tracking-wider text-secondary-foreground transition group-hover:bg-primary">
-            Ver detalle
+          <div className="mt-3 flex gap-2">
+            <Link
+              to="/producto/$id"
+              params={{ id: p.id }}
+              className="flex-1 rounded-full border border-secondary/20 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-secondary hover:bg-secondary hover:text-secondary-foreground transition"
+            >
+              Ver
+            </Link>
+            <button
+              onClick={() => {
+                cart.add({ id: p.id, brand: p.brand, model: p.model, size: p.size, price_ars: Number(p.price_ars), image_url: p.image_url });
+                cart.open();
+              }}
+              className="flex flex-1 items-center justify-center gap-1 rounded-full bg-primary py-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:scale-[1.02] transition"
+            >
+              <Plus className="h-3 w-3" /> Carrito
+            </button>
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
