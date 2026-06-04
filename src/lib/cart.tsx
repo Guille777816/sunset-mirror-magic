@@ -237,3 +237,71 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
     </label>
   );
 }
+
+function BankBlock({ settings, orderId, total }: { settings: any; orderId: string | null; total: number }) {
+  const bank = {
+    name: settings?.bank_name || "",
+    holder: settings?.bank_holder || "",
+    cbu: settings?.bank_cbu || "",
+    alias: settings?.bank_alias || "",
+    extra: settings?.bank_extra || "",
+  };
+  const whatsapp = settings?.whatsapp || "";
+  const hasBank = bank.cbu || bank.alias || bank.holder;
+
+  if (!hasBank) {
+    return (
+      <div className="mt-5 rounded-xl bg-muted p-4 text-center text-xs text-muted-foreground">
+        Te contactaremos a la brevedad para coordinar el pago y la entrega.
+      </div>
+    );
+  }
+
+  const ref = orderId ? `LR-${orderId.slice(0, 8).toUpperCase()}` : "";
+  const waText = encodeURIComponent(
+    `Hola! Acabo de hacer el pedido ${ref} por $${total.toLocaleString("es-AR")}. Adjunto el comprobante de transferencia.`
+  );
+  const waUrl = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${waText}` : null;
+
+  return (
+    <div className="mt-5 rounded-2xl border-2 border-primary/30 bg-card p-4">
+      <p className="mb-3 text-xs font-bold uppercase tracking-wider text-primary">Datos para transferir</p>
+      <div className="space-y-2">
+        {bank.name && <Row label="Banco" value={bank.name} />}
+        {bank.holder && <Row label="Titular" value={bank.holder} />}
+        {bank.cbu && <Row label="CBU" value={bank.cbu} copy />}
+        {bank.alias && <Row label="Alias" value={bank.alias} copy />}
+        {ref && <Row label="Referencia" value={ref} copy />}
+      </div>
+      {bank.extra && (
+        <p className="mt-3 whitespace-pre-line rounded-lg bg-muted p-2 text-[11px] text-muted-foreground">{bank.extra}</p>
+      )}
+      {waUrl && (
+        <a href={waUrl} target="_blank" rel="noopener noreferrer"
+          className="mt-3 block w-full rounded-full bg-secondary py-2.5 text-center text-xs font-bold uppercase text-secondary-foreground">
+          Enviar comprobante por WhatsApp
+        </a>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, value, copy }: { label: string; value: string; copy?: boolean }) {
+  const [done, setDone] = useState(false);
+  async function doCopy() {
+    try { await navigator.clipboard.writeText(value); setDone(true); setTimeout(() => setDone(false), 1500); } catch {}
+  }
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 py-2">
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-bold text-secondary">{value}</p>
+      </div>
+      {copy && (
+        <button onClick={doCopy} className="shrink-0 rounded-full bg-primary/10 p-2 text-primary hover:bg-primary/20">
+          {done ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        </button>
+      )}
+    </div>
+  );
+}
