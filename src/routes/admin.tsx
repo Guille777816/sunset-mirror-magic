@@ -885,3 +885,154 @@ function CategoryImageCard({
     </div>
   );
 }
+
+/* ─────────────────── ORDERS PANEL ─────────────────── */
+const STATUS_OPTIONS = ["pendiente", "pagado", "enviado", "entregado", "cancelado"] as const;
+type OrderStatus = typeof STATUS_OPTIONS[number];
+
+const STATUS_STYLE: Record<OrderStatus, string> = {
+  pendiente:  "bg-yellow-100 text-yellow-800",
+  pagado:     "bg-blue-100 text-blue-800",
+  enviado:    "bg-indigo-100 text-indigo-800",
+  entregado:  "bg-green-100 text-green-800",
+  cancelado:  "bg-red-100 text-red-800",
+};
+
+function OrdersPanel() {
+  const qc = useQueryClient();
+  const fetchOrders = useServerFn(listOrders);
+  const setStatus = useServerFn(updateOrderStatus);
+  const delOrder = useServerFn(deleteOrder);
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ["admin-orders"],
+    queryFn: () => fetchOrders(),
+  });
+  const [filter, setFilter] = useState<OrderStatus | "todos">("todos");
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const statusMut = useMutation({
+    mutationFn: (v: { id: string; status: OrderStatus }) => setStatus({ data: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-orders"] }),
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => delOrder({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-orders"] }),
+  });
+
+  const list = (orders as any[]).filter((o) => filter === "todos" || o.status === filter);
+  const counts: Record<string, number> = { todos: (orders as any[]).length };
+  for (const s of STATUS_OPTIONS) counts[s] = (orders as any[]).filter((o: any) => o.status === s).length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {(["todos", ...STATUS_OPTIONS] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilter(s as any)}
+            className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition ${
+              filter === s ? "bg-primary text-primary-foreground" : "bg-card text-secondary hover:bg-muted"
+            }`}
+          >
+            {s} ({counts[s] ?? 0})
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">Cargando pedidos...</p>
+      ) : list.length === 0 ? (
+        <div className="rounded-2xl bg-card p-10 text-center text-sm text-muted-foreground">
+          No hay pedidos {filter !== "todos" ? `en estado "${filter}"` : "todavía"}.
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)]">
+          <table className="w-full text-sm">
+            <thead className="bg-muted text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3">Pedido</th>
+                <th className="px-4 py-3">Cliente</th>
+                <th className="px-4 py-3">Teléfono</th>
+                <th className="px-4 py-3 text-right">Total</th>
+                <th className="px-4 py-3">Estado</th>
+                <th className="px-4 py-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((o: any) => {
+                const date = new Date(o.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+                const isOpen = openId === o.id;
+                const wa = String(o.customer_phone || "").replace(/\D/g, "");
+                return (
+                  <>
+                    <tr key={o.id} className="border-t">
+                      <td className="px-4 py-3">
+                        <button onClick={() => setOpenId(isOpen ? null : o.id)} className="text-left">
+                          <p className="font-bold text-secondary">#{o.id.slice(0, 8).toUpperCase()}</p>
+                          <p className="text-xs text-muted-foreground">{date}</p>
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-secondary">{o.customer_name}</td>
+                      <td className="px-4 py-3">
+                        {wa ? (
+                          <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{o.customer_phone}</a>
+                        ) : o.customer_phone}
+                      </td>
+                      <td className="px-4 py-3 text-right font-black text-secondary">$ {Number(o.total_ars).toLocaleString("es-AR")}</td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={o.status}
+                          onChange={(e) => statusMut.mutate({ id: o.id, status: e.target.value as OrderStatus })}
+                          className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${STATUS_STYLE[o.status as OrderStatus] ?? "bg-muted"}`}
+                        >
+                          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => setOpenId(isOpen ? null : o.id)} className="mr-2 rounded-full bg-muted px-3 py-1 text-xs font-bold text-secondary hover:bg-secondary hover:text-secondary-foreground">
+                          {isOpen ? "Ocultar" : "Ver"}
+                        </button>
+                        <button
+                          onClick={() => { if (confirm("¿Eliminar este pedido?")) delMut.mutate(o.id); }}
+                          className="rounded-full bg-destructive/10 p-1.5 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="border-t bg-muted/40">
+                        <td colSpan={6} className="px-4 py-4">
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wider text-secondary">Productos</p>
+                              <ul className="mt-2 space-y-1 text-sm">
+                                {(o.items as any[]).map((it, i) => (
+                                  <li key={i} className="flex justify-between gap-3">
+                                    <span>{it.qty} × {it.brand} {it.model} <span className="text-muted-foreground">({it.size})</span></span>
+                                    <span className="font-semibold text-secondary">$ {Number(it.price_ars * it.qty).toLocaleString("es-AR")}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div className="space-y-1 text-sm">
+                              {o.customer_email && <p><strong>Email:</strong> {o.customer_email}</p>}
+                              {o.customer_address && <p><strong>Dirección:</strong> {o.customer_address}</p>}
+                              {o.notes && <p><strong>Notas:</strong> {o.notes}</p>}
+                              <p className="text-xs text-muted-foreground">Referencia para el cliente: LR-{o.id.slice(0, 8).toUpperCase()}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
