@@ -559,6 +559,11 @@ function SettingsPanel() {
       logo_url: (data as any).logo_url ?? "",
       hero_image_url: (data as any).hero_image_url ?? "",
       category_images: (data as any).category_images ?? {},
+      bank_name: (data as any).bank_name ?? "",
+      bank_holder: (data as any).bank_holder ?? "",
+      bank_cbu: (data as any).bank_cbu ?? "",
+      bank_alias: (data as any).bank_alias ?? "",
+      bank_extra: (data as any).bank_extra ?? "",
     });
   }, [data, s]);
 
