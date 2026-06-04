@@ -186,7 +186,9 @@ function CartDrawer() {
               {error && <p className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
               <div className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
                 Total a abonar: <strong className="text-secondary">$ {total.toLocaleString("es-AR")}</strong><br />
-                Te contactaremos para coordinar el pago y la entrega.
+                {(settings as any)?.bank_cbu || (settings as any)?.bank_alias
+                  ? "Al confirmar te mostramos los datos para pagar por transferencia."
+                  : "Te contactaremos para coordinar el pago y la entrega."}
               </div>
             </div>
             <footer className="flex gap-2 border-t p-5">
