@@ -333,7 +333,7 @@ function Index() {
       )}
 
       {/* Secciones por categoría */}
-      {!searchActive && CATEGORY_CONFIG.filter(c => c.slug !== "industriales").map((c, idx) => {
+      {!searchActive && CATEGORY_CONFIG.map((c, idx) => {
         const items = (products as any[]).filter((p) => p.category === c.slug);
         if (items.length === 0) return null;
         return (
