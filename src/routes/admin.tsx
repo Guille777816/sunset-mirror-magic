@@ -10,7 +10,8 @@ import {
   checkIsAdmin,
 } from "@/lib/products.functions";
 import { getSettings, updateSettings } from "@/lib/settings.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package } from "lucide-react";
+import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
