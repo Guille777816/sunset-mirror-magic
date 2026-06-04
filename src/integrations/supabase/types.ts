@@ -107,6 +107,11 @@ export type Database = {
       site_settings: {
         Row: {
           address: string
+          bank_alias: string
+          bank_cbu: string
+          bank_extra: string
+          bank_holder: string
+          bank_name: string
           business_name: string
           category_images: Json
           cuit: string
@@ -128,6 +133,11 @@ export type Database = {
         }
         Insert: {
           address?: string
+          bank_alias?: string
+          bank_cbu?: string
+          bank_extra?: string
+          bank_holder?: string
+          bank_name?: string
           business_name?: string
           category_images?: Json
           cuit?: string
@@ -149,6 +159,11 @@ export type Database = {
         }
         Update: {
           address?: string
+          bank_alias?: string
+          bank_cbu?: string
+          bank_extra?: string
+          bank_holder?: string
+          bank_name?: string
           business_name?: string
           category_images?: Json
           cuit?: string
