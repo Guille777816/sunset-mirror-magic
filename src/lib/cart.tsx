@@ -102,6 +102,7 @@ function CartDrawer() {
         items: items.map(i => ({ id: i.id, brand: i.brand, model: i.model, size: i.size, price_ars: i.price_ars, qty: i.qty })),
       }});
       setOrderId(res.id);
+      setOrderTotal(res.total ?? total);
       setStep("done");
       clear();
     } catch (err: any) {
