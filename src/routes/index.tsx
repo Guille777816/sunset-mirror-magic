@@ -332,27 +332,37 @@ function Index() {
         </section>
       )}
 
-      {/* Secciones por categoría */}
-      {!searchActive && CATEGORY_CONFIG.map((c, idx) => {
+      {/* Sección de categoría activa (solo cuando el usuario hace click en una categoría) */}
+      {!searchActive && activeCategory && (() => {
+        const c = CATEGORY_CONFIG.find((x) => x.slug === activeCategory);
+        if (!c) return null;
         const items = (products as any[]).filter((p) => p.category === c.slug);
-        if (items.length === 0) return null;
         return (
-          <section key={c.slug} id={`cat-${c.slug}`} className={idx % 2 === 0 ? "bg-muted py-12" : "bg-background py-12"}>
+          <section key={c.slug} id={`cat-${c.slug}`} className="bg-muted py-12">
             <div className="container mx-auto px-4">
-              <div className="mb-6 flex items-end justify-between">
+              <div className="mb-6 flex items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Categoría</p>
                   <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{c.label}</h2>
+                  <p className="text-sm text-muted-foreground">{items.length} producto{items.length !== 1 ? "s" : ""}</p>
                 </div>
-                <span className="text-sm text-muted-foreground">{items.length} producto{items.length !== 1 ? "s" : ""}</span>
+                <button onClick={() => setActiveCategory(null)} className="rounded-full border px-4 py-2 text-xs font-bold uppercase text-secondary hover:bg-background">
+                  ← Volver al inicio
+                </button>
               </div>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {items.map((p) => <ProductCard key={p.id} p={p} />)}
-              </div>
+              {items.length === 0 ? (
+                <p className="rounded-2xl bg-background p-8 text-center text-sm text-muted-foreground">
+                  Todavía no hay productos en esta categoría.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                  {items.map((p) => <ProductCard key={p.id} p={p} />)}
+                </div>
+              )}
             </div>
           </section>
         );
-      })}
+      })()}
 
       {/* Beneficios */}
       <section className="container mx-auto grid gap-6 px-4 py-16 md:grid-cols-3">
