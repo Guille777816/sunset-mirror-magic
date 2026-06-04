@@ -534,6 +534,7 @@ type Settings = {
   promo_banner: string;
   logo_url: string; hero_image_url: string;
   category_images: Record<string, string>;
+  bank_name: string; bank_holder: string; bank_cbu: string; bank_alias: string; bank_extra: string;
 };
 
 function SettingsPanel() {
