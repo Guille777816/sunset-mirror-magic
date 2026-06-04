@@ -964,7 +964,7 @@ function OrdersPanel() {
                 const isOpen = openId === o.id;
                 const wa = String(o.customer_phone || "").replace(/\D/g, "");
                 return (
-                  <>
+                  <Fragment key={o.id}>
                     <tr key={o.id} className="border-t">
                       <td className="px-4 py-3">
                         <button onClick={() => setOpenId(isOpen ? null : o.id)} className="text-left">
