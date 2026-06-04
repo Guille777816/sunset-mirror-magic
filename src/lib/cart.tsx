@@ -201,13 +201,26 @@ function CartDrawer() {
         )}
 
         {step === "done" && (
-          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-full bg-primary text-primary-foreground">
-              <ShoppingCart className="h-8 w-8" />
+          <div className="flex flex-1 flex-col overflow-y-auto p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Check className="h-7 w-7" />
+              </div>
+              <h3 className="mt-3 text-xl font-black text-secondary">¡Pedido confirmado!</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pedido{orderId ? ` #${orderId.slice(0, 8)}` : ""} · Total a transferir
+              </p>
+              <p className="mt-1 text-3xl font-black text-primary">$ {orderTotal.toLocaleString("es-AR")}</p>
             </div>
-            <h3 className="mt-4 text-xl font-black text-secondary">¡Gracias por tu compra!</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Recibimos tu pedido{orderId ? ` #${orderId.slice(0, 8)}` : ""}. Te contactaremos a la brevedad.</p>
-            <button onClick={close} className="mt-6 rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground">Cerrar</button>
+
+            <BankBlock settings={settings as any} orderId={orderId} total={orderTotal} />
+
+            <button onClick={close} className="mt-6 rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground">
+              Listo, ya transferí
+            </button>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">
+              Una vez recibido el comprobante te confirmamos por WhatsApp y coordinamos la entrega.
+            </p>
           </div>
         )}
       </aside>
