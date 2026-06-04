@@ -753,6 +753,7 @@ function CategoryImagesPanel({
     { slug: "camionetas", label: "Camionetas" },
     { slug: "camiones", label: "Camiones" },
     { slug: "agricolas", label: "Agrícolas" },
+    { slug: "industriales", label: "Industriales" },
   ];
 
   async function upload(slug: string, file: File) {
