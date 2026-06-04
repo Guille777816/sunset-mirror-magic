@@ -289,7 +289,7 @@ function Index() {
           <h2 className="mt-1 text-3xl font-black text-secondary md:text-4xl">Encontrá tu cubierta</h2>
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {CATEGORY_CONFIG.filter(c => c.slug !== "industriales").map((c) => {
+          {CATEGORY_CONFIG.map((c) => {
             const count = (products as any[]).filter((p) => p.category === c.slug).length;
             const customImg = (settings as any)?.category_images?.[c.slug];
             return (
