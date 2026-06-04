@@ -1026,7 +1026,7 @@ function OrdersPanel() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
