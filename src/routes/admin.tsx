@@ -278,6 +278,9 @@ function AdminPage() {
           </div>
         )}
 
+        {/* ── TAB: PEDIDOS ── */}
+        {tab === "pedidos" && <OrdersPanel />}
+
         {/* ── TAB: IMÁGENES ── */}
         {tab === "imagenes" && (
           <ImageManager products={products as Product[]} onRefresh={() => qc.invalidateQueries({ queryKey: ["admin-products"] })} />
