@@ -48,7 +48,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   industriales: "Industriales",
 };
 
-type Tab = "productos" | "imagenes" | "ajustes";
+type Tab = "productos" | "pedidos" | "imagenes" | "ajustes";
 
 function AdminPage() {
   const navigate = useNavigate();
