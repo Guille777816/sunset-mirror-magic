@@ -76,11 +76,14 @@ export function useCart() {
 function CartDrawer() {
   const { items, total, isOpen, close, remove, setQty, clear } = useCart();
   const submit = useServerFn(createOrder);
+  const fetchS = useServerFn(getSettings);
+  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
   const [step, setStep] = useState<"cart" | "form" | "done">("cart");
   const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderTotal, setOrderTotal] = useState<number>(0);
 
   useEffect(() => { if (isOpen) { setStep(items.length ? "cart" : "cart"); setError(null); } }, [isOpen, items.length]);
 
