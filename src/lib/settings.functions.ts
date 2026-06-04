@@ -31,6 +31,11 @@ const settingsSchema = z.object({
   logo_url: z.string().max(500).default(""),
   hero_image_url: z.string().max(500).default(""),
   category_images: z.record(z.string(), z.string().max(500)).default({}),
+  bank_name: z.string().max(120).default(""),
+  bank_holder: z.string().max(150).default(""),
+  bank_cbu: z.string().max(60).default(""),
+  bank_alias: z.string().max(60).default(""),
+  bank_extra: z.string().max(400).default(""),
 });
 
 export const updateSettings = createServerFn({ method: "POST" })
