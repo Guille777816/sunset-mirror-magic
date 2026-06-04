@@ -1,0 +1,7 @@
+
+ALTER TABLE public.site_settings
+  ADD COLUMN IF NOT EXISTS bank_name text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS bank_holder text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS bank_cbu text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS bank_alias text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS bank_extra text NOT NULL DEFAULT '';

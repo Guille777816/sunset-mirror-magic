@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { X, Minus, Plus, ShoppingCart, Trash2, Copy, Check } from "lucide-react";
 import { createOrder } from "./orders.functions";
+import { getSettings } from "./settings.functions";
 
 export type CartItem = {
   id: string;
@@ -74,11 +76,14 @@ export function useCart() {
 function CartDrawer() {
   const { items, total, isOpen, close, remove, setQty, clear } = useCart();
   const submit = useServerFn(createOrder);
+  const fetchS = useServerFn(getSettings);
+  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
   const [step, setStep] = useState<"cart" | "form" | "done">("cart");
   const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderTotal, setOrderTotal] = useState<number>(0);
 
   useEffect(() => { if (isOpen) { setStep(items.length ? "cart" : "cart"); setError(null); } }, [isOpen, items.length]);
 
@@ -97,6 +102,7 @@ function CartDrawer() {
         items: items.map(i => ({ id: i.id, brand: i.brand, model: i.model, size: i.size, price_ars: i.price_ars, qty: i.qty })),
       }});
       setOrderId(res.id);
+      setOrderTotal(res.total ?? total);
       setStep("done");
       clear();
     } catch (err: any) {
@@ -180,7 +186,9 @@ function CartDrawer() {
               {error && <p className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
               <div className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
                 Total a abonar: <strong className="text-secondary">$ {total.toLocaleString("es-AR")}</strong><br />
-                Te contactaremos para coordinar el pago y la entrega.
+                {(settings as any)?.bank_cbu || (settings as any)?.bank_alias
+                  ? "Al confirmar te mostramos los datos para pagar por transferencia."
+                  : "Te contactaremos para coordinar el pago y la entrega."}
               </div>
             </div>
             <footer className="flex gap-2 border-t p-5">
@@ -193,13 +201,26 @@ function CartDrawer() {
         )}
 
         {step === "done" && (
-          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-full bg-primary text-primary-foreground">
-              <ShoppingCart className="h-8 w-8" />
+          <div className="flex flex-1 flex-col overflow-y-auto p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Check className="h-7 w-7" />
+              </div>
+              <h3 className="mt-3 text-xl font-black text-secondary">¡Pedido confirmado!</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pedido{orderId ? ` #${orderId.slice(0, 8)}` : ""} · Total a transferir
+              </p>
+              <p className="mt-1 text-3xl font-black text-primary">$ {orderTotal.toLocaleString("es-AR")}</p>
             </div>
-            <h3 className="mt-4 text-xl font-black text-secondary">¡Gracias por tu compra!</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Recibimos tu pedido{orderId ? ` #${orderId.slice(0, 8)}` : ""}. Te contactaremos a la brevedad.</p>
-            <button onClick={close} className="mt-6 rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground">Cerrar</button>
+
+            <BankBlock settings={settings as any} orderId={orderId} total={orderTotal} />
+
+            <button onClick={close} className="mt-6 rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground">
+              Listo, ya transferí
+            </button>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">
+              Una vez recibido el comprobante te confirmamos por WhatsApp y coordinamos la entrega.
+            </p>
           </div>
         )}
       </aside>
@@ -214,5 +235,73 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
         className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm" />
     </label>
+  );
+}
+
+function BankBlock({ settings, orderId, total }: { settings: any; orderId: string | null; total: number }) {
+  const bank = {
+    name: settings?.bank_name || "",
+    holder: settings?.bank_holder || "",
+    cbu: settings?.bank_cbu || "",
+    alias: settings?.bank_alias || "",
+    extra: settings?.bank_extra || "",
+  };
+  const whatsapp = settings?.whatsapp || "";
+  const hasBank = bank.cbu || bank.alias || bank.holder;
+
+  if (!hasBank) {
+    return (
+      <div className="mt-5 rounded-xl bg-muted p-4 text-center text-xs text-muted-foreground">
+        Te contactaremos a la brevedad para coordinar el pago y la entrega.
+      </div>
+    );
+  }
+
+  const ref = orderId ? `LR-${orderId.slice(0, 8).toUpperCase()}` : "";
+  const waText = encodeURIComponent(
+    `Hola! Acabo de hacer el pedido ${ref} por $${total.toLocaleString("es-AR")}. Adjunto el comprobante de transferencia.`
+  );
+  const waUrl = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${waText}` : null;
+
+  return (
+    <div className="mt-5 rounded-2xl border-2 border-primary/30 bg-card p-4">
+      <p className="mb-3 text-xs font-bold uppercase tracking-wider text-primary">Datos para transferir</p>
+      <div className="space-y-2">
+        {bank.name && <Row label="Banco" value={bank.name} />}
+        {bank.holder && <Row label="Titular" value={bank.holder} />}
+        {bank.cbu && <Row label="CBU" value={bank.cbu} copy />}
+        {bank.alias && <Row label="Alias" value={bank.alias} copy />}
+        {ref && <Row label="Referencia" value={ref} copy />}
+      </div>
+      {bank.extra && (
+        <p className="mt-3 whitespace-pre-line rounded-lg bg-muted p-2 text-[11px] text-muted-foreground">{bank.extra}</p>
+      )}
+      {waUrl && (
+        <a href={waUrl} target="_blank" rel="noopener noreferrer"
+          className="mt-3 block w-full rounded-full bg-secondary py-2.5 text-center text-xs font-bold uppercase text-secondary-foreground">
+          Enviar comprobante por WhatsApp
+        </a>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, value, copy }: { label: string; value: string; copy?: boolean }) {
+  const [done, setDone] = useState(false);
+  async function doCopy() {
+    try { await navigator.clipboard.writeText(value); setDone(true); setTimeout(() => setDone(false), 1500); } catch {}
+  }
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 py-2">
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-bold text-secondary">{value}</p>
+      </div>
+      {copy && (
+        <button onClick={doCopy} className="shrink-0 rounded-full bg-primary/10 p-2 text-primary hover:bg-primary/20">
+          {done ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        </button>
+      )}
+    </div>
   );
 }

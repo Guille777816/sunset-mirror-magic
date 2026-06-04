@@ -534,6 +534,7 @@ type Settings = {
   promo_banner: string;
   logo_url: string; hero_image_url: string;
   category_images: Record<string, string>;
+  bank_name: string; bank_holder: string; bank_cbu: string; bank_alias: string; bank_extra: string;
 };
 
 function SettingsPanel() {
@@ -558,6 +559,11 @@ function SettingsPanel() {
       logo_url: (data as any).logo_url ?? "",
       hero_image_url: (data as any).hero_image_url ?? "",
       category_images: (data as any).category_images ?? {},
+      bank_name: (data as any).bank_name ?? "",
+      bank_holder: (data as any).bank_holder ?? "",
+      bank_cbu: (data as any).bank_cbu ?? "",
+      bank_alias: (data as any).bank_alias ?? "",
+      bank_extra: (data as any).bank_extra ?? "",
     });
   }, [data, s]);
 
@@ -667,6 +673,23 @@ function SettingsPanel() {
         </div>
       </div>
 
+      {/* Datos bancarios para transferencia */}
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+        <h3 className="mb-1 text-base font-bold text-secondary">Datos bancarios (transferencia)</h3>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Se muestran al cliente apenas confirma el pedido para que pague directo. Dejá vacío lo que no uses.
+        </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Banco"><input className={input} placeholder="Ej: Banco Macro" value={s.bank_name} onChange={(e) => set("bank_name", e.target.value)} /></Field>
+          <Field label="Titular de la cuenta"><input className={input} placeholder="Nombre y apellido / Razón social" value={s.bank_holder} onChange={(e) => set("bank_holder", e.target.value)} /></Field>
+          <Field label="CBU / CVU"><input className={input} placeholder="22 dígitos" value={s.bank_cbu} onChange={(e) => set("bank_cbu", e.target.value)} /></Field>
+          <Field label="Alias"><input className={input} placeholder="mi.alias.mp" value={s.bank_alias} onChange={(e) => set("bank_alias", e.target.value)} /></Field>
+          <Field label="Notas extra (CUIT, instrucciones)" col2>
+            <textarea className={input + " min-h-[70px] rounded-2xl py-2"} placeholder="Ej: enviar comprobante por WhatsApp al 376..." value={s.bank_extra} onChange={(e) => set("bank_extra", e.target.value)} />
+          </Field>
+        </div>
+      </div>
+
       {/* Banner */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
         <h3 className="mb-4 text-base font-bold text-secondary">Banner promocional</h3>
@@ -753,6 +776,7 @@ function CategoryImagesPanel({
     { slug: "camionetas", label: "Camionetas" },
     { slug: "camiones", label: "Camiones" },
     { slug: "agricolas", label: "Agrícolas" },
+    { slug: "industriales", label: "Industriales" },
   ];
 
   async function upload(slug: string, file: File) {
