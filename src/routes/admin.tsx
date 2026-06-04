@@ -141,6 +141,7 @@ function AdminPage() {
         <div className="container mx-auto flex gap-1 px-4 pb-0">
           {([ 
             { id: "productos", label: "Productos", icon: Package },
+            { id: "pedidos", label: "Pedidos", icon: ClipboardList },
             { id: "imagenes", label: "Imágenes", icon: ImageIcon },
             { id: "ajustes", label: "Ajustes del sitio", icon: Settings2 },
           ] as { id: Tab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
