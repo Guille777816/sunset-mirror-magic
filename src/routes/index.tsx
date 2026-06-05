@@ -167,9 +167,19 @@ function Index() {
             </a>
           </div>
         </div>
-        {/* Nav — categorías clickeables */}
+        {/* Nav — Inicio + categorías clickeables */}
         <nav className="border-t bg-muted">
-          <div className="container mx-auto flex items-center justify-between overflow-x-auto px-4">
+          <div className="container mx-auto flex items-center overflow-x-auto px-4">
+            <button
+              onClick={() => { setActiveCategory(null); setSearchActive(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className={`whitespace-nowrap px-4 py-3 text-sm font-semibold uppercase tracking-wide transition ${
+                !activeCategory && !searchActive
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-secondary hover:text-primary"
+              }`}
+            >
+              Inicio
+            </button>
             {CATEGORY_CONFIG.map((c) => (
               <button
                 key={c.slug}
