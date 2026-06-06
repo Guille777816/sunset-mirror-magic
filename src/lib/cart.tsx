@@ -155,6 +155,11 @@ function CartDrawer() {
                 </ul>
               )}
             </div>
+            {items.length > 0 && ((settings as any)?.bank_cbu || (settings as any)?.bank_alias) && (
+              <div className="border-t px-5 pt-4">
+                <BankBlock settings={settings as any} orderId={null} total={total} />
+              </div>
+            )}
             <footer className="border-t p-5">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-semibold text-muted-foreground">Total</span>
@@ -165,8 +170,11 @@ function CartDrawer() {
                 onClick={() => setStep("form")}
                 className="w-full rounded-full bg-primary py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] disabled:opacity-50"
               >
-                Finalizar pedido
+                {((settings as any)?.bank_cbu || (settings as any)?.bank_alias) ? "Ya transferí — confirmar pedido" : "Finalizar pedido"}
               </button>
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                Transferí con los datos de arriba y confirmá el pedido con tus datos de contacto.
+              </p>
             </footer>
           </>
         )}
