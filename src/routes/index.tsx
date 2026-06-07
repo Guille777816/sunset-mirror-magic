@@ -53,8 +53,8 @@ const rims = [
 ];
 
 // Cotizaciones aproximadas — pedile a tu asistente que las actualice cuando cambien
-const USD_RATE = 1200; // 1 USD = X ARS
-const BRL_RATE = 230;  // 1 BRL = X ARS
+const USD_RATE = 1450; // 1 USD = X ARS
+const BRL_RATE = 279;  // 1 BRL = X ARS
 
 function formatArs(n: number) {
   return "$ " + Number(n).toLocaleString("es-AR");
