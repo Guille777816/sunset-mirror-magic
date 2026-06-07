@@ -486,12 +486,13 @@ function ProductCard({ p }: { p: any }) {
       </Link>
       <div className="flex flex-1 flex-col p-4">
         <Link to="/producto/$id" params={{ id: p.id }} className="block">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{p.brand}</p>
+          <p className="text-sm font-extrabold uppercase tracking-wider text-primary">{p.brand}</p>
           <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary hover:text-primary">{p.model}</h3>
           <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
         </Link>
         <div className="mt-auto pt-4">
           <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
+          <p className="text-[11px] font-semibold text-muted-foreground">{formatUsd(p.price_ars)} · {formatBrl(p.price_ars)}</p>
           <div className="mt-3 flex gap-2">
             <Link
               to="/producto/$id"
