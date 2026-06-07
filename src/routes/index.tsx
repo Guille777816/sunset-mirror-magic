@@ -52,8 +52,18 @@ const rims = [
   "24","24.5","25","26","28","30","30.5","32","34","36","38","42",
 ];
 
+// Cotizaciones aproximadas — pedile a tu asistente que las actualice cuando cambien
+const USD_RATE = 1200; // 1 USD = X ARS
+const BRL_RATE = 230;  // 1 BRL = X ARS
+
 function formatArs(n: number) {
   return "$ " + Number(n).toLocaleString("es-AR");
+}
+function formatUsd(n: number) {
+  return "US$ " + (Number(n) / USD_RATE).toLocaleString("es-AR", { maximumFractionDigits: 0 });
+}
+function formatBrl(n: number) {
+  return "R$ " + (Number(n) / BRL_RATE).toLocaleString("es-AR", { maximumFractionDigits: 0 });
 }
 
 function Index() {
