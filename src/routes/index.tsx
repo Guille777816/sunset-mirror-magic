@@ -583,3 +583,33 @@ function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow:
     </section>
   );
 }
+
+function AutoCarousel({ id, eyebrow, title, items, bg, direction = "left" }: { id: string; eyebrow: string; title: string; items: any[]; bg: string; direction?: "left" | "right" }) {
+  // Duplicamos los items para conseguir el efecto de scroll infinito
+  const loop = [...items, ...items];
+  const animClass = direction === "left" ? "animate-marquee-left" : "animate-marquee-right";
+  const durationSec = Math.max(20, items.length * 6);
+  return (
+    <section id={id} className={`overflow-hidden py-12 ${bg}`}>
+      <div className="container mx-auto px-4">
+        <div className="mb-5">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{eyebrow}</p>
+          <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{title}</h2>
+        </div>
+      </div>
+      <div className="group relative">
+        <div
+          className={`flex w-max gap-4 px-4 ${animClass} group-hover:[animation-play-state:paused]`}
+          style={{ animationDuration: `${durationSec}s` }}
+        >
+          {loop.map((p, idx) => (
+            <div key={`${p.id}-${idx}`} className="w-[260px] shrink-0 sm:w-[280px] md:w-[300px]">
+              <ProductCard p={p} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
