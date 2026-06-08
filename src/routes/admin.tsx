@@ -547,7 +547,6 @@ type Settings = {
 };
 
 function SettingsPanel() {
-function SettingsPanel() {
   const qc = useQueryClient();
   const fetchS = useServerFn(getAdminSettings);
   const saveS = useServerFn(updateSettings);
