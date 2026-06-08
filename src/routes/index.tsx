@@ -105,13 +105,15 @@ function Index() {
     });
   }, [products, w, h, r, searchActive]);
 
-  // Solo productos destacados (promo) en la portada, divididos en 2 carruseles
+  // Solo productos destacados (promo) en la portada
   const featured = useMemo(
     () => (products as any[]).filter((p) => p.is_featured),
     [products]
   );
-  const featuredTop = useMemo(() => featured.slice(0, Math.ceil(featured.length / 2)), [featured]);
-  const featuredBottom = useMemo(() => featured.slice(Math.ceil(featured.length / 2)), [featured]);
+  // Carruseles auto-scroll por categoría
+  const autos = useMemo(() => (products as any[]).filter((p) => p.category === "autos"), [products]);
+  const camionetas = useMemo(() => (products as any[]).filter((p) => p.category === "camionetas"), [products]);
+  const camiones = useMemo(() => (products as any[]).filter((p) => p.category === "camiones"), [products]);
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
@@ -346,20 +348,30 @@ function Index() {
         </div>
       </section>
 
-      {/* Carruseles de PROMO en la portada */}
-      {!searchActive && featured.length > 0 && (
+      {/* Carruseles auto-scroll por categoría (estilo página original) */}
+      {!searchActive && !activeCategory && (
         <>
-          <PromoCarousel id="promo-top" eyebrow="Promo destacada" title="Ofertas seleccionadas" items={featuredTop} bg="bg-muted" />
-          {featuredBottom.length > 0 && (
-            <PromoCarousel id="promo-bottom" eyebrow="Más promos" title="Aprovechá ahora" items={featuredBottom} bg="bg-background" />
+          {autos.length > 0 && (
+            <AutoCarousel id="auto-autos" eyebrow="Autos" title="Cubiertas para autos" items={autos} bg="bg-muted" direction="left" />
+          )}
+          {camionetas.length > 0 && (
+            <AutoCarousel id="auto-camionetas" eyebrow="Camionetas" title="Cubiertas para camionetas" items={camionetas} bg="bg-background" direction="right" />
+          )}
+          {camiones.length > 0 && (
+            <AutoCarousel id="auto-camiones" eyebrow="Camiones" title="Cubiertas para camiones" items={camiones} bg="bg-muted" direction="left" />
           )}
         </>
       )}
 
+      {/* Carrusel destacados (promo) */}
+      {!searchActive && featured.length > 0 && (
+        <PromoCarousel id="promo-top" eyebrow="Promo destacada" title="Ofertas seleccionadas" items={featured} bg="bg-background" />
+      )}
+
       {/* Estado vacío */}
-      {!searchActive && featured.length === 0 && (
+      {!searchActive && featured.length === 0 && autos.length === 0 && camionetas.length === 0 && camiones.length === 0 && (
         <section className="py-12 text-center text-muted-foreground">
-          <p>Todavía no hay productos en promoción. Marcalos como ★ Promo desde el panel admin.</p>
+          <p>Todavía no hay productos cargados. Agregalos desde el panel admin.</p>
         </section>
       )}
 
@@ -475,6 +487,11 @@ function ProductCard({ p }: { p: any }) {
             Promo
           </span>
         )}
+        {p.free_shipping && (
+          <span className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
+            <Truck className="h-3 w-3" /> Envío gratis
+          </span>
+        )}
         <img
           src={p.image_url || categoryImg[p.category] || tireCar}
           alt={`${p.brand} ${p.model}`}
@@ -566,3 +583,33 @@ function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow:
     </section>
   );
 }
+
+function AutoCarousel({ id, eyebrow, title, items, bg, direction = "left" }: { id: string; eyebrow: string; title: string; items: any[]; bg: string; direction?: "left" | "right" }) {
+  // Duplicamos los items para conseguir el efecto de scroll infinito
+  const loop = [...items, ...items];
+  const animClass = direction === "left" ? "animate-marquee-left" : "animate-marquee-right";
+  const durationSec = Math.max(20, items.length * 6);
+  return (
+    <section id={id} className={`overflow-hidden py-12 ${bg}`}>
+      <div className="container mx-auto px-4">
+        <div className="mb-5">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{eyebrow}</p>
+          <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{title}</h2>
+        </div>
+      </div>
+      <div className="group relative">
+        <div
+          className={`flex w-max gap-4 px-4 ${animClass} group-hover:[animation-play-state:paused]`}
+          style={{ animationDuration: `${durationSec}s` }}
+        >
+          {loop.map((p, idx) => (
+            <div key={`${p.id}-${idx}`} className="w-[260px] shrink-0 sm:w-[280px] md:w-[300px]">
+              <ProductCard p={p} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+

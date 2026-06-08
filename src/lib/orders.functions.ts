@@ -5,10 +5,6 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ItemSchema = z.object({
   id: z.string().uuid(),
-  brand: z.string().max(120),
-  model: z.string().max(120),
-  size: z.string().max(60),
-  price_ars: z.number().nonnegative(),
   qty: z.number().int().min(1).max(99),
 });
 
@@ -24,7 +20,39 @@ const OrderSchema = z.object({
 export const createOrder = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => OrderSchema.parse(i))
   .handler(async ({ data }) => {
-    const total = data.items.reduce((s, it) => s + it.price_ars * it.qty, 0);
+    // SEGURIDAD: precios SIEMPRE desde la base de datos, nunca desde el cliente
+    const productIds = data.items.map((i) => i.id);
+    const { data: dbProducts, error: prodErr } = await supabaseAdmin
+      .from("products")
+      .select("id, brand, model, size, price_ars, is_active, free_shipping, image_url")
+      .in("id", productIds);
+    if (prodErr) throw new Error(prodErr.message);
+
+    const map = new Map((dbProducts ?? []).map((p) => [p.id, p]));
+
+    const verifiedItems = data.items.map((it) => {
+      const p = map.get(it.id);
+      if (!p || !p.is_active) throw new Error("Uno de los productos ya no está disponible.");
+      return {
+        id: p.id,
+        brand: p.brand,
+        model: p.model,
+        size: p.size,
+        price_ars: Number(p.price_ars),
+        free_shipping: !!p.free_shipping,
+        qty: it.qty,
+      };
+    });
+
+    const total = verifiedItems.reduce((s, it) => s + it.price_ars * it.qty, 0);
+
+    // Cargar datos bancarios solo en el servidor para devolverlos en la respuesta
+    const { data: settings } = await supabaseAdmin
+      .from("site_settings")
+      .select("bank_name, bank_holder, bank_cbu, bank_alias, bank_extra, whatsapp")
+      .eq("id", "main")
+      .maybeSingle();
+
     const { data: row, error } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -33,13 +61,24 @@ export const createOrder = createServerFn({ method: "POST" })
         customer_email: data.customer_email || null,
         customer_address: data.customer_address || null,
         notes: data.notes || null,
-        items: data.items,
+        items: verifiedItems,
         total_ars: total,
       })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    return { id: row.id, total };
+    return {
+      id: row.id,
+      total,
+      payment: {
+        bank_name: settings?.bank_name ?? "",
+        bank_holder: settings?.bank_holder ?? "",
+        bank_cbu: settings?.bank_cbu ?? "",
+        bank_alias: settings?.bank_alias ?? "",
+        bank_extra: settings?.bank_extra ?? "",
+        whatsapp: settings?.whatsapp ?? "",
+      },
+    };
   });
 
 async function assertAdmin(supabase: any, userId: string) {

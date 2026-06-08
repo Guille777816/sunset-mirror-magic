@@ -1,9 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { X, Minus, Plus, ShoppingCart, Trash2, Copy, Check } from "lucide-react";
+import { X, Minus, Plus, ShoppingCart, Trash2, Copy, Check, Lock } from "lucide-react";
 import { createOrder } from "./orders.functions";
-import { getSettings } from "./settings.functions";
 
 export type CartItem = {
   id: string;
@@ -73,19 +71,22 @@ export function useCart() {
   return c;
 }
 
+type PaymentInfo = {
+  bank_name: string; bank_holder: string; bank_cbu: string; bank_alias: string; bank_extra: string; whatsapp: string;
+};
+
 function CartDrawer() {
   const { items, total, isOpen, close, remove, setQty, clear } = useCart();
   const submit = useServerFn(createOrder);
-  const fetchS = useServerFn(getSettings);
-  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
   const [step, setStep] = useState<"cart" | "form" | "done">("cart");
   const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderTotal, setOrderTotal] = useState<number>(0);
+  const [payment, setPayment] = useState<PaymentInfo | null>(null);
 
-  useEffect(() => { if (isOpen) { setStep(items.length ? "cart" : "cart"); setError(null); } }, [isOpen, items.length]);
+  useEffect(() => { if (isOpen) { setError(null); } }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -99,10 +100,11 @@ function CartDrawer() {
     try {
       const res = await submit({ data: {
         ...form,
-        items: items.map(i => ({ id: i.id, brand: i.brand, model: i.model, size: i.size, price_ars: i.price_ars, qty: i.qty })),
+        items: items.map(i => ({ id: i.id, qty: i.qty })),
       }});
       setOrderId(res.id);
       setOrderTotal(res.total ?? total);
+      setPayment(res.payment ?? null);
       setStep("done");
       clear();
     } catch (err: any) {
@@ -155,11 +157,6 @@ function CartDrawer() {
                 </ul>
               )}
             </div>
-            {items.length > 0 && ((settings as any)?.bank_cbu || (settings as any)?.bank_alias) && (
-              <div className="border-t px-5 pt-4">
-                <BankBlock settings={settings as any} orderId={null} total={total} />
-              </div>
-            )}
             <footer className="border-t p-5">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-semibold text-muted-foreground">Total</span>
@@ -168,12 +165,12 @@ function CartDrawer() {
               <button
                 disabled={items.length === 0}
                 onClick={() => setStep("form")}
-                className="w-full rounded-full bg-primary py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] disabled:opacity-50"
               >
-                {((settings as any)?.bank_cbu || (settings as any)?.bank_alias) ? "Ya transferí — confirmar pedido" : "Finalizar pedido"}
+                <Lock className="h-4 w-4" /> Finalizar compra
               </button>
               <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                Transferí con los datos de arriba y confirmá el pedido con tus datos de contacto.
+                Los datos de pago se muestran al confirmar el pedido.
               </p>
             </footer>
           </>
@@ -194,15 +191,13 @@ function CartDrawer() {
               {error && <p className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
               <div className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
                 Total a abonar: <strong className="text-secondary">$ {total.toLocaleString("es-AR")}</strong><br />
-                {(settings as any)?.bank_cbu || (settings as any)?.bank_alias
-                  ? "Al confirmar te mostramos los datos para pagar por transferencia."
-                  : "Te contactaremos para coordinar el pago y la entrega."}
+                Al confirmar te mostramos los datos de pago de forma segura.
               </div>
             </div>
             <footer className="flex gap-2 border-t p-5">
               <button type="button" onClick={() => setStep("cart")} className="flex-1 rounded-full border py-3 text-sm font-bold uppercase">Volver</button>
               <button type="submit" disabled={sending} className="flex-[2] rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground disabled:opacity-50">
-                {sending ? "Enviando..." : "Enviar pedido"}
+                {sending ? "Enviando..." : "Confirmar pedido"}
               </button>
             </footer>
           </form>
@@ -216,18 +211,18 @@ function CartDrawer() {
               </div>
               <h3 className="mt-3 text-xl font-black text-secondary">¡Pedido confirmado!</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Pedido{orderId ? ` #${orderId.slice(0, 8)}` : ""} · Total a transferir
+                Pedido{orderId ? ` #${orderId.slice(0, 8)}` : ""} · Total a abonar
               </p>
               <p className="mt-1 text-3xl font-black text-primary">$ {orderTotal.toLocaleString("es-AR")}</p>
             </div>
 
-            <BankBlock settings={settings as any} orderId={orderId} total={orderTotal} />
+            <BankBlock payment={payment} orderId={orderId} total={orderTotal} />
 
             <button onClick={close} className="mt-6 rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground">
-              Listo, ya transferí
+              Listo
             </button>
             <p className="mt-3 text-center text-[11px] text-muted-foreground">
-              Una vez recibido el comprobante te confirmamos por WhatsApp y coordinamos la entrega.
+              Una vez recibido el pago te confirmamos por WhatsApp y coordinamos la entrega.
             </p>
           </div>
         )}
@@ -246,15 +241,15 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
   );
 }
 
-function BankBlock({ settings, orderId, total }: { settings: any; orderId: string | null; total: number }) {
+function BankBlock({ payment, orderId, total }: { payment: PaymentInfo | null; orderId: string | null; total: number }) {
   const bank = {
-    name: settings?.bank_name || "",
-    holder: settings?.bank_holder || "",
-    cbu: settings?.bank_cbu || "",
-    alias: settings?.bank_alias || "",
-    extra: settings?.bank_extra || "",
+    name: payment?.bank_name || "",
+    holder: payment?.bank_holder || "",
+    cbu: payment?.bank_cbu || "",
+    alias: payment?.bank_alias || "",
+    extra: payment?.bank_extra || "",
   };
-  const whatsapp = settings?.whatsapp || "";
+  const whatsapp = payment?.whatsapp || "";
   const hasBank = bank.cbu || bank.alias || bank.holder;
 
   if (!hasBank) {

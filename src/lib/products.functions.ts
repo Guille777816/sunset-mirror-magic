@@ -26,6 +26,7 @@ const productSchema = z.object({
   description: z.string().max(2000).nullable().optional(),
   is_active: z.boolean(),
   is_featured: z.boolean(),
+  free_shipping: z.boolean().default(false),
 });
 
 async function assertAdmin(supabase: any, userId: string) {
