@@ -487,6 +487,11 @@ function ProductCard({ p }: { p: any }) {
             Promo
           </span>
         )}
+        {p.free_shipping && (
+          <span className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
+            <Truck className="h-3 w-3" /> Envío gratis
+          </span>
+        )}
         <img
           src={p.image_url || categoryImg[p.category] || tireCar}
           alt={`${p.brand} ${p.model}`}
