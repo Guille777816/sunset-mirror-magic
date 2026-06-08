@@ -3,6 +3,17 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+// Campos sensibles que NO se exponen públicamente
+const SENSITIVE_FIELDS = ["bank_name", "bank_holder", "bank_cbu", "bank_alias", "bank_extra", "cuit"] as const;
+
+function stripSensitive<T extends Record<string, any> | null>(row: T): T {
+  if (!row) return row;
+  const out: any = { ...row };
+  for (const f of SENSITIVE_FIELDS) delete out[f];
+  return out;
+}
+
+// Pública: usada por el sitio. NUNCA devuelve datos bancarios ni CUIT.
 export const getSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await supabaseAdmin
     .from("site_settings")
@@ -10,8 +21,22 @@ export const getSettings = createServerFn({ method: "GET" }).handler(async () =>
     .eq("id", "main")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data;
+  return stripSensitive(data);
 });
+
+// Admin: incluye datos bancarios para edición en el panel.
+export const getAdminSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    if (!role) throw new Error("No autorizado");
+    const { data, error } = await supabaseAdmin
+      .from("site_settings").select("*").eq("id", "main").maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  });
 
 const settingsSchema = z.object({
   phone: z.string().min(1).max(80),
