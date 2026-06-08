@@ -105,13 +105,15 @@ function Index() {
     });
   }, [products, w, h, r, searchActive]);
 
-  // Solo productos destacados (promo) en la portada, divididos en 2 carruseles
+  // Solo productos destacados (promo) en la portada
   const featured = useMemo(
     () => (products as any[]).filter((p) => p.is_featured),
     [products]
   );
-  const featuredTop = useMemo(() => featured.slice(0, Math.ceil(featured.length / 2)), [featured]);
-  const featuredBottom = useMemo(() => featured.slice(Math.ceil(featured.length / 2)), [featured]);
+  // Carruseles auto-scroll por categoría
+  const autos = useMemo(() => (products as any[]).filter((p) => p.category === "autos"), [products]);
+  const camionetas = useMemo(() => (products as any[]).filter((p) => p.category === "camionetas"), [products]);
+  const camiones = useMemo(() => (products as any[]).filter((p) => p.category === "camiones"), [products]);
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
@@ -346,20 +348,30 @@ function Index() {
         </div>
       </section>
 
-      {/* Carruseles de PROMO en la portada */}
-      {!searchActive && featured.length > 0 && (
+      {/* Carruseles auto-scroll por categoría (estilo página original) */}
+      {!searchActive && !activeCategory && (
         <>
-          <PromoCarousel id="promo-top" eyebrow="Promo destacada" title="Ofertas seleccionadas" items={featuredTop} bg="bg-muted" />
-          {featuredBottom.length > 0 && (
-            <PromoCarousel id="promo-bottom" eyebrow="Más promos" title="Aprovechá ahora" items={featuredBottom} bg="bg-background" />
+          {autos.length > 0 && (
+            <AutoCarousel id="auto-autos" eyebrow="Autos" title="Cubiertas para autos" items={autos} bg="bg-muted" direction="left" />
+          )}
+          {camionetas.length > 0 && (
+            <AutoCarousel id="auto-camionetas" eyebrow="Camionetas" title="Cubiertas para camionetas" items={camionetas} bg="bg-background" direction="right" />
+          )}
+          {camiones.length > 0 && (
+            <AutoCarousel id="auto-camiones" eyebrow="Camiones" title="Cubiertas para camiones" items={camiones} bg="bg-muted" direction="left" />
           )}
         </>
       )}
 
+      {/* Carrusel destacados (promo) */}
+      {!searchActive && featured.length > 0 && (
+        <PromoCarousel id="promo-top" eyebrow="Promo destacada" title="Ofertas seleccionadas" items={featured} bg="bg-background" />
+      )}
+
       {/* Estado vacío */}
-      {!searchActive && featured.length === 0 && (
+      {!searchActive && featured.length === 0 && autos.length === 0 && camionetas.length === 0 && camiones.length === 0 && (
         <section className="py-12 text-center text-muted-foreground">
-          <p>Todavía no hay productos en promoción. Marcalos como ★ Promo desde el panel admin.</p>
+          <p>Todavía no hay productos cargados. Agregalos desde el panel admin.</p>
         </section>
       )}
 
