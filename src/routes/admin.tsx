@@ -9,7 +9,7 @@ import {
   deleteProduct,
   checkIsAdmin,
 } from "@/lib/products.functions";
-import { getSettings, updateSettings } from "@/lib/settings.functions";
+import { getSettings, getAdminSettings, updateSettings } from "@/lib/settings.functions";
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList } from "lucide-react";
 
@@ -32,12 +32,13 @@ type Product = {
   description: string | null;
   is_active: boolean;
   is_featured: boolean;
+  free_shipping: boolean;
 };
 
 const empty: Product = {
   brand: "", model: "", size: "", category: "autos",
   price_ars: 0, stock: 0, image_url: null, description: null,
-  is_active: true, is_featured: false,
+  is_active: true, is_featured: false, free_shipping: false,
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -502,6 +503,9 @@ function ProductForm({
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={p.is_featured} onChange={(e) => set("is_featured", e.target.checked)} /> ★ Destacado (Promo)
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={p.free_shipping} onChange={(e) => set("free_shipping", e.target.checked)} /> 🚚 Envío gratis (muestra distintivo sobre la foto)
+          </label>
         </div>
         {p.id && (
           <p className="mt-3 rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
@@ -543,10 +547,11 @@ type Settings = {
 };
 
 function SettingsPanel() {
+function SettingsPanel() {
   const qc = useQueryClient();
-  const fetchS = useServerFn(getSettings);
+  const fetchS = useServerFn(getAdminSettings);
   const saveS = useServerFn(updateSettings);
-  const { data } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
+  const { data } = useQuery({ queryKey: ["admin-settings"], queryFn: () => fetchS() });
   const [s, setS] = useState<Settings | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [uploadingAsset, setUploadingAsset] = useState<"logo" | "hero" | null>(null);
