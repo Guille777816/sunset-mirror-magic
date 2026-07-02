@@ -1045,3 +1045,243 @@ function OrdersPanel() {
     </div>
   );
 }
+
+/* ─────────────────── BANNERS PANEL ─────────────────── */
+type Banner = {
+  id?: string;
+  title: string;
+  subtitle: string;
+  image_url: string;
+  link_url: string;
+  is_active: boolean;
+  sort_order: number;
+};
+
+const emptyBanner: Banner = {
+  title: "", subtitle: "", image_url: "", link_url: "", is_active: true, sort_order: 0,
+};
+
+function BannersPanel() {
+  const qc = useQueryClient();
+  const fetchAll = useServerFn(listAllBanners);
+  const save = useServerFn(upsertBanner);
+  const remove = useServerFn(deleteBanner);
+  const { data: banners = [] } = useQuery({ queryKey: ["admin-banners"], queryFn: () => fetchAll() });
+  const [editing, setEditing] = useState<Banner | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const saveMut = useMutation({
+    mutationFn: (b: Banner) => save({ data: b }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-banners"] });
+      qc.invalidateQueries({ queryKey: ["public-banners"] });
+      setEditing(null); setError(null);
+    },
+    onError: (e: any) => setError(e?.message ?? "Error al guardar"),
+  });
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => remove({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-banners"] });
+      qc.invalidateQueries({ queryKey: ["public-banners"] });
+    },
+  });
+
+  async function handleFile(file: File) {
+    if (!editing) return;
+    setUploading(true); setError(null);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `banner-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+      setEditing({ ...editing, image_url: urlData.publicUrl + "?t=" + Date.now() });
+    } catch (e: any) {
+      setError(e?.message ?? "Error al subir imagen");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-black text-secondary">Banners rotativos de la portada</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Se muestran en la sección de la Inicio y rotan automáticamente. Podés activar / desactivar y ordenar cada uno.
+          </p>
+        </div>
+        <button
+          onClick={() => { setEditing({ ...emptyBanner }); setError(null); }}
+          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)]"
+        >
+          <Plus className="h-4 w-4" /> Nuevo banner
+        </button>
+      </div>
+
+      <div className="grid gap-3">
+        {(banners as Banner[]).length === 0 && (
+          <div className="rounded-2xl bg-card p-8 text-center text-sm text-muted-foreground">
+            Todavía no hay banners. Creá el primero con el botón de arriba.
+          </div>
+        )}
+        {(banners as Banner[]).map((b) => (
+          <div key={b.id} className="flex flex-col gap-3 rounded-2xl bg-card p-3 shadow-[var(--shadow-product)] sm:flex-row sm:items-center">
+            <div className="h-24 w-full shrink-0 overflow-hidden rounded-xl bg-muted sm:w-40">
+              {b.image_url ? (
+                <img src={b.image_url} alt={b.title} className="h-full w-full object-cover" />
+              ) : (
+                <div className="grid h-full place-items-center text-muted-foreground">
+                  <ImageIcon className="h-6 w-6" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${b.is_active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  {b.is_active ? "Activo" : "Oculto"}
+                </span>
+                <span className="text-xs text-muted-foreground">Orden: {b.sort_order}</span>
+              </div>
+              <p className="mt-1 font-bold text-secondary">{b.title || <span className="italic text-muted-foreground">(sin título)</span>}</p>
+              {b.subtitle && <p className="text-xs text-muted-foreground">{b.subtitle}</p>}
+              {b.link_url && <p className="mt-1 truncate text-[11px] text-primary">→ {b.link_url}</p>}
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => saveMut.mutate({ ...b, is_active: !b.is_active })}
+                className="rounded-full border px-3 py-1.5 text-xs font-bold uppercase text-secondary hover:bg-muted"
+              >
+                {b.is_active ? "Ocultar" : "Mostrar"}
+              </button>
+              <button
+                onClick={() => { setEditing({ ...b }); setError(null); }}
+                className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold uppercase text-primary hover:bg-primary/10"
+              >
+                <Pencil className="h-3 w-3" /> Editar
+              </button>
+              <button
+                onClick={() => { if (b.id && confirm("¿Eliminar este banner?")) delMut.mutate(b.id); }}
+                className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold uppercase text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3 w-3" /> Borrar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-black text-secondary">{editing.id ? "Editar banner" : "Nuevo banner"}</h3>
+              <button onClick={() => setEditing(null)} className="rounded-full p-1 hover:bg-muted"><X className="h-5 w-5" /></button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">Imagen del banner *</label>
+                {editing.image_url && (
+                  <div className="mb-2 aspect-[16/6] overflow-hidden rounded-xl bg-muted">
+                    <img src={editing.image_url} alt="preview" className="h-full w-full object-cover" />
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground hover:opacity-90">
+                    <Upload className="h-4 w-4" />
+                    {uploading ? "Subiendo..." : "Subir desde tu computadora"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+                    />
+                  </label>
+                  <span className="text-xs text-muted-foreground">o pegá una URL:</span>
+                </div>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={editing.image_url}
+                  onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
+                  className="mt-2 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">Título (opcional)</label>
+                <input
+                  value={editing.title}
+                  onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                  placeholder="Ej: Nueva línea 2026"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">Subtítulo (opcional)</label>
+                <input
+                  value={editing.subtitle}
+                  onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })}
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                  placeholder="Ej: 15% off en cubiertas para camionetas"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">Enlace al hacer click (opcional)</label>
+                <input
+                  value={editing.link_url}
+                  onChange={(e) => setEditing({ ...editing, link_url: e.target.value })}
+                  className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                  placeholder="Ej: https://wa.me/54..... o /producto/..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">Orden</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editing.sort_order}
+                    onChange={(e) => setEditing({ ...editing, sort_order: Number(e.target.value) || 0 })}
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">Menor número = aparece primero.</p>
+                </div>
+                <label className="flex items-end gap-2 pb-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={editing.is_active}
+                    onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })}
+                  />
+                  <span>Activo (visible en el sitio)</span>
+                </label>
+              </div>
+
+              {error && <p className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setEditing(null)} className="rounded-full border px-5 py-2 text-sm font-semibold">Cancelar</button>
+                <button
+                  disabled={saveMut.isPending || !editing.image_url}
+                  onClick={() => saveMut.mutate(editing)}
+                  className="rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+                >
+                  {saveMut.isPending ? "Guardando..." : "Guardar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
