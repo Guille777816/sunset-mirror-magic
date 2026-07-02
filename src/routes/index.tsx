@@ -324,38 +324,12 @@ function Index() {
         </div>
       </section>
 
-      {/* Categorías visuales */}
-      <section id="categorias" className="container mx-auto px-4 py-16">
-        <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Categorías</p>
-          <h2 className="mt-1 text-3xl font-black text-secondary md:text-4xl">Encontrá tu cubierta</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {CATEGORY_CONFIG.map((c) => {
-            const count = (products as any[]).filter((p) => p.category === c.slug).length;
-            const customImg = (settings as any)?.category_images?.[c.slug];
-            return (
-              <button
-                key={c.slug}
-                onClick={() => handleCategoryNav(c.slug)}
-                className="group relative overflow-hidden rounded-2xl border bg-card p-5 text-left transition hover:-translate-y-1 hover:shadow-[var(--shadow-primary)]"
-              >
-                <div className="aspect-square overflow-hidden rounded-xl bg-muted">
-                  <img src={customImg || c.img} alt={c.label} loading="lazy" width={600} height={600}
-                    className="h-full w-full object-cover transition group-hover:scale-110" />
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-secondary">{c.label}</h3>
-                    {count > 0 && <p className="text-xs text-muted-foreground">{count} producto{count !== 1 ? "s" : ""}</p>}
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-primary opacity-0 transition group-hover:opacity-100" />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* Banners administrables (rotan solos) */}
+      {!searchActive && !activeCategory && banners.length > 0 && (
+        <section id="banners" className="container mx-auto px-4 py-10">
+          <BannerCarousel banners={banners as any[]} circleLogoUrl={CIRCLE_LOGO_URL} />
+        </section>
+      )}
 
       {/* Carruseles auto-scroll por categoría (estilo página original) */}
       {!searchActive && !activeCategory && (
