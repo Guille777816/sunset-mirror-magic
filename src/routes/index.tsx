@@ -621,3 +621,83 @@ function AutoCarousel({ id, eyebrow, title, items, bg, direction = "left" }: { i
   );
 }
 
+type BannerRow = { id: string; title: string; subtitle: string; image_url: string; link_url: string };
+
+function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circleLogoUrl: string }) {
+  const autoplay = useMemo(
+    () => Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true }),
+    []
+  );
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" }, [autoplay]);
+  const [selected, setSelected] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSel = () => setSelected(emblaApi.selectedScrollSnap());
+    onSel();
+    emblaApi.on("select", onSel);
+    return () => { emblaApi.off("select", onSel); };
+  }, [emblaApi]);
+
+  const snaps = emblaApi?.scrollSnapList() ?? banners.map((_, i) => i);
+
+  return (
+    <div className="relative">
+      <div className="overflow-hidden rounded-3xl" ref={emblaRef}>
+        <div className="flex">
+          {banners.map((b) => {
+            const inner = (
+              <div className="relative h-[220px] w-full overflow-hidden bg-secondary md:h-[360px] lg:h-[440px]">
+                <img
+                  src={b.image_url || circleLogoUrl}
+                  alt={b.title || "Banner"}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                {(b.title || b.subtitle) && (
+                  <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 md:p-10">
+                    {b.title && (
+                      <h3 className="max-w-xl text-2xl font-black uppercase tracking-tight text-white md:text-4xl">
+                        {b.title}
+                      </h3>
+                    )}
+                    {b.subtitle && (
+                      <p className="mt-2 max-w-xl text-sm text-white/90 md:text-base">{b.subtitle}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+            return (
+              <div key={b.id} className="min-w-0 shrink-0 grow-0 basis-full">
+                {b.link_url ? (
+                  <a href={b.link_url} target={b.link_url.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className="block">
+                    {inner}
+                  </a>
+                ) : (
+                  inner
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {banners.length > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          {snaps.map((_, i) => (
+            <button
+              key={i}
+              aria-label={`Ir al banner ${i + 1}`}
+              onClick={() => emblaApi?.scrollTo(i)}
+              className={`h-2 rounded-full transition-all ${
+                selected === i ? "w-8 bg-primary" : "w-2 bg-muted-foreground/40 hover:bg-muted-foreground/70"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
