@@ -11,7 +11,8 @@ import {
 } from "@/lib/products.functions";
 import { getSettings, getAdminSettings, updateSettings } from "@/lib/settings.functions";
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList } from "lucide-react";
+import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -49,7 +50,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   industriales: "Industriales",
 };
 
-type Tab = "productos" | "pedidos" | "imagenes" | "ajustes";
+type Tab = "productos" | "pedidos" | "banners" | "imagenes" | "ajustes";
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -143,6 +144,7 @@ function AdminPage() {
           {([ 
             { id: "productos", label: "Productos", icon: Package },
             { id: "pedidos", label: "Pedidos", icon: ClipboardList },
+            { id: "banners", label: "Banners", icon: ImageLucide },
             { id: "imagenes", label: "Imágenes", icon: ImageIcon },
             { id: "ajustes", label: "Ajustes del sitio", icon: Settings2 },
           ] as { id: Tab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
@@ -281,6 +283,9 @@ function AdminPage() {
 
         {/* ── TAB: PEDIDOS ── */}
         {tab === "pedidos" && <OrdersPanel />}
+
+        {/* ── TAB: BANNERS ── */}
+        {tab === "banners" && <BannersPanel />}
 
         {/* ── TAB: IMÁGENES ── */}
         {tab === "imagenes" && (
