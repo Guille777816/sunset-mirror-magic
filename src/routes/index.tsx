@@ -2,16 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, ChevronRight, Plus } from "lucide-react";
+import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, Plus, Instagram, Facebook } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import heroTire from "@/assets/hero-tire.jpg";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
 import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
+import leRadialHeaderAsset from "@/assets/le-radial-header.jpg.asset.json";
+import leRadialCircleAsset from "@/assets/le-radial-circle.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
 import { getSettings } from "@/lib/settings.functions";
+import { listPublicBanners } from "@/lib/banners.functions";
 import { useCart } from "@/lib/cart";
+
+const HEADER_LOGO_URL = leRadialHeaderAsset.url;
+const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -83,11 +91,13 @@ function Index() {
 
   const fetchProducts = useServerFn(listPublicProducts);
   const fetchSettings = useServerFn(getSettings);
+  const fetchBanners = useServerFn(listPublicBanners);
   const { data: products = [] } = useQuery({
     queryKey: ["public-products"],
     queryFn: () => fetchProducts(),
   });
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => fetchSettings() });
+  const { data: banners = [] } = useQuery({ queryKey: ["public-banners"], queryFn: () => fetchBanners() });
 
   const phone = settings?.phone ?? "(376) 4-000000";
   const phoneHref = "tel:" + (settings?.phone ?? "").replace(/\s/g, "");
@@ -130,12 +140,15 @@ function Index() {
       <div className="bg-secondary text-secondary-foreground text-xs">
         <div className="container mx-auto flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5 text-primary" />
-            <span>{settings?.address ?? "Posadas, Misiones · Envíos a toda la Argentina"}</span>
+            {settings?.address && (
+              <>
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                <span>{settings.address}</span>
+              </>
+            )}
           </div>
           <div className="hidden gap-4 md:flex">
-            <span>Lun a Vie 8:00 – 18:00</span>
-            <span>Sáb 8:00 – 12:00</span>
+            <span>{(settings as any)?.hours || "Lun a Vie 8:00 – 18:00"}</span>
           </div>
         </div>
       </div>
@@ -144,15 +157,11 @@ function Index() {
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-4">
           <a href="/" className="flex items-center gap-2">
-            {settings?.logo_url ? (
-              <img src={settings.logo_url} alt={settings?.business_name || "Logo"} className="h-12 w-auto max-w-[200px] object-contain" />
-            ) : (
-              <>
-                <span className="text-3xl font-black tracking-tighter text-primary">LE</span>
-                <span className="text-3xl font-black tracking-tighter text-secondary">RADIAL</span>
-                <span className="ml-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:inline">cubiertas</span>
-              </>
-            )}
+            <img
+              src={settings?.logo_url || HEADER_LOGO_URL}
+              alt={settings?.business_name || "Le Radial"}
+              className="h-14 w-auto max-w-[240px] object-contain"
+            />
           </a>
           <div className="hidden items-center gap-6 lg:flex">
             <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
@@ -232,7 +241,7 @@ function Index() {
           </h1>
           <p className="mt-5 max-w-xl text-base text-white/80 md:text-lg">{settings?.hero_description ?? ""}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#categorias" className="rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-105">
+            <a href="#banners" className="rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-105">
               Ver productos
             </a>
             <a href="#buscador" className="rounded-full border border-white/30 px-7 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-white/10">
@@ -315,38 +324,12 @@ function Index() {
         </div>
       </section>
 
-      {/* Categorías visuales */}
-      <section id="categorias" className="container mx-auto px-4 py-16">
-        <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Categorías</p>
-          <h2 className="mt-1 text-3xl font-black text-secondary md:text-4xl">Encontrá tu cubierta</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {CATEGORY_CONFIG.map((c) => {
-            const count = (products as any[]).filter((p) => p.category === c.slug).length;
-            const customImg = (settings as any)?.category_images?.[c.slug];
-            return (
-              <button
-                key={c.slug}
-                onClick={() => handleCategoryNav(c.slug)}
-                className="group relative overflow-hidden rounded-2xl border bg-card p-5 text-left transition hover:-translate-y-1 hover:shadow-[var(--shadow-primary)]"
-              >
-                <div className="aspect-square overflow-hidden rounded-xl bg-muted">
-                  <img src={customImg || c.img} alt={c.label} loading="lazy" width={600} height={600}
-                    className="h-full w-full object-cover transition group-hover:scale-110" />
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-secondary">{c.label}</h3>
-                    {count > 0 && <p className="text-xs text-muted-foreground">{count} producto{count !== 1 ? "s" : ""}</p>}
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-primary opacity-0 transition group-hover:opacity-100" />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* Banners administrables (rotan solos) */}
+      {!searchActive && !activeCategory && banners.length > 0 && (
+        <section id="banners" className="container mx-auto px-4 py-10">
+          <BannerCarousel banners={banners as any[]} circleLogoUrl={CIRCLE_LOGO_URL} />
+        </section>
+      )}
 
       {/* Carruseles auto-scroll por categoría (estilo página original) */}
       {!searchActive && !activeCategory && (
@@ -457,16 +440,41 @@ function Index() {
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Atención</h4>
             <p className="text-sm opacity-80">{phone}</p>
-            <p className="text-sm opacity-80">{settings?.email ?? "hola@leradial.com.ar"}</p>
-            <p className="mt-2 text-sm opacity-80">{settings?.address ?? "Posadas, Misiones — Argentina"}</p>
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white"
-            >
-              WhatsApp
-            </a>
+            {settings?.email && <p className="text-sm opacity-80">{settings.email}</p>}
+            {settings?.address && <p className="mt-2 text-sm opacity-80">{settings.address}</p>}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="WhatsApp"
+                className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white hover:opacity-90"
+              >
+                WhatsApp
+              </a>
+              {(settings as any)?.instagram && (
+                <a
+                  href={(settings as any).instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white hover:opacity-90"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+              )}
+              {(settings as any)?.facebook && (
+                <a
+                  href={(settings as any).facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-[#1877F2] text-white hover:opacity-90"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
@@ -612,4 +620,84 @@ function AutoCarousel({ id, eyebrow, title, items, bg, direction = "left" }: { i
     </section>
   );
 }
+
+type BannerRow = { id: string; title: string; subtitle: string; image_url: string; link_url: string };
+
+function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circleLogoUrl: string }) {
+  const autoplay = useMemo(
+    () => Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true }),
+    []
+  );
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" }, [autoplay]);
+  const [selected, setSelected] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSel = () => setSelected(emblaApi.selectedScrollSnap());
+    onSel();
+    emblaApi.on("select", onSel);
+    return () => { emblaApi.off("select", onSel); };
+  }, [emblaApi]);
+
+  const snaps = emblaApi?.scrollSnapList() ?? banners.map((_, i) => i);
+
+  return (
+    <div className="relative">
+      <div className="overflow-hidden rounded-3xl" ref={emblaRef}>
+        <div className="flex">
+          {banners.map((b) => {
+            const inner = (
+              <div className="relative h-[220px] w-full overflow-hidden bg-secondary md:h-[360px] lg:h-[440px]">
+                <img
+                  src={b.image_url || circleLogoUrl}
+                  alt={b.title || "Banner"}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                {(b.title || b.subtitle) && (
+                  <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 md:p-10">
+                    {b.title && (
+                      <h3 className="max-w-xl text-2xl font-black uppercase tracking-tight text-white md:text-4xl">
+                        {b.title}
+                      </h3>
+                    )}
+                    {b.subtitle && (
+                      <p className="mt-2 max-w-xl text-sm text-white/90 md:text-base">{b.subtitle}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+            return (
+              <div key={b.id} className="min-w-0 shrink-0 grow-0 basis-full">
+                {b.link_url ? (
+                  <a href={b.link_url} target={b.link_url.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className="block">
+                    {inner}
+                  </a>
+                ) : (
+                  inner
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {banners.length > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          {snaps.map((_, i) => (
+            <button
+              key={i}
+              aria-label={`Ir al banner ${i + 1}`}
+              onClick={() => emblaApi?.scrollTo(i)}
+              className={`h-2 rounded-full transition-all ${
+                selected === i ? "w-8 bg-primary" : "w-2 bg-muted-foreground/40 hover:bg-muted-foreground/70"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
