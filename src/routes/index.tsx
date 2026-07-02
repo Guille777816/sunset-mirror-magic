@@ -2,16 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, ChevronRight, Plus } from "lucide-react";
+import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, ChevronRight, Plus, Instagram, Facebook } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import heroTire from "@/assets/hero-tire.jpg";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
 import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
+import leRadialHeaderAsset from "@/assets/le-radial-header.jpg.asset.json";
+import leRadialCircleAsset from "@/assets/le-radial-circle.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
 import { getSettings } from "@/lib/settings.functions";
+import { listPublicBanners } from "@/lib/banners.functions";
 import { useCart } from "@/lib/cart";
+
+const HEADER_LOGO_URL = leRadialHeaderAsset.url;
+const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
 
 export const Route = createFileRoute("/")({
   head: () => ({
