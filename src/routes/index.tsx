@@ -241,7 +241,7 @@ function Index() {
           </h1>
           <p className="mt-5 max-w-xl text-base text-white/80 md:text-lg">{settings?.hero_description ?? ""}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#categorias" className="rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-105">
+            <a href="#banners" className="rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-105">
               Ver productos
             </a>
             <a href="#buscador" className="rounded-full border border-white/30 px-7 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-white/10">
@@ -440,16 +440,41 @@ function Index() {
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Atención</h4>
             <p className="text-sm opacity-80">{phone}</p>
-            <p className="text-sm opacity-80">{settings?.email ?? "hola@leradial.com.ar"}</p>
-            <p className="mt-2 text-sm opacity-80">{settings?.address ?? "Posadas, Misiones — Argentina"}</p>
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white"
-            >
-              WhatsApp
-            </a>
+            {settings?.email && <p className="text-sm opacity-80">{settings.email}</p>}
+            {settings?.address && <p className="mt-2 text-sm opacity-80">{settings.address}</p>}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="WhatsApp"
+                className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white hover:opacity-90"
+              >
+                WhatsApp
+              </a>
+              {(settings as any)?.instagram && (
+                <a
+                  href={(settings as any).instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white hover:opacity-90"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+              )}
+              {(settings as any)?.facebook && (
+                <a
+                  href={(settings as any).facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-[#1877F2] text-white hover:opacity-90"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
