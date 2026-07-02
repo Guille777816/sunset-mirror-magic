@@ -91,11 +91,13 @@ function Index() {
 
   const fetchProducts = useServerFn(listPublicProducts);
   const fetchSettings = useServerFn(getSettings);
+  const fetchBanners = useServerFn(listPublicBanners);
   const { data: products = [] } = useQuery({
     queryKey: ["public-products"],
     queryFn: () => fetchProducts(),
   });
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => fetchSettings() });
+  const { data: banners = [] } = useQuery({ queryKey: ["public-banners"], queryFn: () => fetchBanners() });
 
   const phone = settings?.phone ?? "(376) 4-000000";
   const phoneHref = "tel:" + (settings?.phone ?? "").replace(/\s/g, "");
@@ -138,12 +140,15 @@ function Index() {
       <div className="bg-secondary text-secondary-foreground text-xs">
         <div className="container mx-auto flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5 text-primary" />
-            <span>{settings?.address ?? "Posadas, Misiones · Envíos a toda la Argentina"}</span>
+            {settings?.address && (
+              <>
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                <span>{settings.address}</span>
+              </>
+            )}
           </div>
           <div className="hidden gap-4 md:flex">
-            <span>Lun a Vie 8:00 – 18:00</span>
-            <span>Sáb 8:00 – 12:00</span>
+            <span>{(settings as any)?.hours || "Lun a Vie 8:00 – 18:00"}</span>
           </div>
         </div>
       </div>
@@ -152,15 +157,11 @@ function Index() {
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-4">
           <a href="/" className="flex items-center gap-2">
-            {settings?.logo_url ? (
-              <img src={settings.logo_url} alt={settings?.business_name || "Logo"} className="h-12 w-auto max-w-[200px] object-contain" />
-            ) : (
-              <>
-                <span className="text-3xl font-black tracking-tighter text-primary">LE</span>
-                <span className="text-3xl font-black tracking-tighter text-secondary">RADIAL</span>
-                <span className="ml-1 hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:inline">cubiertas</span>
-              </>
-            )}
+            <img
+              src={settings?.logo_url || HEADER_LOGO_URL}
+              alt={settings?.business_name || "Le Radial"}
+              className="h-14 w-auto max-w-[240px] object-contain"
+            />
           </a>
           <div className="hidden items-center gap-6 lg:flex">
             <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
