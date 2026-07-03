@@ -45,6 +45,18 @@ const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
 
+// Optimiza URLs de Supabase Storage usando el endpoint de transformación (redimensiona en el CDN)
+function optimizeImg(url: string | undefined | null, width: number, quality = 70): string {
+  if (!url) return "";
+  // Reescribe /storage/v1/object/public/... -> /storage/v1/render/image/public/...?width=..&quality=..
+  if (url.includes("/storage/v1/object/public/")) {
+    const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+    const sep = rewritten.includes("?") ? "&" : "?";
+    return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
+  }
+  return url;
+}
+
 const widths = [
   "Todos",
   "145","155","165","175","185","195","205","215","225","235","245","255","265","275","295","305","315","320","385","400","405","460","600","650","850",
