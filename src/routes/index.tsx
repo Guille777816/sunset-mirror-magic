@@ -45,6 +45,18 @@ const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
 
+// Optimiza URLs de Supabase Storage usando el endpoint de transformación (redimensiona en el CDN)
+function optimizeImg(url: string | undefined | null, width: number, quality = 70): string {
+  if (!url) return "";
+  // Reescribe /storage/v1/object/public/... -> /storage/v1/render/image/public/...?width=..&quality=..
+  if (url.includes("/storage/v1/object/public/")) {
+    const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+    const sep = rewritten.includes("?") ? "&" : "?";
+    return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
+  }
+  return url;
+}
+
 const widths = [
   "Todos",
   "145","155","165","175","185","195","205","215","225","235","245","255","265","275","295","305","315","320","385","400","405","460","600","650","850",
@@ -501,11 +513,17 @@ function ProductCard({ p }: { p: any }) {
           </span>
         )}
         <img
-          src={p.image_url || categoryImg[p.category] || tireCar}
+          src={optimizeImg(p.image_url, 500) || p.image_url || categoryImg[p.category] || tireCar}
           alt={`${p.brand} ${p.model}`}
           loading="lazy"
-          width={600}
-          height={600}
+          decoding="async"
+          width={500}
+          height={500}
+          onError={(e) => {
+            const el = e.currentTarget;
+            const fallback = p.image_url || categoryImg[p.category] || tireCar;
+            if (el.src !== fallback) el.src = fallback;
+          }}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
       </Link>
@@ -645,15 +663,23 @@ function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circ
     <div className="relative">
       <div className="overflow-hidden rounded-3xl" ref={emblaRef}>
         <div className="flex">
-          {banners.map((b) => {
+          {banners.map((b, idx) => {
             const inner = (
               <div className="relative h-[220px] w-full overflow-hidden bg-secondary md:h-[360px] lg:h-[440px]">
                 <img
-                  src={b.image_url || circleLogoUrl}
+                  src={optimizeImg(b.image_url, 1200, 75) || b.image_url || circleLogoUrl}
                   alt={b.title || "Banner"}
                   className="h-full w-full object-cover"
-                  loading="lazy"
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  {...(idx === 0 ? { fetchPriority: "high" as any } : {})}
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    const fallback = b.image_url || circleLogoUrl;
+                    if (el.src !== fallback) el.src = fallback;
+                  }}
                 />
+
                 {(b.title || b.subtitle) && (
                   <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 md:p-10">
                     {b.title && (
