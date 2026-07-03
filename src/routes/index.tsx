@@ -513,11 +513,12 @@ function ProductCard({ p }: { p: any }) {
           </span>
         )}
         <img
-          src={p.image_url || categoryImg[p.category] || tireCar}
+          src={optimizeImg(p.image_url, 500) || p.image_url || categoryImg[p.category] || tireCar}
           alt={`${p.brand} ${p.model}`}
           loading="lazy"
-          width={600}
-          height={600}
+          decoding="async"
+          width={500}
+          height={500}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
       </Link>
