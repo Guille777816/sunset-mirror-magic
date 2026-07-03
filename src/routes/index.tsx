@@ -673,6 +673,11 @@ function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circ
                   loading={idx === 0 ? "eager" : "lazy"}
                   decoding="async"
                   {...(idx === 0 ? { fetchPriority: "high" as any } : {})}
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    const fallback = b.image_url || circleLogoUrl;
+                    if (el.src !== fallback) el.src = fallback;
+                  }}
                 />
 
                 {(b.title || b.subtitle) && (
