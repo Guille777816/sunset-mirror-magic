@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { CartProvider } from "@/lib/cart";
+import { CurrencyProvider } from "@/lib/currency";
 
 import appCss from "../styles.css?url";
 
@@ -113,10 +114,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-      </CartProvider>
+      <CurrencyProvider>
+        <CartProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </CartProvider>
+      </CurrencyProvider>
     </QueryClientProvider>
   );
 }

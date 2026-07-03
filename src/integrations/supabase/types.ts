@@ -167,6 +167,9 @@ export type Database = {
           logo_url: string
           phone: string
           promo_banner: string
+          rate_brl: number
+          rate_pyg: number
+          rate_usd: number
           updated_at: string
           whatsapp: string
         }
@@ -193,6 +196,9 @@ export type Database = {
           logo_url?: string
           phone?: string
           promo_banner?: string
+          rate_brl?: number
+          rate_pyg?: number
+          rate_usd?: number
           updated_at?: string
           whatsapp?: string
         }
@@ -219,8 +225,41 @@ export type Database = {
           logo_url?: string
           phone?: string
           promo_banner?: string
+          rate_brl?: number
+          rate_pyg?: number
+          rate_usd?: number
           updated_at?: string
           whatsapp?: string
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          is_approved: boolean
+          message: string
+          name: string
+          rating: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_approved?: boolean
+          message: string
+          name: string
+          rating?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_approved?: boolean
+          message?: string
+          name?: string
+          rating?: number
         }
         Relationships: []
       }

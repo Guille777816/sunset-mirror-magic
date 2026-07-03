@@ -12,7 +12,8 @@ import {
 import { getSettings, getAdminSettings, updateSettings } from "@/lib/settings.functions";
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide } from "lucide-react";
+import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -50,7 +51,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   industriales: "Industriales",
 };
 
-type Tab = "productos" | "pedidos" | "banners" | "imagenes" | "ajustes";
+type Tab = "productos" | "pedidos" | "banners" | "testimonios" | "imagenes" | "ajustes";
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -145,6 +146,7 @@ function AdminPage() {
             { id: "productos", label: "Productos", icon: Package },
             { id: "pedidos", label: "Pedidos", icon: ClipboardList },
             { id: "banners", label: "Banners", icon: ImageLucide },
+            { id: "testimonios", label: "Testimonios", icon: MessageSquare },
             { id: "imagenes", label: "Imágenes", icon: ImageIcon },
             { id: "ajustes", label: "Ajustes del sitio", icon: Settings2 },
           ] as { id: Tab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
@@ -286,6 +288,9 @@ function AdminPage() {
 
         {/* ── TAB: BANNERS ── */}
         {tab === "banners" && <BannersPanel />}
+
+        {/* ── TAB: TESTIMONIOS ── */}
+        {tab === "testimonios" && <TestimonialsAdminPanel />}
 
         {/* ── TAB: IMÁGENES ── */}
         {tab === "imagenes" && (
@@ -549,6 +554,7 @@ type Settings = {
   logo_url: string; hero_image_url: string;
   category_images: Record<string, string>;
   bank_name: string; bank_holder: string; bank_cbu: string; bank_alias: string; bank_extra: string;
+  rate_usd: number; rate_brl: number; rate_pyg: number;
 };
 
 function SettingsPanel() {
@@ -578,6 +584,9 @@ function SettingsPanel() {
       bank_cbu: (data as any).bank_cbu ?? "",
       bank_alias: (data as any).bank_alias ?? "",
       bank_extra: (data as any).bank_extra ?? "",
+      rate_usd: Number((data as any).rate_usd ?? 1450),
+      rate_brl: Number((data as any).rate_brl ?? 279),
+      rate_pyg: Number((data as any).rate_pyg ?? 5.5),
     });
   }, [data, s]);
 
@@ -704,6 +713,19 @@ function SettingsPanel() {
         </div>
       </div>
 
+      {/* Cotizaciones de monedas */}
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+        <h3 className="mb-1 text-base font-bold text-secondary">Cotizaciones (cambiador de moneda)</h3>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Actualizá estos valores cuando cambien las cotizaciones. Se usan para convertir los precios cuando el cliente elige USD, Real o Guaraní.
+        </p>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="1 USD = X ARS"><input type="number" step="0.01" className={input} value={s.rate_usd} onChange={(e) => set("rate_usd", Number(e.target.value))} /></Field>
+          <Field label="1 BRL (Real) = X ARS"><input type="number" step="0.01" className={input} value={s.rate_brl} onChange={(e) => set("rate_brl", Number(e.target.value))} /></Field>
+          <Field label="1 ARS = X PYG (Guaraníes)"><input type="number" step="0.01" className={input} value={s.rate_pyg} onChange={(e) => set("rate_pyg", Number(e.target.value))} /></Field>
+        </div>
+      </div>
+
       {/* Banner */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
         <h3 className="mb-4 text-base font-bold text-secondary">Banner promocional</h3>
@@ -711,6 +733,7 @@ function SettingsPanel() {
           <input className={input} value={s.promo_banner} onChange={(e) => set("promo_banner", e.target.value)} />
         </Field>
       </div>
+
 
       {mut.error && <p className="text-sm text-destructive">{String((mut.error as any)?.message ?? mut.error)}</p>}
       <div className="flex items-center justify-end gap-3">
