@@ -658,15 +658,18 @@ function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circ
     <div className="relative">
       <div className="overflow-hidden rounded-3xl" ref={emblaRef}>
         <div className="flex">
-          {banners.map((b) => {
+          {banners.map((b, idx) => {
             const inner = (
               <div className="relative h-[220px] w-full overflow-hidden bg-secondary md:h-[360px] lg:h-[440px]">
                 <img
-                  src={b.image_url || circleLogoUrl}
+                  src={optimizeImg(b.image_url, 1200, 75) || b.image_url || circleLogoUrl}
                   alt={b.title || "Banner"}
                   className="h-full w-full object-cover"
-                  loading="lazy"
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  {...(idx === 0 ? { fetchPriority: "high" as any } : {})}
                 />
+
                 {(b.title || b.subtitle) && (
                   <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 md:p-10">
                     {b.title && (
