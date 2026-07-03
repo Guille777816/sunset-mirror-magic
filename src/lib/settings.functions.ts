@@ -61,6 +61,9 @@ const settingsSchema = z.object({
   bank_cbu: z.string().max(60).default(""),
   bank_alias: z.string().max(60).default(""),
   bank_extra: z.string().max(400).default(""),
+  rate_usd: z.number().min(0).default(1450),
+  rate_brl: z.number().min(0).default(279),
+  rate_pyg: z.number().min(0).default(5.5),
 });
 
 export const updateSettings = createServerFn({ method: "POST" })

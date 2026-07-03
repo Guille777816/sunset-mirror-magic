@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, Plus, Instagram, Facebook } from "lucide-react";
+import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, Plus, Instagram, Facebook, Star, ChevronDown, Camera } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import heroTire from "@/assets/hero-tire.jpg";
@@ -12,22 +12,26 @@ import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
 import leRadialHeaderAsset from "@/assets/le-radial-header.jpg.asset.json";
 import leRadialCircleAsset from "@/assets/le-radial-circle.png.asset.json";
+import medidaAsset from "@/assets/medida-cubiertas.webp.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
 import { getSettings } from "@/lib/settings.functions";
 import { listPublicBanners } from "@/lib/banners.functions";
+import { listApprovedTestimonials, submitTestimonial } from "@/lib/testimonials.functions";
 import { useCart } from "@/lib/cart";
+import { useCurrency, CURRENCIES, type Currency } from "@/lib/currency";
 
 const HEADER_LOGO_URL = leRadialHeaderAsset.url;
 const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
+const MEDIDA_IMG_URL = medidaAsset.url;
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Le Radial — Cubiertas y neumáticos en Posadas, Misiones" },
-      { name: "description", content: "Venta de cubiertas para autos, camionetas, camiones y maquinaria agrícola en Posadas, Misiones. Buscá por medida y consultá precios actualizados." },
-      { property: "og:title", content: "Le Radial — Cubiertas en Posadas, Misiones" },
-      { property: "og:description", content: "Cubiertas para autos, camionetas, camiones y agro. Posadas, Misiones — Argentina." },
+      { title: "Le Radial — Cubiertas y neumáticos en Buenos Aires" },
+      { name: "description", content: "Venta de cubiertas para autos, camionetas, camiones y maquinaria agrícola. Buscá por medida, elegí tu moneda y comprá online. Envíos a toda la Argentina." },
+      { property: "og:title", content: "Le Radial — Cubiertas y neumáticos" },
+      { property: "og:description", content: "Cubiertas para autos, camionetas, camiones y agro. Envíos a toda la Argentina." },
     ],
   }),
   component: Index,
@@ -72,20 +76,6 @@ const rims = [
   "24","24.5","25","26","28","30","30.5","32","34","36","38","42",
 ];
 
-// Cotizaciones aproximadas — pedile a tu asistente que las actualice cuando cambien
-const USD_RATE = 1450; // 1 USD = X ARS
-const BRL_RATE = 279;  // 1 BRL = X ARS
-
-function formatArs(n: number) {
-  return "$ " + Number(n).toLocaleString("es-AR");
-}
-function formatUsd(n: number) {
-  return "US$ " + (Number(n) / USD_RATE).toLocaleString("es-AR", { maximumFractionDigits: 0 });
-}
-function formatBrl(n: number) {
-  return "R$ " + (Number(n) / BRL_RATE).toLocaleString("es-AR", { maximumFractionDigits: 0 });
-}
-
 function Index() {
   const [w, setW] = useState("Todos");
   const [h, setH] = useState("Todos");
@@ -94,6 +84,7 @@ function Index() {
   const [authed, setAuthed] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const cart = useCart();
+  const { currency, setCurrency, setRates } = useCurrency();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
@@ -110,6 +101,19 @@ function Index() {
   });
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => fetchSettings() });
   const { data: banners = [] } = useQuery({ queryKey: ["public-banners"], queryFn: () => fetchBanners() });
+  const fetchTestimonials = useServerFn(listApprovedTestimonials);
+  const { data: testimonials = [] } = useQuery({ queryKey: ["public-testimonials"], queryFn: () => fetchTestimonials() });
+
+  // Sync rates from settings so the currency switcher converts using admin-managed values
+  useEffect(() => {
+    if (!settings) return;
+    const s: any = settings;
+    setRates({
+      rate_usd: Number(s.rate_usd) || 1450,
+      rate_brl: Number(s.rate_brl) || 279,
+      rate_pyg: Number(s.rate_pyg) || 5.5,
+    });
+  }, [settings, setRates]);
 
   const phone = settings?.phone ?? "(376) 4-000000";
   const phoneHref = "tel:" + (settings?.phone ?? "").replace(/\s/g, "");
@@ -196,18 +200,20 @@ function Index() {
                 <User className="h-5 w-5" /> Login
               </Link>
             )}
+            <CurrencySelect value={currency} onChange={setCurrency} />
             <button onClick={cart.open} aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground hover:scale-105 transition">
               <ShoppingCart className="h-5 w-5" />
               {cart.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold text-secondary-foreground">{cart.count}</span>}
             </button>
           </div>
-          <div className="flex items-center gap-3 lg:hidden">
+          <div className="flex items-center gap-2 lg:hidden">
+            <CurrencySelect value={currency} onChange={setCurrency} compact />
             <button onClick={cart.open} aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
               <ShoppingCart className="h-5 w-5" />
               {cart.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold text-secondary-foreground">{cart.count}</span>}
             </button>
-            <a href={phoneHref} className="flex items-center gap-1 text-sm font-bold text-primary">
-              <Phone className="h-5 w-5" /> {phone}
+            <a href={phoneHref} aria-label="Llamar" className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-secondary-foreground">
+              <Phone className="h-5 w-5" />
             </a>
           </div>
         </div>
@@ -266,9 +272,21 @@ function Index() {
       {/* Buscador */}
       <section id="buscador" className="bg-muted py-12">
         <div className="container mx-auto px-4">
-          <h2 className="mb-6 text-center text-2xl font-bold text-secondary md:text-3xl">
+          <h2 className="mb-2 text-center text-2xl font-bold text-secondary md:text-3xl">
             Buscar cubiertas por medida
           </h2>
+          <p className="mb-6 text-center text-sm text-muted-foreground">
+            Fijate en el flanco de tu cubierta: <strong>ancho / alto R aro</strong> (ej. 175/70R14).
+          </p>
+          <div className="mx-auto mb-6 max-w-3xl overflow-hidden rounded-2xl bg-card p-3 shadow-[var(--shadow-product)]">
+            <img
+              src={MEDIDA_IMG_URL}
+              alt="Cómo conocer la medida de sus cubiertas: ancho, alto y aro"
+              className="mx-auto w-full max-w-xl object-contain"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
           <div className="mx-auto grid max-w-5xl gap-4 rounded-2xl bg-card p-6 shadow-[var(--shadow-product)] md:grid-cols-[1fr_1fr_1fr_auto]">
             <Select label="Ancho" value={w} onChange={setW} options={widths} />
             <Select label="Alto" value={h} onChange={setH} options={heights} />
@@ -296,6 +314,8 @@ function Index() {
           </div>
         </div>
       </section>
+
+
 
       {/* Resultados de búsqueda */}
       {searchActive && (
@@ -402,10 +422,18 @@ function Index() {
         );
       })()}
 
+      {/* Testimonios */}
+      {!searchActive && (
+        <TestimonialsSection testimonials={testimonials as any[]} />
+      )}
+
+      {/* Preguntas frecuentes */}
+      {!searchActive && <FaqSection whatsappHref={whatsappHref} />}
+
       {/* Beneficios */}
       <section className="container mx-auto grid gap-6 px-4 py-16 md:grid-cols-3">
         {[
-          { icon: Truck, title: "Envíos a toda la Argentina", desc: "Coordinamos con transportadoras de confianza desde Posadas a cualquier provincia." },
+          { icon: Truck, title: "Envíos a toda la Argentina", desc: "Coordinamos con transportadoras de confianza a cualquier provincia." },
           { icon: ShoppingCart, title: "Compra 100% online", desc: "Reservá tu cubierta en minutos y retirá en local o recibí en tu domicilio." },
           { icon: Users, title: "Plan revendedores", desc: "Precios mayoristas y soporte dedicado para gomerías y talleres." },
         ].map((b) => (
@@ -423,11 +451,12 @@ function Index() {
       <footer className="bg-secondary text-secondary-foreground">
         <div className="container mx-auto grid gap-8 px-4 py-12 md:grid-cols-4">
           <div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black tracking-tighter text-primary">LE</span>
-              <span className="text-2xl font-black tracking-tighter">RADIAL</span>
-            </div>
-            <p className="mt-3 text-sm opacity-70">Cubiertas y neumáticos para autos, camionetas, camiones y agro. Posadas, Misiones.</p>
+            <img
+              src={settings?.logo_url || CIRCLE_LOGO_URL}
+              alt={settings?.business_name || "Le Radial"}
+              className="h-20 w-auto object-contain"
+            />
+            <p className="mt-3 text-sm opacity-70">Cubiertas y neumáticos para autos, camionetas, camiones y agro.</p>
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Categorías</h4>
@@ -444,7 +473,6 @@ function Index() {
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Empresa</h4>
             <ul className="space-y-2 text-sm opacity-80">
-              <li>Sucursal Posadas</li>
               <li>Revendedores</li>
               <li>Contacto</li>
             </ul>
@@ -499,6 +527,7 @@ function Index() {
 
 function ProductCard({ p }: { p: any }) {
   const cart = useCart();
+  const { format } = useCurrency();
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1">
       <Link to="/producto/$id" params={{ id: p.id }} className="relative block aspect-square overflow-hidden bg-muted">
@@ -534,8 +563,7 @@ function ProductCard({ p }: { p: any }) {
           <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
         </Link>
         <div className="mt-auto pt-4">
-          <p className="text-lg font-black text-secondary">{formatArs(p.price_ars)}</p>
-          <p className="text-[11px] font-semibold text-muted-foreground">{formatUsd(p.price_ars)} · {formatBrl(p.price_ars)}</p>
+          <p className="text-lg font-black text-secondary">{format(Number(p.price_ars))}</p>
           <div className="mt-3 flex gap-2">
             <Link
               to="/producto/$id"
@@ -725,5 +753,283 @@ function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circ
     </div>
   );
 }
+
+
+/* ─────────── CURRENCY SELECT ─────────── */
+function CurrencySelect({ value, onChange, compact = false }: { value: Currency; onChange: (c: Currency) => void; compact?: boolean }) {
+  return (
+    <label className="relative inline-flex items-center">
+      <span className="sr-only">Moneda</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as Currency)}
+        aria-label="Elegir moneda"
+        className={`appearance-none rounded-full border border-input bg-background pr-7 text-xs font-bold uppercase tracking-wider text-secondary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+          compact ? "h-10 pl-2.5" : "h-10 pl-3"
+        }`}
+      >
+        {CURRENCIES.map((c) => (
+          <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted-foreground" />
+    </label>
+  );
+}
+
+/* ─────────── TESTIMONIOS ─────────── */
+type Testi = { id: string; name: string; message: string; image_url: string | null; rating: number; created_at: string };
+
+function TestimonialsSection({ testimonials }: { testimonials: Testi[] }) {
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: testimonials.length > 1, align: "start" },
+    testimonials.length > 1 ? [Autoplay({ delay: 6000, stopOnInteraction: false, stopOnMouseEnter: true })] : []
+  );
+  const [showForm, setShowForm] = useState(false);
+
+  function scroll(dir: -1 | 1) {
+    if (!emblaApi) return;
+    dir === -1 ? emblaApi.scrollPrev() : emblaApi.scrollNext();
+  }
+
+  return (
+    <section id="testimonios" className="bg-muted py-16">
+      <div className="container mx-auto px-4">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Opiniones</p>
+            <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">Lo que dicen nuestros clientes</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {testimonials.length > 1 && (
+              <>
+                <button onClick={() => scroll(-1)} aria-label="Anterior" className="grid h-10 w-10 place-items-center rounded-full border bg-card hover:bg-primary hover:text-primary-foreground transition">‹</button>
+                <button onClick={() => scroll(1)} aria-label="Siguiente" className="grid h-10 w-10 place-items-center rounded-full border bg-card hover:bg-primary hover:text-primary-foreground transition">›</button>
+              </>
+            )}
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:scale-[1.02] transition"
+            >
+              <Plus className="mr-1 inline h-3 w-3" /> Dejar mi opinión
+            </button>
+          </div>
+        </div>
+
+        {testimonials.length === 0 ? (
+          <div className="rounded-2xl bg-card p-10 text-center text-sm text-muted-foreground shadow-[var(--shadow-product)]">
+            Todavía no hay opiniones publicadas. ¡Sé el primero en dejar tu experiencia!
+          </div>
+        ) : (
+          <div className="overflow-hidden" ref={emblaRef}>
+            <div className="flex gap-4">
+              {testimonials.map((t) => (
+                <div key={t.id} className="min-w-0 shrink-0 grow-0 basis-full sm:basis-1/2 lg:basis-1/3">
+                  <TestimonialCard t={t} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showForm && <TestimonialForm onClose={() => setShowForm(false)} />}
+    </section>
+  );
+}
+
+function TestimonialCard({ t }: { t: Testi }) {
+  return (
+    <div className="flex h-full flex-col rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+      <div className="flex items-center gap-3">
+        {t.image_url ? (
+          <img src={t.image_url} alt={t.name} className="h-14 w-14 rounded-full object-cover border-2 border-primary/30" loading="lazy" />
+        ) : (
+          <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
+            <User className="h-6 w-6" />
+          </div>
+        )}
+        <div>
+          <p className="font-bold text-secondary">{t.name}</p>
+          <div className="flex text-primary" aria-label={`${t.rating} de 5`}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} className={`h-3.5 w-3.5 ${i < t.rating ? "fill-current" : "opacity-30"}`} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">"{t.message}"</p>
+    </div>
+  );
+}
+
+function TestimonialForm({ onClose }: { onClose: () => void }) {
+  const submit = useServerFn(submitTestimonial);
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [rating, setRating] = useState(5);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [ok, setOk] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handleFile(f: File | null) {
+    if (!f) return;
+    setUploading(true);
+    setErr(null);
+    try {
+      const ext = f.name.split(".").pop() || "jpg";
+      const path = `testimonials/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from("site-assets").upload(path, f, { upsert: false });
+      if (error) throw error;
+      const { data } = supabase.storage.from("site-assets").getPublicUrl(path);
+      setImageUrl(data.publicUrl);
+    } catch (e: any) {
+      setErr(e?.message ?? "No se pudo subir la foto");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setErr(null);
+    try {
+      await submit({ data: { name: name.trim(), message: message.trim(), rating, image_url: imageUrl || null } });
+      setOk(true);
+    } catch (e: any) {
+      setErr(e?.message ?? "Error al enviar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        {ok ? (
+          <div className="text-center">
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
+              <Star className="h-7 w-7 fill-current" />
+            </div>
+            <h3 className="text-lg font-bold text-secondary">¡Gracias por tu opinión!</h3>
+            <p className="mt-2 text-sm text-muted-foreground">La revisaremos y publicaremos pronto.</p>
+            <button onClick={onClose} className="mt-5 rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground">Cerrar</button>
+          </div>
+        ) : (
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-secondary">Dejá tu opinión</h3>
+              <button type="button" onClick={onClose} className="text-muted-foreground hover:text-secondary">✕</button>
+            </div>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-secondary">Nombre</span>
+              <input required minLength={2} maxLength={80} value={name} onChange={(e) => setName(e.target.value)}
+                className="h-11 w-full rounded-full border border-input bg-background px-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-secondary">Tu opinión</span>
+              <textarea required minLength={5} maxLength={600} value={message} onChange={(e) => setMessage(e.target.value)}
+                rows={4}
+                className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </label>
+            <div>
+              <span className="mb-1 block text-sm font-semibold text-secondary">Puntuación</span>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button key={n} type="button" onClick={() => setRating(n)} aria-label={`${n} estrellas`}>
+                    <Star className={`h-6 w-6 transition ${n <= rating ? "fill-primary text-primary" : "text-muted-foreground/40"}`} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="mb-1 block text-sm font-semibold text-secondary">Foto (opcional)</span>
+              <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-input bg-muted/50 p-3 text-sm text-muted-foreground hover:bg-muted">
+                <Camera className="h-5 w-5" />
+                {uploading ? "Subiendo..." : imageUrl ? "Cambiar foto" : "Elegir foto"}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+                {imageUrl && <img src={imageUrl} alt="preview" className="ml-auto h-10 w-10 rounded-full object-cover" />}
+              </label>
+            </div>
+            {err && <p className="text-sm text-destructive">{err}</p>}
+            <button type="submit" disabled={saving || uploading}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] disabled:opacity-60">
+              {saving ? "Enviando..." : "Enviar opinión"}
+            </button>
+            <p className="text-center text-[11px] text-muted-foreground">
+              Tu opinión pasa por moderación antes de publicarse.
+            </p>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────── FAQ ─────────── */
+function FaqSection({ whatsappHref }: { whatsappHref: string }) {
+  const [open, setOpen] = useState<number | null>(0);
+  const items = [
+    {
+      q: "¿Cómo es el envío?",
+      a: "Realizamos envíos a toda la Argentina a través de transportes de confianza. El costo depende del destino y la cantidad de cubiertas. Coordinamos el envío por WhatsApp una vez confirmada tu compra. También podés retirar en nuestro local de Mitre 480, Piso 12, Buenos Aires.",
+    },
+    {
+      q: "¿Tienen garantía?",
+      a: "Sí. Todas nuestras cubiertas son 100% nuevas y cuentan con la garantía oficial del fabricante contra defectos de fabricación. Ante cualquier inconveniente, contactanos y te asesoramos con el proceso.",
+    },
+    {
+      q: "¿Qué formas de pago aceptan?",
+      a: "Aceptamos transferencia bancaria y tarjeta de crédito/débito directamente al confirmar el pedido. Los datos aparecen al finalizar la compra.",
+    },
+    {
+      q: "¿Cómo sé qué medida es la mía?",
+      a: "Mirá el flanco lateral de tu cubierta actual. Ahí encontrás una secuencia como 175/70R14: el primer número es el ancho, el segundo el alto y el último el aro. Usá el buscador por medida para encontrar tu cubierta rápido.",
+    },
+  ];
+
+  return (
+    <section id="faq" className="bg-background py-16">
+      <div className="container mx-auto max-w-3xl px-4">
+        <div className="mb-8 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Ayuda</p>
+          <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">Preguntas frecuentes</h2>
+        </div>
+        <div className="space-y-3">
+          {items.map((it, i) => {
+            const isOpen = open === i;
+            return (
+              <div key={i} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                <button
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                  aria-expanded={isOpen}
+                >
+                  <span className="text-sm font-bold text-secondary md:text-base">{it.q}</span>
+                  <ChevronDown className={`h-5 w-5 shrink-0 text-primary transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                </button>
+                {isOpen && (
+                  <div className="border-t bg-muted/40 px-5 py-4 text-sm leading-relaxed text-muted-foreground">
+                    {it.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          ¿Tenés otra pregunta?{" "}
+          <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="font-bold text-primary hover:underline">
+            Escribinos por WhatsApp
+          </a>
+        </p>
+      </div>
+    </section>
+  );
+}
+
 
 
