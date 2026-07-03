@@ -519,6 +519,11 @@ function ProductCard({ p }: { p: any }) {
           decoding="async"
           width={500}
           height={500}
+          onError={(e) => {
+            const el = e.currentTarget;
+            const fallback = p.image_url || categoryImg[p.category] || tireCar;
+            if (el.src !== fallback) el.src = fallback;
+          }}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
       </Link>
