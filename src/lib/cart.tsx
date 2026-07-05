@@ -242,53 +242,6 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
   );
 }
 
-function BankBlock({ payment, orderId, total }: { payment: PaymentInfo | null; orderId: string | null; total: number }) {
-  const bank = {
-    name: payment?.bank_name || "",
-    holder: payment?.bank_holder || "",
-    cbu: payment?.bank_cbu || "",
-    alias: payment?.bank_alias || "",
-    extra: payment?.bank_extra || "",
-  };
-  const whatsapp = payment?.whatsapp || "";
-  const hasBank = bank.cbu || bank.alias || bank.holder;
-
-  if (!hasBank) {
-    return (
-      <div className="mt-5 rounded-xl bg-muted p-4 text-center text-xs text-muted-foreground">
-        Te contactaremos a la brevedad para coordinar el pago y la entrega.
-      </div>
-    );
-  }
-
-  const ref = orderId ? `LR-${orderId.slice(0, 8).toUpperCase()}` : "";
-  const waText = encodeURIComponent(
-    `Hola! Acabo de hacer el pedido ${ref} por $${total.toLocaleString("es-AR")}. Adjunto el comprobante de transferencia.`
-  );
-  const waUrl = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${waText}` : null;
-
-  return (
-    <div className="mt-5 rounded-2xl border-2 border-primary/30 bg-card p-4">
-      <p className="mb-3 text-xs font-bold uppercase tracking-wider text-primary">Datos para transferir</p>
-      <div className="space-y-2">
-        {bank.name && <Row label="Banco" value={bank.name} />}
-        {bank.holder && <Row label="Titular" value={bank.holder} />}
-        {bank.cbu && <Row label="CBU" value={bank.cbu} copy />}
-        {bank.alias && <Row label="Alias" value={bank.alias} copy />}
-        {ref && <Row label="Referencia" value={ref} copy />}
-      </div>
-      {bank.extra && (
-        <p className="mt-3 whitespace-pre-line rounded-lg bg-muted p-2 text-[11px] text-muted-foreground">{bank.extra}</p>
-      )}
-      {waUrl && (
-        <a href={waUrl} target="_blank" rel="noopener noreferrer"
-          className="mt-3 block w-full rounded-full bg-secondary py-2.5 text-center text-xs font-bold uppercase text-secondary-foreground">
-          Enviar comprobante por WhatsApp
-        </a>
-      )}
-    </div>
-  );
-}
 
 function Row({ label, value, copy }: { label: string; value: string; copy?: boolean }) {
   const [done, setDone] = useState(false);
