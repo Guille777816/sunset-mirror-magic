@@ -1308,3 +1308,139 @@ function BannersPanel() {
     </div>
   );
 }
+
+function TestimonialsAdminPanel() {
+  const qc = useQueryClient();
+  const fetchAll = useServerFn(listAllTestimonials);
+  const setApproved = useServerFn(setTestimonialApproved);
+  const remove = useServerFn(deleteTestimonial);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["admin-testimonials"],
+    queryFn: () => fetchAll(),
+  });
+  const approveMut = useMutation({
+    mutationFn: (v: { id: string; is_approved: boolean }) => setApproved({ data: v }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-testimonials"] });
+      qc.invalidateQueries({ queryKey: ["public-testimonials"] });
+    },
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => remove({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-testimonials"] });
+      qc.invalidateQueries({ queryKey: ["public-testimonials"] });
+    },
+  });
+
+  const pending = (items as any[]).filter((t) => !t.is_approved);
+  const approved = (items as any[]).filter((t) => t.is_approved);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-lg font-black text-secondary">Testimonios de clientes</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Aprobá los mensajes que enviaron los clientes para que aparezcan en el sitio.
+        </p>
+      </div>
+
+      {isLoading && <p className="text-sm text-muted-foreground">Cargando…</p>}
+
+      <section>
+        <h3 className="mb-3 text-sm font-black uppercase tracking-wider text-primary">
+          Pendientes ({pending.length})
+        </h3>
+        <div className="grid gap-3">
+          {pending.length === 0 && (
+            <div className="rounded-2xl bg-card p-6 text-center text-sm text-muted-foreground">
+              No hay testimonios pendientes.
+            </div>
+          )}
+          {pending.map((t) => (
+            <TestimonialRow
+              key={t.id}
+              t={t}
+              onApprove={() => approveMut.mutate({ id: t.id, is_approved: true })}
+              onDelete={() => { if (confirm("¿Eliminar este testimonio?")) delMut.mutate(t.id); }}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h3 className="mb-3 text-sm font-black uppercase tracking-wider text-secondary">
+          Publicados ({approved.length})
+        </h3>
+        <div className="grid gap-3">
+          {approved.length === 0 && (
+            <div className="rounded-2xl bg-card p-6 text-center text-sm text-muted-foreground">
+              Todavía no hay testimonios publicados.
+            </div>
+          )}
+          {approved.map((t) => (
+            <TestimonialRow
+              key={t.id}
+              t={t}
+              published
+              onHide={() => approveMut.mutate({ id: t.id, is_approved: false })}
+              onDelete={() => { if (confirm("¿Eliminar este testimonio?")) delMut.mutate(t.id); }}
+            />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function TestimonialRow({
+  t, published, onApprove, onHide, onDelete,
+}: {
+  t: any; published?: boolean;
+  onApprove?: () => void; onHide?: () => void; onDelete: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-[var(--shadow-product)] sm:flex-row">
+      {t.image_url ? (
+        <img src={t.image_url} alt={t.name} className="h-16 w-16 shrink-0 rounded-full object-cover" />
+      ) : (
+        <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+          <MessageSquare className="h-6 w-6" />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-bold text-secondary">{t.name}</p>
+          <div className="flex items-center gap-0.5 text-primary">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} className={`h-3.5 w-3.5 ${i < (t.rating || 0) ? "fill-current" : "opacity-30"}`} />
+            ))}
+          </div>
+          <span className="text-[10px] text-muted-foreground">
+            {new Date(t.created_at).toLocaleDateString("es-AR")}
+          </span>
+        </div>
+        <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{t.message}</p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2 self-start">
+        {!published && onApprove && (
+          <button onClick={onApprove}
+            className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-bold uppercase text-primary-foreground">
+            <Check className="h-3 w-3" /> Aprobar
+          </button>
+        )}
+        {published && onHide && (
+          <button onClick={onHide}
+            className="rounded-full border px-3 py-1.5 text-xs font-bold uppercase text-secondary hover:bg-muted">
+            Ocultar
+          </button>
+        )}
+        <button onClick={onDelete}
+          className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold uppercase text-destructive hover:bg-destructive/10">
+          <Trash2 className="h-3 w-3" /> Borrar
+        </button>
+      </div>
+    </div>
+  );
+}
+

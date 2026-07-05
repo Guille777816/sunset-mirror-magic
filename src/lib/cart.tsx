@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Minus, Plus, ShoppingCart, Trash2, Copy, Check, Lock } from "lucide-react";
+import { X, Minus, Plus, ShoppingCart, Trash2, Copy, Check, Lock, CreditCard } from "lucide-react";
 import { createOrder } from "./orders.functions";
+import { createMpPreference } from "./mercadopago.functions";
 
 export type CartItem = {
   id: string;
@@ -216,6 +217,8 @@ function CartDrawer() {
               <p className="mt-1 text-3xl font-black text-primary">$ {orderTotal.toLocaleString("es-AR")}</p>
             </div>
 
+            {orderId && <MercadoPagoBlock orderId={orderId} total={orderTotal} />}
+
             <BankBlock payment={payment} orderId={orderId} total={orderTotal} />
 
             <button onClick={close} className="mt-6 rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground">
@@ -308,3 +311,42 @@ function Row({ label, value, copy }: { label: string; value: string; copy?: bool
     </div>
   );
 }
+
+function MercadoPagoBlock({ orderId, total }: { orderId: string; total: number }) {
+  const createPref = useServerFn(createMpPreference);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function pay() {
+    setLoading(true); setError(null);
+    try {
+      const res = await createPref({ data: { order_id: orderId, back_url_base: window.location.origin } });
+      window.location.href = res.init_point;
+    } catch (e: any) {
+      setError(e?.message || "No se pudo iniciar el pago.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mt-5 rounded-2xl border-2 border-[#009EE3]/40 bg-[#009EE3]/5 p-4">
+      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-[#009EE3]">Pagar online</p>
+      <p className="text-xs text-muted-foreground">
+        Tarjeta de crédito/débito, dinero en cuenta o efectivo con Mercado Pago. Total: <strong className="text-secondary">$ {total.toLocaleString("es-AR")}</strong>
+      </p>
+      <button
+        onClick={pay}
+        disabled={loading}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] py-3 text-sm font-bold uppercase text-white shadow-sm hover:opacity-90 disabled:opacity-60"
+      >
+        <CreditCard className="h-4 w-4" />
+        {loading ? "Redirigiendo..." : "Pagar con Mercado Pago"}
+      </button>
+      {error && <p className="mt-2 rounded-lg bg-destructive/10 p-2 text-[11px] text-destructive">{error}</p>}
+      <p className="mt-2 text-center text-[10px] text-muted-foreground">
+        Al confirmar el pago te avisamos por WhatsApp y coordinamos el envío.
+      </p>
+    </div>
+  );
+}
+

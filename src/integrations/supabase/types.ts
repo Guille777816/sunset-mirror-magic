@@ -59,6 +59,9 @@ export type Database = {
           customer_phone: string
           id: string
           items: Json
+          mp_payment_id: string | null
+          mp_preference_id: string | null
+          mp_status: string | null
           notes: string | null
           status: string
           total_ars: number
@@ -72,6 +75,9 @@ export type Database = {
           customer_phone: string
           id?: string
           items?: Json
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          mp_status?: string | null
           notes?: string | null
           status?: string
           total_ars?: number
@@ -85,6 +91,9 @@ export type Database = {
           customer_phone?: string
           id?: string
           items?: Json
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          mp_status?: string | null
           notes?: string | null
           status?: string
           total_ars?: number
