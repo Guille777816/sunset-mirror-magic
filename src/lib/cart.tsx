@@ -100,7 +100,6 @@ function CartDrawer() {
       }});
       setOrderId(res.id);
       setOrderTotal(res.total ?? total);
-      setOrderTotal(res.total ?? total);
       setStep("done");
       clear();
     } catch (err: any) {
