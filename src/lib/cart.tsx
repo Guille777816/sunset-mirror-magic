@@ -242,27 +242,6 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
   );
 }
 
-
-function Row({ label, value, copy }: { label: string; value: string; copy?: boolean }) {
-  const [done, setDone] = useState(false);
-  async function doCopy() {
-    try { await navigator.clipboard.writeText(value); setDone(true); setTimeout(() => setDone(false), 1500); } catch {}
-  }
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 py-2">
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="truncate text-sm font-bold text-secondary">{value}</p>
-      </div>
-      {copy && (
-        <button onClick={doCopy} className="shrink-0 rounded-full bg-primary/10 p-2 text-primary hover:bg-primary/20">
-          {done ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-        </button>
-      )}
-    </div>
-  );
-}
-
 function MercadoPagoBlock({ orderId, total }: { orderId: string; total: number }) {
   const createPref = useServerFn(createMpPreference);
   const [loading, setLoading] = useState(false);
