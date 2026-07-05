@@ -56,7 +56,7 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
         if (mpStatus === "approved") patch.status = "pagado";
         else if (mpStatus === "rejected" || mpStatus === "cancelled") patch.status = "cancelado";
 
-        const { error } = await supabaseAdmin.from("orders").update(patch).eq("id", orderId);
+        const { error } = await supabaseAdmin.from("orders").update(patch as any).eq("id", orderId);
         if (error) console.error("mp-webhook update error", error.message);
 
         return new Response("ok", { status: 200 });
