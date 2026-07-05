@@ -217,6 +217,8 @@ function CartDrawer() {
               <p className="mt-1 text-3xl font-black text-primary">$ {orderTotal.toLocaleString("es-AR")}</p>
             </div>
 
+            {orderId && <MercadoPagoBlock orderId={orderId} total={orderTotal} />}
+
             <BankBlock payment={payment} orderId={orderId} total={orderTotal} />
 
             <button onClick={close} className="mt-6 rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground">
