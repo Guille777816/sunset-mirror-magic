@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Minus, Plus, ShoppingCart, Trash2, Copy, Check, Lock } from "lucide-react";
+import { X, Minus, Plus, ShoppingCart, Trash2, Copy, Check, Lock, CreditCard } from "lucide-react";
 import { createOrder } from "./orders.functions";
+import { createMpPreference } from "./mercadopago.functions";
 
 export type CartItem = {
   id: string;
