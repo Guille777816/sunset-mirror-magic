@@ -72,10 +72,6 @@ export function useCart() {
   return c;
 }
 
-type PaymentInfo = {
-  bank_name: string; bank_holder: string; bank_cbu: string; bank_alias: string; bank_extra: string; whatsapp: string;
-};
-
 function CartDrawer() {
   const { items, total, isOpen, close, remove, setQty, clear } = useCart();
   const submit = useServerFn(createOrder);
@@ -85,7 +81,6 @@ function CartDrawer() {
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderTotal, setOrderTotal] = useState<number>(0);
-  const [payment, setPayment] = useState<PaymentInfo | null>(null);
 
   useEffect(() => { if (isOpen) { setError(null); } }, [isOpen]);
 
