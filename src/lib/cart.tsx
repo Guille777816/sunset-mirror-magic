@@ -219,8 +219,6 @@ function CartDrawer() {
 
             {orderId && <MercadoPagoBlock orderId={orderId} total={orderTotal} />}
 
-            <BankBlock payment={payment} orderId={orderId} total={orderTotal} />
-
             <button onClick={close} className="mt-6 rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground">
               Listo
             </button>
