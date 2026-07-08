@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { X, Minus, Plus, ShoppingCart, Trash2, Check, Lock, CreditCard } from "lucide-react";
 import { createOrder } from "./orders.functions";
 import { createMpPreference } from "./mercadopago.functions";
+import { useCurrency } from "./currency";
 
 export type CartItem = {
   id: string;
@@ -74,6 +75,7 @@ export function useCart() {
 
 function CartDrawer() {
   const { items, total, isOpen, close, remove, setQty, clear } = useCart();
+  const { format } = useCurrency();
   const submit = useServerFn(createOrder);
   const [step, setStep] = useState<"cart" | "form" | "done">("cart");
   const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
@@ -143,7 +145,7 @@ function CartDrawer() {
                             <span className="w-6 text-center text-sm font-bold">{it.qty}</span>
                             <button onClick={() => setQty(it.id, it.qty + 1)} className="grid h-7 w-7 place-items-center rounded-full border"><Plus className="h-3 w-3" /></button>
                           </div>
-                          <span className="text-sm font-black text-secondary">$ {(it.price_ars * it.qty).toLocaleString("es-AR")}</span>
+                          <span className="text-sm font-black text-secondary">{format(it.price_ars * it.qty)}</span>
                         </div>
                       </div>
                       <button onClick={() => remove(it.id)} className="self-start rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
@@ -155,7 +157,7 @@ function CartDrawer() {
             <footer className="border-t p-5">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-semibold text-muted-foreground">Total</span>
-                <span className="text-xl font-black text-secondary">$ {total.toLocaleString("es-AR")}</span>
+                <span className="text-xl font-black text-secondary">{format(total)}</span>
               </div>
               <button
                 disabled={items.length === 0}
@@ -185,8 +187,8 @@ function CartDrawer() {
               </label>
               {error && <p className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
               <div className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
-                Total a abonar: <strong className="text-secondary">$ {total.toLocaleString("es-AR")}</strong><br />
-                Al confirmar te mostramos los datos de pago de forma segura.
+                Total a abonar: <strong className="text-secondary">{format(total)}</strong><br />
+                Al confirmar te llevamos a Mercado Pago para pagar con tarjeta, débito o efectivo.
               </div>
             </div>
             <footer className="flex gap-2 border-t p-5">
@@ -208,7 +210,8 @@ function CartDrawer() {
               <p className="mt-1 text-xs text-muted-foreground">
                 Pedido{orderId ? ` #${orderId.slice(0, 8)}` : ""} · Total a abonar
               </p>
-              <p className="mt-1 text-3xl font-black text-primary">$ {orderTotal.toLocaleString("es-AR")}</p>
+              <p className="mt-1 text-3xl font-black text-primary">{format(orderTotal)}</p>
+              <p className="mt-2 text-[11px] text-muted-foreground">Total en pesos (ARS): $ {orderTotal.toLocaleString("es-AR")}</p>
             </div>
 
             {orderId && <MercadoPagoBlock orderId={orderId} total={orderTotal} />}
@@ -238,19 +241,29 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
 
 function MercadoPagoBlock({ orderId, total }: { orderId: string; total: number }) {
   const createPref = useServerFn(createMpPreference);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initPoint, setInitPoint] = useState<string | null>(null);
 
-  async function pay() {
+  async function pay(auto = false) {
     setLoading(true); setError(null);
     try {
       const res = await createPref({ data: { order_id: orderId, back_url_base: window.location.origin } });
-      window.location.href = res.init_point;
+      setInitPoint(res.init_point);
+      if (auto) window.location.href = res.init_point;
+      else setLoading(false);
     } catch (e: any) {
-      setError(e?.message || "No se pudo iniciar el pago.");
+      setError(e?.message || "No se pudo iniciar el pago. Tocá el botón para reintentar.");
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    // Auto-inicia el pago al confirmar el pedido para que el usuario no se
+    // quede varado en la pantalla de confirmación.
+    pay(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
   return (
     <div className="mt-5 rounded-2xl border-2 border-[#009EE3]/40 bg-[#009EE3]/5 p-4">
@@ -259,18 +272,19 @@ function MercadoPagoBlock({ orderId, total }: { orderId: string; total: number }
         Tarjeta de crédito/débito, dinero en cuenta o efectivo con Mercado Pago. Total: <strong className="text-secondary">$ {total.toLocaleString("es-AR")}</strong>
       </p>
       <button
-        onClick={pay}
-        disabled={loading}
+        onClick={() => (initPoint ? (window.location.href = initPoint) : pay(true))}
+        disabled={loading && !initPoint}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] py-3 text-sm font-bold uppercase text-white shadow-sm hover:opacity-90 disabled:opacity-60"
       >
         <CreditCard className="h-4 w-4" />
-        {loading ? "Redirigiendo..." : "Pagar con Mercado Pago"}
+        {loading && !initPoint ? "Preparando pago..." : "Pagar con Mercado Pago"}
       </button>
       {error && <p className="mt-2 rounded-lg bg-destructive/10 p-2 text-[11px] text-destructive">{error}</p>}
       <p className="mt-2 text-center text-[10px] text-muted-foreground">
-        Al confirmar el pago te avisamos por WhatsApp y coordinamos el envío.
+        Si no te redirige automáticamente, tocá el botón azul.
       </p>
     </div>
   );
 }
+
 
