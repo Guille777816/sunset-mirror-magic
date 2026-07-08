@@ -241,19 +241,29 @@ function Field({ label, value, onChange, type = "text" }: { label: string; value
 
 function MercadoPagoBlock({ orderId, total }: { orderId: string; total: number }) {
   const createPref = useServerFn(createMpPreference);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initPoint, setInitPoint] = useState<string | null>(null);
 
-  async function pay() {
+  async function pay(auto = false) {
     setLoading(true); setError(null);
     try {
       const res = await createPref({ data: { order_id: orderId, back_url_base: window.location.origin } });
-      window.location.href = res.init_point;
+      setInitPoint(res.init_point);
+      if (auto) window.location.href = res.init_point;
+      else setLoading(false);
     } catch (e: any) {
-      setError(e?.message || "No se pudo iniciar el pago.");
+      setError(e?.message || "No se pudo iniciar el pago. Tocá el botón para reintentar.");
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    // Auto-inicia el pago al confirmar el pedido para que el usuario no se
+    // quede varado en la pantalla de confirmación.
+    pay(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
 
   return (
     <div className="mt-5 rounded-2xl border-2 border-[#009EE3]/40 bg-[#009EE3]/5 p-4">
@@ -262,18 +272,19 @@ function MercadoPagoBlock({ orderId, total }: { orderId: string; total: number }
         Tarjeta de crédito/débito, dinero en cuenta o efectivo con Mercado Pago. Total: <strong className="text-secondary">$ {total.toLocaleString("es-AR")}</strong>
       </p>
       <button
-        onClick={pay}
-        disabled={loading}
+        onClick={() => (initPoint ? (window.location.href = initPoint) : pay(true))}
+        disabled={loading && !initPoint}
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] py-3 text-sm font-bold uppercase text-white shadow-sm hover:opacity-90 disabled:opacity-60"
       >
         <CreditCard className="h-4 w-4" />
-        {loading ? "Redirigiendo..." : "Pagar con Mercado Pago"}
+        {loading && !initPoint ? "Preparando pago..." : "Pagar con Mercado Pago"}
       </button>
       {error && <p className="mt-2 rounded-lg bg-destructive/10 p-2 text-[11px] text-destructive">{error}</p>}
       <p className="mt-2 text-center text-[10px] text-muted-foreground">
-        Al confirmar el pago te avisamos por WhatsApp y coordinamos el envío.
+        Si no te redirige automáticamente, tocá el botón azul.
       </p>
     </div>
   );
 }
+
 
