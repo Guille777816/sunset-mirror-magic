@@ -278,7 +278,7 @@ function Index() {
           <p className="mb-6 text-center text-sm text-muted-foreground">
             Fijate en el flanco de tu cubierta: <strong>ancho / alto R aro</strong> (ej. 175/70R14).
           </p>
-          <div className="mx-auto mb-6 max-w-3xl overflow-hidden rounded-2xl bg-card p-3 shadow-[var(--shadow-product)] md:max-w-5xl md:p-6">
+          <div className="mx-auto mb-6 max-w-3xl overflow-hidden rounded-2xl bg-card p-3 shadow-[var(--shadow-product)] md:max-w-3xl md:p-4">
             <img
               src={MEDIDA_IMG_URL}
               alt="Cómo conocer la medida de sus cubiertas: ancho, alto y aro"
