@@ -278,14 +278,33 @@ function Index() {
           <p className="mb-6 text-center text-sm text-muted-foreground">
             Fijate en el flanco de tu cubierta: <strong>ancho / alto R aro</strong> (ej. 175/70R14).
           </p>
-          <div className="mx-auto mb-6 max-w-3xl overflow-hidden rounded-2xl bg-card p-3 shadow-[var(--shadow-product)] md:max-w-3xl md:p-4">
+          <div className="mx-auto mb-6 grid max-w-4xl items-center gap-6 overflow-hidden rounded-2xl bg-card p-4 shadow-[var(--shadow-product)] md:grid-cols-2 md:p-6">
             <img
               src={MEDIDA_IMG_URL}
               alt="Cómo conocer la medida de sus cubiertas: ancho, alto y aro"
-              className="mx-auto w-full max-w-xl object-contain md:max-w-2xl"
+              className="mx-auto w-full max-w-sm object-contain md:max-w-md"
               loading="lazy"
               decoding="async"
             />
+            <div className="text-center md:text-left">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-primary md:text-sm">
+                Cómo conocer la medida de sus cubiertas
+              </p>
+              <div className="flex items-end justify-center gap-4 md:justify-start md:gap-6">
+                <div className="text-center">
+                  <span className="block text-4xl font-black leading-none text-secondary md:text-5xl">175</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground md:text-sm">Ancho</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-4xl font-black leading-none text-secondary md:text-5xl">70</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground md:text-sm">Alto</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-4xl font-black leading-none text-secondary md:text-5xl">14</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground md:text-sm">Aro</span>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="mx-auto grid max-w-5xl gap-4 rounded-2xl bg-card p-6 shadow-[var(--shadow-product)] md:grid-cols-[1fr_1fr_1fr_auto]">
             <Select label="Ancho" value={w} onChange={setW} options={widths} />
