@@ -282,7 +282,7 @@ function Index() {
             <img
               src={MEDIDA_IMG_URL}
               alt="Cómo conocer la medida de sus cubiertas: ancho, alto y aro"
-              className="mx-auto w-full max-w-xl object-contain md:max-w-none"
+              className="mx-auto w-full max-w-xl object-contain md:max-w-2xl"
               loading="lazy"
               decoding="async"
             />
