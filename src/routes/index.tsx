@@ -622,6 +622,69 @@ function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow:
   );
 }
 
+function CategorySection({ slug, label, items, onBack }: { slug: string; label: string; items: any[]; onBack: () => void }) {
+  const [q, setQ] = useState("");
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return items;
+    const tokens = term.split(/\s+/).filter(Boolean);
+    return items.filter((p) => {
+      const hay = `${p.brand ?? ""} ${p.model ?? ""} ${p.size ?? ""}`.toLowerCase();
+      return tokens.every((t) => hay.includes(t));
+    });
+  }, [items, q]);
+  return (
+    <section id={`cat-${slug}`} className="bg-muted py-12">
+      <div className="container mx-auto px-4">
+        <div className="mb-6 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Categoría</p>
+            <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{label}</h2>
+            <p className="text-sm text-muted-foreground">{filtered.length} producto{filtered.length !== 1 ? "s" : ""}{q ? ` de ${items.length}` : ""}</p>
+          </div>
+          <button onClick={onBack} className="rounded-full border px-4 py-2 text-xs font-bold uppercase text-secondary hover:bg-background">
+            ← Volver al inicio
+          </button>
+        </div>
+        <div className="mb-6">
+          <div className="relative max-w-xl">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar por marca o medida (ej: Michelin, 285/45R22, 285)"
+              className="w-full rounded-full border bg-background py-3 pl-10 pr-10 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            {q && (
+              <button
+                onClick={() => setQ("")}
+                aria-label="Limpiar búsqueda"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+        {items.length === 0 ? (
+          <p className="rounded-2xl bg-background p-8 text-center text-sm text-muted-foreground">
+            Todavía no hay productos en esta categoría.
+          </p>
+        ) : filtered.length === 0 ? (
+          <p className="rounded-2xl bg-background p-8 text-center text-sm text-muted-foreground">
+            No se encontraron productos con esa búsqueda.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {filtered.map((p) => <ProductCard key={p.id} p={p} />)}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function AutoCarousel({ id, eyebrow, title, items, bg, direction = "left" }: { id: string; eyebrow: string; title: string; items: any[]; bg: string; direction?: "left" | "right" }) {
   // Duplicamos los items para conseguir el efecto de scroll infinito
   const loop = [...items, ...items];
