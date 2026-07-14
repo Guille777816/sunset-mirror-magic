@@ -62,7 +62,23 @@ function ProductDetail() {
         </Link>
         <div className="grid gap-8 md:grid-cols-2">
           <div className="overflow-hidden rounded-2xl bg-muted shadow-[var(--shadow-product)]">
-            <img src={p.image_url || categoryImg[p.category] || tireCar} alt={`${p.brand} ${p.model}`} className="aspect-square w-full object-cover" />
+            <img
+              src={p.image_url ? (/^https?:\/\//i.test(p.image_url) && !p.image_url.includes("/storage/v1/") ? `https://images.weserv.nl/?url=${encodeURIComponent(p.image_url.replace(/^https?:\/\//i, ""))}&w=900&q=80&output=webp` : p.image_url) : (categoryImg[p.category] || tireCar)}
+              alt={`${p.brand} ${p.model}`}
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const el = e.currentTarget;
+                const original = p.image_url || "";
+                const placeholder = categoryImg[p.category] || tireCar;
+                if (original && el.src !== original && !el.dataset.triedOriginal) {
+                  el.dataset.triedOriginal = "1";
+                  el.src = original;
+                } else if (el.src !== placeholder) {
+                  el.src = placeholder;
+                }
+              }}
+              className="aspect-square w-full object-cover"
+            />
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{p.brand}</p>
