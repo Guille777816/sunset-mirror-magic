@@ -49,14 +49,19 @@ const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
 
-// Optimiza URLs de Supabase Storage usando el endpoint de transformación (redimensiona en el CDN)
+// Optimiza URLs: Supabase Storage usa el endpoint de render; URLs externas
+// (sunset.com.py, fate.com.ar, etc.) se enrutan por images.weserv.nl para
+// evitar bloqueos de hotlinking (Referer) y servir con CDN + resize.
 function optimizeImg(url: string | undefined | null, width: number, quality = 70): string {
   if (!url) return "";
-  // Reescribe /storage/v1/object/public/... -> /storage/v1/render/image/public/...?width=..&quality=..
   if (url.includes("/storage/v1/object/public/")) {
     const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
     const sep = rewritten.includes("?") ? "&" : "?";
     return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
+  }
+  if (/^https?:\/\//i.test(url)) {
+    const clean = url.replace(/^https?:\/\//i, "");
+    return `https://images.weserv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp`;
   }
   return url;
 }
