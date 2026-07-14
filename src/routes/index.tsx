@@ -550,16 +550,23 @@ function ProductCard({ p }: { p: any }) {
           </span>
         )}
         <img
-          src={optimizeImg(p.image_url, 500) || p.image_url || categoryImg[p.category] || tireCar}
+          src={optimizeImg(p.image_url, 500) || categoryImg[p.category] || tireCar}
           alt={`${p.brand} ${p.model}`}
           loading="lazy"
           decoding="async"
+          referrerPolicy="no-referrer"
           width={500}
           height={500}
           onError={(e) => {
             const el = e.currentTarget;
-            const fallback = p.image_url || categoryImg[p.category] || tireCar;
-            if (el.src !== fallback) el.src = fallback;
+            const original = p.image_url || "";
+            const placeholder = categoryImg[p.category] || tireCar;
+            if (original && el.src !== original && !el.dataset.triedOriginal) {
+              el.dataset.triedOriginal = "1";
+              el.src = original;
+            } else if (el.src !== placeholder) {
+              el.src = placeholder;
+            }
           }}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
