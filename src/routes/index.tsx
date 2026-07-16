@@ -127,14 +127,25 @@ function Index() {
   // Search filter
   const searchResults = useMemo(() => {
     if (!searchActive) return [];
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Normaliza espacios y separadores raros dentro de la medida
+    const norm = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
+    // Ancho: número al inicio (posiblemente con prefijo LT), seguido de / o - o espacio
+    const widthRe = w === "Todos" ? null : new RegExp(`(^|\\s|LT)${esc(w)}(?=[\\s/\\-])`, "i");
+    // Alto: número después de "/" y antes de R, - o espacio
+    const heightRe = h === "Todos" ? null : new RegExp(`/\\s*${esc(h)}(?=\\s*[R\\-\\s])`, "i");
+    // Aro: después de R, - o espacio, y sin más dígitos pegados
+    const rimStripped = r.replace(/^0+(?=\d)/, ""); // "08" -> "8"
+    const rimRe = r === "Todos" ? null : new RegExp(`(R|-|\\s)${esc(rimStripped)}(?![0-9.])`, "i");
     return (products as any[]).filter((p) => {
-      const size = String(p.size || "");
-      if (w !== "Todos" && !size.includes(w)) return false;
-      if (h !== "Todos" && !size.includes(h)) return false;
-      if (r !== "Todos" && !new RegExp(`\\b${r}\\b|R${r}\\b`).test(size)) return false;
+      const size = norm(p.size);
+      if (widthRe && !widthRe.test(size)) return false;
+      if (heightRe && !heightRe.test(size)) return false;
+      if (rimRe && !rimRe.test(size)) return false;
       return true;
     });
   }, [products, w, h, r, searchActive]);
+
 
   // Solo productos destacados (promo) en la portada
   const featured = useMemo(
