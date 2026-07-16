@@ -110,6 +110,11 @@ function ProductDetail() {
                 </a>
               )}
             </div>
+            <div className="mt-8 flex items-center gap-6 border-t border-border/60 pt-6">
+              <img src={inmetroAsset.url} alt="INMETRO" className="h-14 w-auto object-contain" />
+              <img src={tuvAsset.url} alt="TÜV SÜD" className="h-14 w-auto object-contain" />
+              <img src={garantiaAsset.url} alt="Garantía 5 años" className="h-14 w-auto object-contain" />
+            </div>
           </div>
         </div>
       </div>
