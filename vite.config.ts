@@ -2,12 +2,17 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
+import { tanstackStart } from "@tanstack/start-plugin";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), tsConfigPaths()],
-  base: "/",
-  build: {
-    outDir: "dist",
-    emptyOutDir: true,
-  },
+  plugins: [
+    tanstackStart({
+      server: {
+        preset: "vercel",
+      },
+    }),
+    react(),
+    tailwindcss(),
+    tsConfigPaths(),
+  ],
 });
