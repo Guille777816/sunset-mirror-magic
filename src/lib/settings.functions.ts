@@ -1,27 +1,45 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase } from "@/integrations/supabase/client";
 
-// Campos sensibles que NO se exponen públicamente
-const SENSITIVE_FIELDS = ["bank_name", "bank_holder", "bank_cbu", "bank_alias", "bank_extra", "cuit"] as const;
+// Pública: usada por el sitio. Lee de una vista de DB que ya excluye
+// datos bancarios y CUIT a nivel de base de datos (no solo en el código),
+// así que funciona con la key pública, sin necesitar la service role key.
+type PublicSettings = {
+  id: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  address: string;
+  business_name: string;
+  instagram: string;
+  facebook: string;
+  hours: string;
+  hero_eyebrow: string;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_description: string;
+  promo_banner: string;
+  logo_url: string;
+  hero_image_url: string;
+  category_images: Record<string, string>;
+  rate_usd: number;
+  rate_brl: number;
+  rate_pyg: number;
+  updated_at: string;
+} | null;
 
-function stripSensitive<T extends Record<string, any> | null>(row: T): T {
-  if (!row) return row;
-  const out: any = { ...row };
-  for (const f of SENSITIVE_FIELDS) delete out[f];
-  return out;
-}
-
-// Pública: usada por el sitio. NUNCA devuelve datos bancarios ni CUIT.
 export const getSettings = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await supabaseAdmin
-    .from("site_settings")
+  // "site_settings_public" is a DB view (not in the auto-generated types yet),
+  // so we cast the client here to keep the rest of the app's typing intact.
+  const { data, error } = await (supabase as any)
+    .from("site_settings_public")
     .select("*")
     .eq("id", "main")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return stripSensitive(data);
+  return data as PublicSettings;
 });
 
 // Admin: incluye datos bancarios para edición en el panel.
@@ -32,7 +50,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
     const { data: role } = await supabase
       .from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
     if (!role) throw new Error("No autorizado");
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("site_settings").select("*").eq("id", "main").maybeSingle();
     if (error) throw new Error(error.message);
     return data;
@@ -78,7 +96,7 @@ export const updateSettings = createServerFn({ method: "POST" })
       .eq("role", "admin")
       .maybeSingle();
     if (!role) throw new Error("No autorizado");
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from("site_settings")
       .update({ ...data, updated_at: new Date().toISOString() })
       .eq("id", "main");
