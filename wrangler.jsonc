@@ -6,5 +6,13 @@
   "main": "@tanstack/react-start/server-entry",
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "SUPABASE_URL": "https://ispoqgfpkhckbzvlqzds.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcG9xZ2Zwa2hja2J6dmxxemRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDkzOTMsImV4cCI6MjA5NTU4NTM5M30.CDEdTIJzmFpnwMgQ0VhDa9nWZf10XbTextoyIlBXKHU",
+    "SUPABASE_PROJECT_ID": "ispoqgfpkhckbzvlqzds",
+    "VITE_SUPABASE_URL": "https://ispoqgfpkhckbzvlqzds.supabase.co",
+    "VITE_SUPABASE_PUBLISHABLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcG9xZ2Zwa2hja2J6dmxxemRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDkzOTMsImV4cCI6MjA5NTU4NTM5M30.CDEdTIJzmFpnwMgQ0VhDa9nWZf10XbTextoyIlBXKHU",
+    "VITE_SUPABASE_PROJECT_ID": "ispoqgfpkhckbzvlqzds"
   }
 }
