@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase } from "@/integrations/supabase/client";
 
 export const listPublicBanners = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from("banners")
     .select("id, title, subtitle, image_url, link_url, sort_order")
     .eq("is_active", true)
@@ -28,7 +28,7 @@ export const listAllBanners = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await context.supabase
       .from("banners")
       .select("*")
       .order("sort_order", { ascending: true })
@@ -54,11 +54,11 @@ export const upsertBanner = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId);
     const { id, ...rest } = data;
     if (id) {
-      const { error } = await supabaseAdmin.from("banners").update(rest).eq("id", id);
+      const { error } = await context.supabase.from("banners").update(rest).eq("id", id);
       if (error) throw new Error(error.message);
       return { id };
     }
-    const { data: created, error } = await supabaseAdmin
+    const { data: created, error } = await context.supabase
       .from("banners")
       .insert(rest)
       .select("id")
@@ -72,7 +72,7 @@ export const deleteBanner = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { error } = await supabaseAdmin.from("banners").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("banners").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
