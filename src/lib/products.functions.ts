@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase } from "@/integrations/supabase/client";
 
 export const listPublicProducts = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from("products")
     .select("*")
     .eq("is_active", true)
@@ -43,9 +43,9 @@ async function assertAdmin(supabase: any, userId: string) {
 export const listAllProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    await assertAdmin(supabase, userId);
-    const { data, error } = await supabaseAdmin
+    const { supabase: supabaseAuthed, userId } = context;
+    await assertAdmin(supabaseAuthed, userId);
+    const { data, error } = await supabaseAuthed
       .from("products")
       .select("*")
       .order("created_at", { ascending: false });
@@ -57,15 +57,15 @@ export const upsertProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => productSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    await assertAdmin(supabase, userId);
+    const { supabase: supabaseAuthed, userId } = context;
+    await assertAdmin(supabaseAuthed, userId);
     const { id, ...rest } = data;
     if (id) {
-      const { error } = await supabaseAdmin.from("products").update(rest).eq("id", id);
+      const { error } = await supabaseAuthed.from("products").update(rest).eq("id", id);
       if (error) throw new Error(error.message);
       return { id };
     }
-    const { data: created, error } = await supabaseAdmin
+    const { data: created, error } = await supabaseAuthed
       .from("products")
       .insert(rest)
       .select("id")
@@ -78,9 +78,9 @@ export const deleteProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    await assertAdmin(supabase, userId);
-    const { error } = await supabaseAdmin.from("products").delete().eq("id", data.id);
+    const { supabase: supabaseAuthed, userId } = context;
+    await assertAdmin(supabaseAuthed, userId);
+    const { error } = await supabaseAuthed.from("products").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
