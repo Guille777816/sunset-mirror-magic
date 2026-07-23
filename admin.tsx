@@ -63,7 +63,7 @@ function AdminPage() {
   const save = useServerFn(upsertProduct);
   const remove = useServerFn(deleteProduct);
 
-  useEffect(() => {
+   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) { navigate({ to: "/login", replace: true }); return; }
       try { const r = await checkAdmin(); setIsAdmin(r.isAdmin); } catch { setIsAdmin(false); }
