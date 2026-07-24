@@ -68,15 +68,38 @@ function AdminPage() {
   const remove = useServerFn(deleteProduct);
 
   useEffect(() => {
-      /* DESACTIVAMOS EL LOGIN DE SUPABASE PARA ENTRAR DIRECTO
+        const [ready, setReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [tab, setTab] = useState<Tab>("productos");
+  const [filterCat, setFilterCat] = useState<string>("todas");
+
+  const fetchAll = useServerFn(listAllProducts);
+  const save = useServerFn(upsertProduct);
+  const remove = useServerFn(deleteProduct);
+
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!data.session) { navigate({ to: "/login", replace: true }); return; }
-      try { const r = await checkAdmin(); setIsAdmin(r.isAdmin); } catch { setIsAdmin(false); }
+    const checkAdminStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate({ to: "/login", replace: true });
+        return;
+      }
+      try {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single();
+        setIsAdmin(roleData?.role === "admin");
+      } catch (e) {
+        setIsAdmin(false);
+      }
       setReady(true);
-    });
-  }, [navigate, checkAdmin]);
-  */
+    };
+    checkAdminStatus();
+  }, [navigate]);
+
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products"],
     queryFn: () => fetchAll(),
