@@ -1445,4 +1445,3 @@ function TestimonialRow({
     </div>
   );
 }
-
