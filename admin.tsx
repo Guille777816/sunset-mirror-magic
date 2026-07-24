@@ -51,28 +51,20 @@ type Tab = "productos" | "pedidos" | "banners" | "testimonios" | "imagenes" | "a
 function AdminPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [ready, setReady] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(true);
-  const [editing, setEditing] = useState<Product | null>(null);
-  const [tab, setTab] = useState<Tab>("productos");
-  const [filterCat, setFilterCat] = useState<string>("todas");
-
-  const checkAdmin = useServerFn(checkIsAdmin);
-  const fetchAll = useServerFn(listAllProducts);
-  const save = useServerFn(upsertProduct);
-  const remove = useServerFn(deleteProduct);
-
-  useEffect(() => {
-        const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(false;
   const [isAdmin, setIsAdmin] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [tab, setTab] = useState<Tab>("productos");
   const [filterCat, setFilterCat] = useState<string>("todas");
 
+const checkAdmin = useServerFn(checkIsAdmin);  
+
   const fetchAll = useServerFn(listAllProducts);
   const save = useServerFn(upsertProduct);
   const remove = useServerFn(deleteProduct);
 
+   
+                                                   
   useEffect(() => {
     const checkAdminStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
