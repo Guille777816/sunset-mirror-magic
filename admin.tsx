@@ -3,12 +3,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  listAllProducts,
-  upsertProduct,
-  deleteProduct,
-  checkIsAdmin,
-} from "@/lib/products.functions";
+import { listAllProducts, upsertProduct, deleteProduct } from "@/lib/products.functions";
 import { getSettings, getAdminSettings, updateSettings } from "@/lib/settings.functions";
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
