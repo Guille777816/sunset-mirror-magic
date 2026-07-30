@@ -419,12 +419,16 @@ function Index() {
       )}
 
       {/* Estado vacío */}
-      {!searchActive && featured.length === 0 && autos.length === 0 && camionetas.length === 0 && camiones.length === 0 && (
-        <section className="py-12 text-center text-muted-foreground">
-          <p>Todavía no hay productos cargados. Agregalos desde el panel admin.</p>
-        </section>
-      )}
-
+     {!searchActive && productsLoading && (
+  <section className="py-12 text-center text-muted-foreground">
+    <p>Cargando productos...</p>
+  </section>
+)}
+{!searchActive && !productsLoading && featured.length === 0 && autos.length === 0 && camionetas.length === 0 && camiones.length === 0 && (
+  <section className="py-12 text-center text-muted-foreground">
+    <p>Todavía no hay productos cargados. Agregalos desde el panel admin.</p>
+  </section>
+)}
       {/* Sección de categoría activa (solo cuando el usuario hace click en una categoría) */}
       {!searchActive && activeCategory && (() => {
         const c = CATEGORY_CONFIG.find((x) => x.slug === activeCategory);
