@@ -275,8 +275,7 @@ function AdminPage() {
                   {filteredProducts.length === 0 && (
                     <tr>
                       <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
-                        {filterCat === "todas" ? "No hay productos cargados aún." : `No hay productos en la categoría ${CATEGORY_LABELS[filterCat]}.`}
-                      </td>
+                        {productsLoading ? "Cargando productos..." : (filterCat === "todas" ? "No hay productos cargados aún." : `No hay productos en la categoría ${CATEGORY_LABELS[filterCat]}.`)}
                     </tr>
                   )}
                 </tbody>
