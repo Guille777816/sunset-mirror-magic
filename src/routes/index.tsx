@@ -100,7 +100,7 @@ function Index() {
   const fetchProducts = useServerFn(listPublicProducts);
   const fetchSettings = useServerFn(getSettings);
   const fetchBanners = useServerFn(listPublicBanners);
-  const { data: products = [] } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery({ 
     queryKey: ["public-products"],
     queryFn: () => fetchProducts(),
   });
