@@ -87,7 +87,7 @@ const checkAdmin = useServerFn(checkIsAdmin);
     checkAdminStatus();
   }, [navigate]);
 
-  const { data: products = [] } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: () => fetchAll(),
     enabled: ready && isAdmin,
