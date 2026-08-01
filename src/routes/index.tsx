@@ -34,8 +34,24 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Cubiertas para autos, camionetas, camiones y agro. Envíos a toda la Argentina." },
     ],
   }),
+  // Carga los datos en el servidor: la portada llega al navegador con los
+  // productos ya renderizados, sin la espera de 3-5 s del fetch en el cliente.
+  loader: async () => {
+    const [products, settings, banners, testimonials] = await Promise.all([
+      listPublicProducts(),
+      getSettings().catch(() => null),
+      listPublicBanners().catch(() => []),
+      listApprovedTestimonials().catch(() => []),
+    ]);
+    return { products, settings, banners, testimonials };
+  },
+  staleTime: 60_000,
+  errorComponent: ({ error }) => (
+    <div role="alert" className="p-8 text-center">{error.message}</div>
+  ),
   component: Index,
 });
+
 
 const CATEGORY_CONFIG = [
   { slug: "autos",        label: "Autos",        img: tireCar },
@@ -97,17 +113,36 @@ function Index() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const initial = Route.useLoaderData();
   const fetchProducts = useServerFn(listPublicProducts);
   const fetchSettings = useServerFn(getSettings);
   const fetchBanners = useServerFn(listPublicBanners);
-  const { data: products = [], isLoading: productsLoading } = useQuery({ 
+  const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["public-products"],
     queryFn: () => fetchProducts(),
+    initialData: initial.products as any,
+    staleTime: 60_000,
   });
-  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: () => fetchSettings() });
-  const { data: banners = [] } = useQuery({ queryKey: ["public-banners"], queryFn: () => fetchBanners() });
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => fetchSettings(),
+    initialData: initial.settings as any,
+    staleTime: 60_000,
+  });
+  const { data: banners = [] } = useQuery({
+    queryKey: ["public-banners"],
+    queryFn: () => fetchBanners(),
+    initialData: initial.banners as any,
+    staleTime: 60_000,
+  });
   const fetchTestimonials = useServerFn(listApprovedTestimonials);
-  const { data: testimonials = [] } = useQuery({ queryKey: ["public-testimonials"], queryFn: () => fetchTestimonials() });
+  const { data: testimonials = [] } = useQuery({
+    queryKey: ["public-testimonials"],
+    queryFn: () => fetchTestimonials(),
+    initialData: initial.testimonials as any,
+    staleTime: 60_000,
+  });
+
 
   // Sync rates from settings so the currency switcher converts using admin-managed values
   useEffect(() => {

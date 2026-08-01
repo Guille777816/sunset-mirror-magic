@@ -67,8 +67,7 @@ function AdminPage() {
   const save = useServerFn(upsertProduct);
   const remove = useServerFn(deleteProduct);
 
-  useEffect(() => {
-      /* DESACTIVAMOS EL LOGIN DE SUPABASE PARA ENTRAR DIRECTO
+  /* DESACTIVAMOS EL LOGIN DE SUPABASE PARA ENTRAR DIRECTO
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) { navigate({ to: "/login", replace: true }); return; }
@@ -77,11 +76,12 @@ function AdminPage() {
     });
   }, [navigate, checkAdmin]);
   */
-  const { data: products = [] } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: () => fetchAll(),
     enabled: ready && isAdmin,
   });
+
 
   const saveMut = useMutation({
     mutationFn: (p: Product) => save({ data: p }),
@@ -276,7 +276,9 @@ function AdminPage() {
                     <tr>
                       <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
                         {productsLoading ? "Cargando productos..." : (filterCat === "todas" ? "No hay productos cargados aún." : `No hay productos en la categoría ${CATEGORY_LABELS[filterCat]}.`)}
+                      </td>
                     </tr>
+
                   )}
                 </tbody>
               </table>

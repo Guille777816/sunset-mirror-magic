@@ -4,15 +4,17 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabase } from "@/integrations/supabase/client";
 
 export const listPublicProducts = createServerFn({ method: "GET" }).handler(async () => {
+  // Sólo las columnas que usa la vitrina: evita mandar textos largos y acelera la carga.
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select("id,brand,model,size,category,price_ars,stock,image_url,is_featured,free_shipping")
     .eq("is_active", true)
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return data ?? [];
 });
+
 
 const productSchema = z.object({
   id: z.string().uuid().optional(),
