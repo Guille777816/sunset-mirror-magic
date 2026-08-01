@@ -295,7 +295,78 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      site_settings_public: {
+        Row: {
+          address: string | null
+          business_name: string | null
+          category_images: Json | null
+          email: string | null
+          facebook: string | null
+          hero_description: string | null
+          hero_eyebrow: string | null
+          hero_image_url: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
+          hours: string | null
+          id: string | null
+          instagram: string | null
+          logo_url: string | null
+          phone: string | null
+          promo_banner: string | null
+          rate_brl: number | null
+          rate_pyg: number | null
+          rate_usd: number | null
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name?: string | null
+          category_images?: Json | null
+          email?: string | null
+          facebook?: string | null
+          hero_description?: string | null
+          hero_eyebrow?: string | null
+          hero_image_url?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          hours?: string | null
+          id?: string | null
+          instagram?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          promo_banner?: string | null
+          rate_brl?: number | null
+          rate_pyg?: number | null
+          rate_usd?: number | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string | null
+          category_images?: Json | null
+          email?: string | null
+          facebook?: string | null
+          hero_description?: string | null
+          hero_eyebrow?: string | null
+          hero_image_url?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          hours?: string | null
+          id?: string | null
+          instagram?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          promo_banner?: string | null
+          rate_brl?: number | null
+          rate_pyg?: number | null
+          rate_usd?: number | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
