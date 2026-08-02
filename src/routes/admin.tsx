@@ -87,7 +87,7 @@ function AdminPage() {
     });
   }, [navigate]);
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery({
     queryKey: ["admin-products"],
     queryFn: () => fetchAll(),
     enabled: ready && isAdmin,
@@ -291,7 +291,11 @@ function AdminPage() {
                   {filteredProducts.length === 0 && (
                     <tr>
                       <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
-                        {productsLoading ? "Cargando productos..." : (filterCat === "todas" ? "No hay productos cargados aún." : `No hay productos en la categoría ${CATEGORY_LABELS[filterCat]}.`)}
+                        {productsLoading
+                          ? "Cargando productos..."
+                          : productsError
+                            ? `No se pudieron cargar los productos: ${productsError instanceof Error ? productsError.message : "error desconocido"}`
+                            : (filterCat === "todas" ? "No hay productos cargados aún." : `No hay productos en la categoría ${CATEGORY_LABELS[filterCat]}.`)}
                       </td>
                     </tr>
 
