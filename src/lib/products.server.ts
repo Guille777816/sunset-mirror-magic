@@ -1,18 +1,19 @@
 export async function assertAdmin(
-  supabase: {
-    from: (table: "user_roles") => {
-      select: (columns: "role") => {
-        eq: (column: "user_id", value: string) => {
-          eq: (column: "role", value: "admin") => {
-            maybeSingle: () => Promise<{ data: unknown; error: { message: string } | null }>;
+  supabase: unknown,
+  userId: string,
+) {
+  const client = supabase as {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (column: string, value: string) => {
+          eq: (column: string, value: string) => {
+            maybeSingle: () => PromiseLike<{ data: unknown; error: { message: string } | null }>;
           };
         };
       };
     };
-  },
-  userId: string,
-) {
-  const { data, error } = await supabase
+  };
+  const { data, error } = await client
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
