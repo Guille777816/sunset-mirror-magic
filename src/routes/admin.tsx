@@ -7,7 +7,7 @@ import {
   listAllProducts,
   upsertProduct,
   deleteProduct,
-  checkIsAdmin,
+  
 } from "@/lib/products.functions";
 import { getSettings, getAdminSettings, updateSettings } from "@/lib/settings.functions";
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
