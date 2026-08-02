@@ -58,22 +58,34 @@ function AdminPage() {
   const qc = useQueryClient();
   const [ready, setReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Product | null>(null);
   const [tab, setTab] = useState<Tab>("productos");
   const [filterCat, setFilterCat] = useState<string>("todas");
 
-  const checkAdmin = useServerFn(checkIsAdmin);
   const fetchAll = useServerFn(listAllProducts);
   const save = useServerFn(upsertProduct);
   const remove = useServerFn(deleteProduct);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
-      if (!data.session) { navigate({ to: "/login", replace: true }); return; }
-      try { const r = await checkAdmin(); setIsAdmin(r.isAdmin); } catch { setIsAdmin(false); }
+      const session = data.session;
+      if (!session) { navigate({ to: "/login", replace: true }); return; }
+      const { data: role, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (error) {
+        setAuthError(error.message);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(!!role);
+      }
       setReady(true);
     });
-  }, [navigate, checkAdmin]);
+  }, [navigate]);
 
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["admin-products"],
@@ -111,12 +123,16 @@ function AdminPage() {
           <code className="rounded bg-muted px-1">user_roles</code> con tu user_id y rol{" "}
           <code className="rounded bg-muted px-1">admin</code>.
         </p>
+        {authError && (
+          <p className="mt-3 text-xs text-destructive">Detalle: {authError}</p>
+        )}
         <Link to="/" className="mt-6 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground">
           Volver al inicio
         </Link>
       </div>
     );
   }
+
 
   const filteredProducts = filterCat === "todas"
     ? (products as Product[])
