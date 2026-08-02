@@ -56,7 +56,7 @@ type Tab = "productos" | "pedidos" | "banners" | "testimonios" | "imagenes" | "a
 function AdminPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [ready, setReady] = useState(true);
+  const [ready, setReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(true);
   const [editing, setEditing] = useState<Product | null>(null);
   const [tab, setTab] = useState<Tab>("productos");
@@ -67,7 +67,6 @@ function AdminPage() {
   const save = useServerFn(upsertProduct);
   const remove = useServerFn(deleteProduct);
 
-  /* DESACTIVAMOS EL LOGIN DE SUPABASE PARA ENTRAR DIRECTO
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) { navigate({ to: "/login", replace: true }); return; }
@@ -75,12 +74,13 @@ function AdminPage() {
       setReady(true);
     });
   }, [navigate, checkAdmin]);
-  */
+
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: () => fetchAll(),
     enabled: ready && isAdmin,
   });
+
 
 
   const saveMut = useMutation({
