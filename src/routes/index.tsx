@@ -12,7 +12,6 @@ import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
 import leRadialHeaderAsset from "@/assets/le-radial-header.jpg.asset.json";
 import leRadialCircleAsset from "@/assets/le-radial-circle.png.asset.json";
-import medidaAsset from "@/assets/medida-cubiertas.webp.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
 import { getSettings } from "@/lib/settings.functions";
@@ -23,7 +22,6 @@ import { useCurrency, CURRENCIES, type Currency } from "@/lib/currency";
 
 const HEADER_LOGO_URL = leRadialHeaderAsset.url;
 const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
-const MEDIDA_IMG_URL = medidaAsset.url;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -329,34 +327,8 @@ function Index() {
           <p className="mb-6 text-center text-sm text-muted-foreground">
             Fijate en el flanco de tu cubierta: <strong>ancho / alto R aro</strong> (ej. 175/70R14).
           </p>
-          <div className="mx-auto mb-6 grid max-w-4xl items-center gap-6 overflow-hidden rounded-2xl bg-card p-4 shadow-[var(--shadow-product)] md:grid-cols-2 md:p-6">
-            <img
-              src={MEDIDA_IMG_URL}
-              alt="Cómo conocer la medida de sus cubiertas: ancho, alto y aro"
-              className="mx-auto w-full max-w-sm object-contain md:max-w-md"
-              loading="lazy"
-              decoding="async"
-            />
-            <div className="text-center md:text-left">
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-primary md:text-sm">
-                Cómo conocer la medida de sus cubiertas
-              </p>
-              <div className="flex items-end justify-center gap-4 md:justify-start md:gap-6">
-                <div className="text-center">
-                  <span className="block text-4xl font-black leading-none text-secondary md:text-5xl">175</span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground md:text-sm">Ancho</span>
-                </div>
-                <div className="text-center">
-                  <span className="block text-4xl font-black leading-none text-secondary md:text-5xl">70</span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground md:text-sm">Alto</span>
-                </div>
-                <div className="text-center">
-                  <span className="block text-4xl font-black leading-none text-secondary md:text-5xl">14</span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground md:text-sm">Aro</span>
-                </div>
-              </div>
-            </div>
-          </div>
+
+
           <div className="mx-auto grid max-w-5xl gap-4 rounded-2xl bg-card p-6 shadow-[var(--shadow-product)] md:grid-cols-[1fr_1fr_1fr_auto]">
             <Select label="Ancho" value={w} onChange={setW} options={widths} />
             <Select label="Alto" value={h} onChange={setH} options={heights} />
