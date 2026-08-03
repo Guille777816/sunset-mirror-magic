@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireAuth as requireSupabaseAuth } from "@/lib/supabase-auth.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabase } from "@/integrations/supabase/client";
 
 export const listPublicBanners = createServerFn({ method: "GET" }).handler(async () => {

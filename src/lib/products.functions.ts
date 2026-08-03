@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireAuth as requireSupabaseAuth } from "@/lib/supabase-auth.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabase } from "@/integrations/supabase/client";
 import { productIdSchema, productSchema } from "@/lib/products.schema";
 import { assertAdmin } from "@/lib/products.server";
