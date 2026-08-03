@@ -12,7 +12,6 @@ import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
 import leRadialHeaderAsset from "@/assets/le-radial-header.jpg.asset.json";
 import leRadialCircleAsset from "@/assets/le-radial-circle.png.asset.json";
-import medidaAsset from "@/assets/medida-cubiertas.webp.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
 import { getSettings } from "@/lib/settings.functions";
@@ -23,7 +22,6 @@ import { useCurrency, CURRENCIES, type Currency } from "@/lib/currency";
 
 const HEADER_LOGO_URL = leRadialHeaderAsset.url;
 const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
-const MEDIDA_IMG_URL = medidaAsset.url;
 
 export const Route = createFileRoute("/")({
   head: () => ({
