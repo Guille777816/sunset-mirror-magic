@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProductoIdRouteImport } from './routes/producto.$id'
+import { Route as ApiPublicCatalogoRouteImport } from './routes/api/public/catalogo'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const ProductoIdRoute = ProductoIdRouteImport.update({
   path: '/producto/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCatalogoRoute = ApiPublicCatalogoRouteImport.update({
+  id: '/api/public/catalogo',
+  path: '/api/public/catalogo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   id: '/api/public/mp-webhook',
   path: '/api/public/mp-webhook',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/producto/$id': typeof ProductoIdRoute
+  '/api/public/catalogo': typeof ApiPublicCatalogoRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/producto/$id': typeof ProductoIdRoute
+  '/api/public/catalogo': typeof ApiPublicCatalogoRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRoutesById {
@@ -61,20 +69,33 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/producto/$id': typeof ProductoIdRoute
+  '/api/public/catalogo': typeof ApiPublicCatalogoRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/admin' | '/login' | '/producto/$id' | '/api/public/mp-webhook'
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/producto/$id'
+    | '/api/public/catalogo'
+    | '/api/public/mp-webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/login' | '/producto/$id' | '/api/public/mp-webhook'
+  to:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/producto/$id'
+    | '/api/public/catalogo'
+    | '/api/public/mp-webhook'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/login'
     | '/producto/$id'
+    | '/api/public/catalogo'
     | '/api/public/mp-webhook'
   fileRoutesById: FileRoutesById
 }
@@ -83,6 +104,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
   ProductoIdRoute: typeof ProductoIdRoute
+  ApiPublicCatalogoRoute: typeof ApiPublicCatalogoRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
 }
 
@@ -116,6 +138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/catalogo': {
+      id: '/api/public/catalogo'
+      path: '/api/public/catalogo'
+      fullPath: '/api/public/catalogo'
+      preLoaderRoute: typeof ApiPublicCatalogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mp-webhook': {
       id: '/api/public/mp-webhook'
       path: '/api/public/mp-webhook'
@@ -131,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
   ProductoIdRoute: ProductoIdRoute,
+  ApiPublicCatalogoRoute: ApiPublicCatalogoRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
 }
 export const routeTree = rootRouteImport
