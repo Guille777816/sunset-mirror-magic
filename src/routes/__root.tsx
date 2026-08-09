@@ -87,6 +87,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "stylesheet", href: "https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" },
     ],
   }),
   shellComponent: RootShell,
@@ -104,6 +105,17 @@ function RootShell({ children }: { children: React.ReactNode }) {
       <body>
         {children}
         <Scripts />
+        <script
+          type="module"
+          dangerouslySetInnerHTML={{
+            __html: `
+              import Chat from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+              Chat.createChat({
+                webhookUrl: 'https://leradial.app.n8n.cloud/webhook/0f2b37b5-99e2-4e55-8609-6eab89c48888/chat'
+              });
+            `,
+          }}
+        />
       </body>
     </html>
   );
