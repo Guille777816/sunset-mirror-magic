@@ -111,7 +111,18 @@ function RootShell({ children }: { children: React.ReactNode }) {
             __html: `
               import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
               createChat({
-                webhookUrl: 'https://leradial.app.n8n.cloud/webhook/0f2b37b5-99e2-4e55-8609-6eab89c48888/chat'
+                webhookUrl: 'https://leradial.app.n8n.cloud/webhook/0f2b37b5-99e2-4e55-8609-6eab89c48888/chat',
+                initialMessages: ['¡Hola! Soy el asesor de ventas de Le Radial. ¿Qué neumáticos estás buscando?'],
+                i18n: {
+                  en: {
+                    title: 'Le Radial - Ventas de Neumáticos',
+                    subtitle: 'Atención directa de fábrica. Compra mínima: 4 unidades.',
+                    footer: '',
+                    getStarted: 'Iniciar conversación',
+                    inputPlaceholder: 'Escribí tu consulta...',
+                    closeButtonTooltip: 'Cerrar chat'
+                  }
+                }
               });
             `,
           }}
