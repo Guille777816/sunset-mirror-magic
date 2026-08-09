@@ -109,8 +109,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
           type="module"
           dangerouslySetInnerHTML={{
             __html: `
-              import Chat from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
-              Chat.createChat({
+              import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+              createChat({
                 webhookUrl: 'https://leradial.app.n8n.cloud/webhook/0f2b37b5-99e2-4e55-8609-6eab89c48888/chat'
               });
             `,
