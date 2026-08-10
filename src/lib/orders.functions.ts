@@ -54,9 +54,13 @@ export const createOrder = createServerFn({ method: "POST" })
       .eq("id", "main")
       .maybeSingle();
 
-    const { data: row, error } = await supabase
+    // El rol anónimo puede insertar pero NO leer pedidos, por eso generamos el id
+    // acá y evitamos el .select() (que dispararía un error de RLS).
+    const orderId = crypto.randomUUID();
+    const { error } = await supabase
       .from("orders")
       .insert({
+        id: orderId,
         customer_name: data.customer_name,
         customer_phone: data.customer_phone,
         customer_email: data.customer_email || null,
@@ -64,12 +68,10 @@ export const createOrder = createServerFn({ method: "POST" })
         notes: data.notes || null,
         items: verifiedItems,
         total_ars: total,
-      })
-      .select("id")
-      .single();
+      });
     if (error) throw new Error(error.message);
     return {
-      id: row.id,
+      id: orderId,
       total,
       payment: {
         bank_name: settings?.bank_name ?? "",
