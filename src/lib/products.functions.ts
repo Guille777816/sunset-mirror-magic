@@ -8,7 +8,7 @@ export const listPublicProducts = createServerFn({ method: "GET" }).handler(asyn
   // Sólo las columnas que usa la vitrina: evita mandar textos largos y acelera la carga.
   const { data, error } = await supabase
     .from("products")
-    .select("id,brand,model,size,category,price_ars,stock,image_url,is_featured,free_shipping")
+    .select("id,slug,brand,model,size,category,price_ars,stock,image_url,is_featured,free_shipping")
     .eq("is_active", true)
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false });

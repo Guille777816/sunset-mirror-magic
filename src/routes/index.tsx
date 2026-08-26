@@ -560,7 +560,7 @@ function ProductCard({ p }: { p: any }) {
   const { format } = useCurrency();
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1">
-      <Link to="/producto/$id" params={{ id: p.id }} className="relative block aspect-square overflow-hidden bg-muted">
+      <Link to="/producto/$slug" params={{ slug: p.slug }} className="relative block aspect-square overflow-hidden bg-muted">
         {p.is_featured && (
           <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
             Promo
@@ -594,7 +594,7 @@ function ProductCard({ p }: { p: any }) {
         />
       </Link>
       <div className="flex flex-1 flex-col p-4">
-        <Link to="/producto/$id" params={{ id: p.id }} className="block">
+        <Link to="/producto/$slug" params={{ slug: p.slug }} className="block">
           <p className="text-sm font-extrabold uppercase tracking-wider text-primary">{p.brand}</p>
           <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary hover:text-primary">{p.model}</h3>
           <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
@@ -603,8 +603,8 @@ function ProductCard({ p }: { p: any }) {
           <p className="text-lg font-black text-secondary">{format(Number(p.price_ars))}</p>
           <div className="mt-3 flex gap-2">
             <Link
-              to="/producto/$id"
-              params={{ id: p.id }}
+              to="/producto/$slug"
+              params={{ slug: p.slug }}
               className="flex-1 rounded-full border border-secondary/20 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-secondary hover:bg-secondary hover:text-secondary-foreground transition"
             >
               Ver

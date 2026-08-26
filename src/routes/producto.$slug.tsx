@@ -15,13 +15,13 @@ import inmetroAsset from "@/assets/inmetro.png.asset.json";
 import tuvAsset from "@/assets/tuv.png.asset.json";
 import garantiaAsset from "@/assets/garantia.png.asset.json";
 
-export const getProductById = createServerFn({ method: "GET" })
-  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+export const getProductBySlug = createServerFn({ method: "GET" })
+  .inputValidator((i: unknown) => z.object({ slug: z.string().min(1) }).parse(i))
   .handler(async ({ data }) => {
     const { data: p, error } = await supabase
       .from("products")
       .select("*")
-      .eq("id", data.id)
+      .eq("slug", data.slug)
       .eq("is_active", true)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -32,16 +32,39 @@ const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
 
-export const Route = createFileRoute("/producto/$id")({
-  head: () => ({ meta: [{ title: "Producto — Le Radial" }] }),
+export const Route = createFileRoute("/producto/$slug")({
+  loader: async ({ params }) => {
+    const product = await getProductBySlug({ data: { slug: params.slug } }).catch(() => null);
+    return { product };
+  },
+  head: ({ loaderData }) => {
+    const p = loaderData?.product as any;
+    const title = p ? `${p.brand} ${p.model} ${p.size} — Le Radial` : "Producto — Le Radial";
+    const description = p
+      ? (p.description?.slice(0, 155) || `${p.brand} ${p.model} medida ${p.size}. Comprá online en Le Radial, envíos a toda la Argentina.`)
+      : "Cubiertas y neumáticos para autos, camionetas, camiones y agro.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+      ],
+    };
+  },
   component: ProductDetail,
 });
 
 function ProductDetail() {
-  const { id } = useParams({ from: "/producto/$id" });
-  const fetchP = useServerFn(getProductById);
+  const { slug } = useParams({ from: "/producto/$slug" });
+  const fetchP = useServerFn(getProductBySlug);
   const fetchS = useServerFn(getSettings);
-  const { data: p, isLoading } = useQuery({ queryKey: ["product", id], queryFn: () => fetchP({ data: { id } }) });
+  const initial = Route.useLoaderData();
+  const { data: p, isLoading } = useQuery({
+    queryKey: ["product", slug],
+    queryFn: () => fetchP({ data: { slug } }),
+    initialData: initial?.product as any,
+  });
   const { data: s } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
   const cart = useCart();
 
