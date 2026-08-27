@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
-const SITE_URL = 'https://www.leradial.com.ar';
+const SITE_URL = 'https://leradial.com.ar';
 
 export const Route = createFileRoute('/sitemap.xml')({
   server: {
@@ -28,7 +28,7 @@ export const Route = createFileRoute('/sitemap.xml')({
           productUrls = (data ?? []).map((p) => `${SITE_URL}/producto/${p.slug}`);
         }
 
-        const staticUrls = [SITE_URL];
+        const staticUrls = [SITE_URL, `${SITE_URL}/politica-devoluciones`];
 
         const urls = [...staticUrls, ...productUrls];
         const body = `<?xml version="1.0" encoding="UTF-8"?>
