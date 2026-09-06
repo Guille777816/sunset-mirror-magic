@@ -502,10 +502,15 @@ function Index() {
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Empresa</h4>
-            <ul className="space-y-2 text-sm opacity-80">
-              <li>Revendedores</li>
-              <li>Contacto</li>
-            </ul>
+          <ul className="space-y-2 text-sm opacity-80">
+  <li>Revendedores</li>
+  <li>Contacto</li>
+  <li>
+    <a href="/politica-devoluciones" className="hover:text-primary hover:opacity-100">
+      Política de Envíos y Devoluciones
+    </a>
+  </li>
+</ul>
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary">Atención</h4>
