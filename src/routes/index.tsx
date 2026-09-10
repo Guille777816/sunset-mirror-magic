@@ -73,10 +73,10 @@ function optimizeImg(url: string | undefined | null, width: number, quality = 70
     const sep = rewritten.includes("?") ? "&" : "?";
     return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
   }
-  if (/^https?:\/\//i.test(url)) {
-    const clean = url.replace(/^https?:\/\//i, "");
-    return `https://images.weserv.nl/?url=${encodeURIComponent(clean)}&w=${width}&q=${quality}&output=webp`;
-  }
+  // Direct provider URLs (sunset.com.py, dac.com.py, etc.) load fine on
+  // their own — routing them through the images.weserv.nl proxy added an
+  // extra hop that was slow/unreliable under the burst of simultaneous
+  // requests a product grid or carousel makes on page load.
   return url;
 }
 
@@ -560,7 +560,7 @@ function Index() {
   );
 }
 
-function ProductCard({ p }: { p: any }) {
+function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
   const cart = useCart();
   const { format } = useCurrency();
   return (
@@ -579,7 +579,7 @@ function ProductCard({ p }: { p: any }) {
         <img
           src={optimizeImg(p.image_url, 500) || categoryImg[p.category] || tireCar}
           alt={`${p.brand} ${p.model}`}
-          loading="lazy"
+          loading={eager ? "eager" : "lazy"}
           decoding="async"
           referrerPolicy="no-referrer"
           width={500}
@@ -671,7 +671,7 @@ function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow:
         >
           {items.map((p) => (
             <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[32%] lg:w-[24%]">
-              <ProductCard p={p} />
+              <ProductCard p={p} eager />
             </div>
           ))}
         </div>
@@ -763,7 +763,7 @@ function AutoCarousel({ id, eyebrow, title, items, bg, direction = "left" }: { i
         >
           {loop.map((p, idx) => (
             <div key={`${p.id}-${idx}`} className="w-[260px] shrink-0 sm:w-[280px] md:w-[300px]">
-              <ProductCard p={p} />
+              <ProductCard p={p} eager />
             </div>
           ))}
         </div>
