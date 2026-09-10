@@ -11,10 +11,6 @@ import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
 import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
-import inmetroAsset from "@/assets/inmetro.png.asset.json";
-import tuvAsset from "@/assets/tuv.png.asset.json";
-import garantiaAsset from "@/assets/garantia.png.asset.json";
-
 export const getProductBySlug = createServerFn({ method: "GET" })
   .inputValidator((i: unknown) => z.object({ slug: z.string().min(1) }).parse(i))
   .handler(async ({ data }) => {
@@ -134,9 +130,9 @@ function ProductDetail() {
               )}
             </div>
             <div className="mt-8 flex items-center gap-6 border-t border-border/60 pt-6">
-              <img src={inmetroAsset.url} alt="INMETRO" className="h-14 w-auto object-contain" />
-              <img src={tuvAsset.url} alt="TÜV SÜD" className="h-14 w-auto object-contain" />
-              <img src={garantiaAsset.url} alt="Garantía 5 años" className="h-14 w-auto object-contain" />
+             <img src="/inmetro.webp" alt="INMETRO" className="h-14 w-auto object-contain" />
+<img src="/tuv.webp" alt="TÜV SÜD" className="h-14 w-auto object-contain" />
+<img src="/garantia.webp" alt="Garantía 5 años" className="h-14 w-auto object-contain" />
             </div>
           </div>
         </div>
