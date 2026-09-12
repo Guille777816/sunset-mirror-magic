@@ -483,7 +483,6 @@ function ImageManager({ products, onRefresh }: { products: Product[]; onRefresh:
     </div>
   );
 }
-
 /* ─────────────────── PRODUCT FORM ─────────────────── */
 function ProductForm({
   value, onCancel, onSave, saving, error,
@@ -494,8 +493,27 @@ function ProductForm({
   saving: boolean;
   error: any;
 }) {
-  const [p, setP] = useState<Product>(value);
+   const [p, setP] = useState<Product>(value);
+  const [uploading, setUploading] = useState(false);
   const set = <K extends keyof Product>(k: K, v: Product[K]) => setP({ ...p, [k]: v });
+
+  async function handleFileUpload(file: File) {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${p.id ?? "tmp-" + Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("product-images")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+      set("image_url", urlData.publicUrl + "?t=" + Date.now());
+    } catch (e: any) {
+      alert(e?.message ?? "Error al subir imagen");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={onCancel}>
