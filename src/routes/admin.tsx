@@ -540,9 +540,28 @@ function ProductForm({
           <Field label="Descripción" col2>
             <textarea className={input + " min-h-[70px] rounded-2xl py-2"} value={p.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
           </Field>
-          <Field label="URL de imagen (pegá un enlace https://...)" col2>
+                  <Field label="Imagen del producto" col2>
+            {p.image_url && (
+              <div className="mb-2 h-24 w-24 overflow-hidden rounded-xl bg-muted">
+                <img src={p.image_url} alt="preview" className="h-full w-full object-cover" />
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground hover:opacity-90">
+                <Upload className="h-4 w-4" />
+                {uploading ? "Subiendo..." : "Subir desde tu computadora"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }}
+                />
+              </label>
+              <span className="text-xs text-muted-foreground">o pegá URL:</span>
+            </div>
             <input
-              className={input}
+              className={input + " mt-2"}
               placeholder="https://ejemplo.com/foto.jpg"
               value={p.image_url ?? ""}
               onChange={(e) => set("image_url", e.target.value || null)}
