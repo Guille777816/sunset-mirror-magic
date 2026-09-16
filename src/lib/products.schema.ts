@@ -3,6 +3,7 @@ import { z } from "zod";
 export const CATEGORY_VALUES = [
   "autos",
   "camionetas",
+  "suv",
   "camiones",
   "agricolas",
   "industriales",

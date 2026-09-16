@@ -28,7 +28,7 @@ type Product = {
   model: string;
   size: string;
   category?: string;
-  categories: ("autos" | "camionetas" | "camiones" | "agricolas" | "industriales")[];
+  categories: ("autos" | "camionetas" | "suv" | "camiones" | "agricolas" | "industriales")[];
   price_ars: number;
   stock: number;
   image_url: string | null;
@@ -52,6 +52,7 @@ function catsOf(p: { categories?: string[] | null; category?: string | null }): 
 const CATEGORY_LABELS: Record<string, string> = {
   autos: "Autos",
   camionetas: "Camionetas",
+  suv: "SUV",
   camiones: "Camiones",
   agricolas: "Agrícolas",
   industriales: "Industriales",
@@ -892,6 +893,7 @@ function CategoryImagesPanel({
   const cats = [
     { slug: "autos", label: "Autos" },
     { slug: "camionetas", label: "Camionetas" },
+    { slug: "suv", label: "SUV" },
     { slug: "camiones", label: "Camiones" },
     { slug: "agricolas", label: "Agrícolas" },
     { slug: "industriales", label: "Industriales" },
