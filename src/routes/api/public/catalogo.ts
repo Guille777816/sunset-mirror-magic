@@ -37,12 +37,12 @@ export const Route = createFileRoute('/api/public/catalogo')({
         const sel = (s: string): string => s;
         let query = supabase
           .from('products')
-          .select(sel('id, brand, model, size, category, price_ars, stock, free_shipping'))
+          .select(sel('id, brand, model, size, category, categories, price_ars, stock, free_shipping'))
           .eq('is_active', true)
           .order('brand', { ascending: true })
           .limit(limit);
 
-        if (categoria) query = query.eq('category', categoria);
+        if (categoria) query = query.contains('categories', [categoria]);
         if (soloStock) query = query.gt('stock', 0);
         if (q) query = query.or(`brand.ilike.%${q}%,model.ilike.%${q}%,size.ilike.%${q}%`);
 
@@ -52,6 +52,7 @@ export const Route = createFileRoute('/api/public/catalogo')({
           model: string;
           size: string;
           category: string;
+          categories: string[] | null;
           price_ars: number;
           stock: number;
           free_shipping: boolean;
@@ -67,7 +68,8 @@ export const Route = createFileRoute('/api/public/catalogo')({
           marca: p.brand,
           modelo: p.model,
           medida: p.size,
-          categoria: p.category,
+          categoria: p.categories?.length ? p.categories[0] : p.category,
+          categorias: p.categories?.length ? p.categories : [p.category],
           precio_ars: Number(p.price_ars),
           stock: p.stock,
           disponible: p.stock > 0,
