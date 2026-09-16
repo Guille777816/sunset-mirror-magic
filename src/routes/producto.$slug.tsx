@@ -85,13 +85,13 @@ function ProductDetail() {
         <div className="grid gap-8 md:grid-cols-2">
           <div className="overflow-hidden rounded-2xl bg-muted shadow-[var(--shadow-product)]">
             <img
-              src={p.image_url ? (/^https?:\/\//i.test(p.image_url) && !p.image_url.includes("/storage/v1/") ? `https://images.weserv.nl/?url=${encodeURIComponent(p.image_url.replace(/^https?:\/\//i, ""))}&w=900&q=80&output=webp` : p.image_url) : (categoryImg[p.category] || tireCar)}
+              src={p.image_url ? (/^https?:\/\//i.test(p.image_url) && !p.image_url.includes("/storage/v1/") ? `https://images.weserv.nl/?url=${encodeURIComponent(p.image_url.replace(/^https?:\/\//i, ""))}&w=900&q=80&output=webp` : p.image_url) : (categoryImg[(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories[0] : p.category) as string] || tireCar)}
               alt={`${p.brand} ${p.model}`}
               referrerPolicy="no-referrer"
               onError={(e) => {
                 const el = e.currentTarget;
                 const original = p.image_url || "";
-                const placeholder = categoryImg[p.category] || tireCar;
+                const placeholder = categoryImg[(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories[0] : p.category) as string] || tireCar;
                 if (original && el.src !== original && !el.dataset.triedOriginal) {
                   el.dataset.triedOriginal = "1";
                   el.src = original;
@@ -106,7 +106,7 @@ function ProductDetail() {
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{p.brand}</p>
             <h1 className="mt-2 text-3xl font-black text-secondary md:text-4xl">{p.model}</h1>
             <p className="mt-2 text-lg text-muted-foreground">Medida: <strong>{p.size}</strong></p>
-            <p className="mt-1 text-sm capitalize text-muted-foreground">Categoría: {p.category}</p>
+            <p className="mt-1 text-sm capitalize text-muted-foreground">Categoría: {(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories : [p.category]).join(", ")}</p>
             <p className="mt-6 text-4xl font-black text-secondary">$ {Number(p.price_ars).toLocaleString("es-AR")}</p>
             <p className="mt-2 text-sm text-muted-foreground">{p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}</p>
             {p.description && <p className="mt-6 whitespace-pre-line text-sm leading-relaxed text-foreground/80">{p.description}</p>}
