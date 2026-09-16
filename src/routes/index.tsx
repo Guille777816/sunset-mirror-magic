@@ -54,13 +54,14 @@ export const Route = createFileRoute("/")({
 const CATEGORY_CONFIG = [
   { slug: "autos",        label: "Autos",        img: tireCar },
   { slug: "camionetas",   label: "Camionetas",   img: tireSuv },
+  { slug: "suv",          label: "SUV",          img: tireSuv },
   { slug: "camiones",     label: "Camiones",     img: tireTruck },
   { slug: "agricolas",    label: "Agrícolas",    img: tireAgro },
   { slug: "industriales", label: "Industriales", img: tireTruck },
 ];
 
 const categoryImg: Record<string, string> = {
-  autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
+  autos: tireCar, camionetas: tireSuv, suv: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
 
 // Un producto puede pertenecer a varias categorías (columna `categories`).
@@ -200,6 +201,7 @@ function Index() {
   // Carruseles auto-scroll por categoría
   const autos = useMemo(() => (products as any[]).filter((p) => inCategory(p, "autos")), [products]);
   const camionetas = useMemo(() => (products as any[]).filter((p) => inCategory(p, "camionetas")), [products]);
+  const suv = useMemo(() => (products as any[]).filter((p) => inCategory(p, "suv")), [products]);
   const camiones = useMemo(() => (products as any[]).filter((p) => inCategory(p, "camiones")), [products]);
 
   // Handle nav category click
@@ -425,6 +427,9 @@ function Index() {
           )}
           {camionetas.length > 0 && (
             <AutoCarousel id="auto-camionetas" eyebrow="Camionetas" title="Cubiertas para camionetas" items={camionetas} bg="bg-background" direction="right" />
+          )}
+          {suv.length > 0 && (
+            <AutoCarousel id="auto-suv" eyebrow="SUV" title="Cubiertas para SUV" items={suv} bg="bg-muted" direction="left" />
           )}
           {camiones.length > 0 && (
             <AutoCarousel id="auto-camiones" eyebrow="Camiones" title="Cubiertas para camiones" items={camiones} bg="bg-muted" direction="left" />
