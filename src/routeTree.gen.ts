@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PoliticaDevolucionesRouteImport } from './routes/politica-devoluciones'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProductoSlugRouteImport } from './routes/producto.$slug'
 import { Route as ApiPublicCatalogoRouteImport } from './routes/api/public/catalogo'
@@ -30,6 +31,11 @@ const AdminRoute = AdminRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoliticaDevolucionesRoute = PoliticaDevolucionesRouteImport.update({
+  id: '/politica-devoluciones',
+  path: '/politica-devoluciones',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/politica-devoluciones': typeof PoliticaDevolucionesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/api/public/catalogo': typeof ApiPublicCatalogoRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/politica-devoluciones': typeof PoliticaDevolucionesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/api/public/catalogo': typeof ApiPublicCatalogoRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/politica-devoluciones': typeof PoliticaDevolucionesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/producto/$slug': typeof ProductoSlugRoute
   '/api/public/catalogo': typeof ApiPublicCatalogoRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/politica-devoluciones'
     | '/sitemap.xml'
     | '/producto/$slug'
     | '/api/public/catalogo'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/politica-devoluciones'
     | '/sitemap.xml'
     | '/producto/$slug'
     | '/api/public/catalogo'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/politica-devoluciones'
     | '/sitemap.xml'
     | '/producto/$slug'
     | '/api/public/catalogo'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
+  PoliticaDevolucionesRoute: typeof PoliticaDevolucionesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ProductoSlugRoute: typeof ProductoSlugRoute
   ApiPublicCatalogoRoute: typeof ApiPublicCatalogoRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politica-devoluciones': {
+      id: '/politica-devoluciones'
+      path: '/politica-devoluciones'
+      fullPath: '/politica-devoluciones'
+      preLoaderRoute: typeof PoliticaDevolucionesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
+  PoliticaDevolucionesRoute: PoliticaDevolucionesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ProductoSlugRoute: ProductoSlugRoute,
   ApiPublicCatalogoRoute: ApiPublicCatalogoRoute,
