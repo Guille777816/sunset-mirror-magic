@@ -27,7 +27,8 @@ type Product = {
   brand: string;
   model: string;
   size: string;
-  category: "autos" | "camionetas" | "camiones" | "agricolas" | "industriales";
+  category?: string;
+  categories: ("autos" | "camionetas" | "camiones" | "agricolas" | "industriales")[];
   price_ars: number;
   stock: number;
   image_url: string | null;
@@ -38,10 +39,15 @@ type Product = {
 };
 
 const empty: Product = {
-  brand: "", model: "", size: "", category: "autos",
+  brand: "", model: "", size: "", categories: ["autos"],
   price_ars: 0, stock: 0, image_url: null, description: null,
   is_active: true, is_featured: false, free_shipping: false,
 };
+
+function catsOf(p: { categories?: string[] | null; category?: string | null }): any[] {
+  const list = Array.isArray(p?.categories) ? p.categories.filter(Boolean) : [];
+  return list.length ? list : (p?.category ? [p.category] : []);
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   autos: "Autos",
@@ -136,10 +142,10 @@ function AdminPage() {
 
   const filteredProducts = filterCat === "todas"
     ? (products as Product[])
-    : (products as Product[]).filter((p) => p.category === filterCat);
+    : (products as Product[]).filter((p) => catsOf(p).includes(filterCat));
 
   const countByCategory = (cat: string) =>
-    (products as Product[]).filter((p) => p.category === cat).length;
+    (products as Product[]).filter((p) => catsOf(p).includes(cat)).length;
 
   return (
     <div className="min-h-screen bg-muted">
@@ -255,7 +261,7 @@ function AdminPage() {
                       <td className="px-4 py-3 font-mono text-xs">{p.size}</td>
                       <td className="px-4 py-3">
                         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold capitalize">
-                          {CATEGORY_LABELS[p.category] ?? p.category}
+                          {catsOf(p).map((c) => CATEGORY_LABELS[c] ?? c).join(", ")}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold">$ {Number(p.price_ars).toLocaleString("es-AR")}</td>
@@ -391,7 +397,7 @@ function ImageManager({ products, onRefresh }: { products: Product[]; onRefresh:
 
   const grouped = Object.entries(CATEGORY_LABELS).map(([slug, label]) => ({
     slug, label,
-    items: products.filter((p) => p.category === slug),
+    items: products.filter((p) => catsOf(p).includes(slug)),
   })).filter((g) => g.items.length > 0);
 
   return (
@@ -526,14 +532,29 @@ function ProductForm({
           <Field label="Marca"><input className={input} value={p.brand} onChange={(e) => set("brand", e.target.value)} /></Field>
           <Field label="Modelo"><input className={input} value={p.model} onChange={(e) => set("model", e.target.value)} /></Field>
           <Field label="Medida"><input className={input} placeholder="ej: 185/65R15" value={p.size} onChange={(e) => set("size", e.target.value)} /></Field>
-          <Field label="Categoría">
-            <select className={input} value={p.category} onChange={(e) => set("category", e.target.value as Product["category"])}>
-              <option value="autos">Autos</option>
-              <option value="camionetas">Camionetas</option>
-              <option value="camiones">Camiones</option>
-              <option value="agricolas">Agrícolas</option>
-              <option value="industriales">Industriales</option>
-            </select>
+          <Field label="Categorías (podés elegir varias)" col2>
+            <div className="flex flex-wrap gap-3 rounded-2xl border px-3 py-2">
+              {(Object.keys(CATEGORY_LABELS) as Product["categories"]).map((c) => {
+                const checked = catsOf(p).includes(c);
+                return (
+                  <label key={c} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={checked}
+                      onChange={(e) => {
+                        const current = catsOf(p);
+                        const next = e.target.checked
+                          ? [...current, c]
+                          : current.filter((x) => x !== c);
+                        set("categories", next as Product["categories"]);
+                      }}
+                    />
+                    {CATEGORY_LABELS[c]}
+                  </label>
+                );
+              })}
+            </div>
           </Field>
           <Field label="Precio ARS"><input type="number" min={0} className={input} value={p.price_ars} onChange={(e) => set("price_ars", Number(e.target.value))} /></Field>
           <Field label="Stock"><input type="number" min={0} className={input} value={p.stock} onChange={(e) => set("stock", Number(e.target.value))} /></Field>
