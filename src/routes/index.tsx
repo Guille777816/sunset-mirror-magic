@@ -63,6 +63,18 @@ const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
 
+// Un producto puede pertenecer a varias categorías (columna `categories`).
+export function productCategories(p: any): string[] {
+  const list = Array.isArray(p?.categories) ? p.categories.filter(Boolean) : [];
+  return list.length ? list : (p?.category ? [p.category] : []);
+}
+function inCategory(p: any, slug: string): boolean {
+  return productCategories(p).includes(slug);
+}
+function primaryCategory(p: any): string {
+  return productCategories(p)[0] ?? "";
+}
+
 // Optimiza URLs: Supabase Storage usa el endpoint de render; URLs externas
 // (sunset.com.py, fate.com.ar, etc.) se enrutan por images.weserv.nl para
 // evitar bloqueos de hotlinking (Referer) y servir con CDN + resize.
