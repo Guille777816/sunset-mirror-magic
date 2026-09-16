@@ -44,8 +44,8 @@ export const Route = createFileRoute("/")({
     return { products, settings, banners, testimonials };
   },
   staleTime: 60_000,
-  errorComponent: ({ error }) => (
-    <div role="alert" className="p-8 text-center">{error.message}</div>
+  errorComponent: ({ error }: { error: unknown }) => (
+    <div role="alert" className="p-8 text-center">{(error as Error)?.message ?? "Error"}</div>
   ),
   component: Index,
 });
