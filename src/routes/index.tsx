@@ -44,8 +44,8 @@ export const Route = createFileRoute("/")({
     return { products, settings, banners, testimonials };
   },
   staleTime: 60_000,
-  errorComponent: ({ error }) => (
-    <div role="alert" className="p-8 text-center">{error.message}</div>
+  errorComponent: ({ error }: { error: unknown }) => (
+    <div role="alert" className="p-8 text-center">{(error as Error)?.message ?? "Error"}</div>
   ),
   component: Index,
 });
@@ -62,6 +62,18 @@ const CATEGORY_CONFIG = [
 const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
+
+// Un producto puede pertenecer a varias categorías (columna `categories`).
+export function productCategories(p: any): string[] {
+  const list = Array.isArray(p?.categories) ? p.categories.filter(Boolean) : [];
+  return list.length ? list : (p?.category ? [p.category] : []);
+}
+function inCategory(p: any, slug: string): boolean {
+  return productCategories(p).includes(slug);
+}
+function primaryCategory(p: any): string {
+  return productCategories(p)[0] ?? "";
+}
 
 // Optimiza URLs: Supabase Storage usa el endpoint de render; URLs externas
 // (sunset.com.py, fate.com.ar, etc.) se enrutan por images.weserv.nl para
@@ -186,9 +198,9 @@ function Index() {
     [products]
   );
   // Carruseles auto-scroll por categoría
-  const autos = useMemo(() => (products as any[]).filter((p) => p.category === "autos"), [products]);
-  const camionetas = useMemo(() => (products as any[]).filter((p) => p.category === "camionetas"), [products]);
-  const camiones = useMemo(() => (products as any[]).filter((p) => p.category === "camiones"), [products]);
+  const autos = useMemo(() => (products as any[]).filter((p) => inCategory(p, "autos")), [products]);
+  const camionetas = useMemo(() => (products as any[]).filter((p) => inCategory(p, "camionetas")), [products]);
+  const camiones = useMemo(() => (products as any[]).filter((p) => inCategory(p, "camiones")), [products]);
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
@@ -440,7 +452,7 @@ function Index() {
       {!searchActive && activeCategory && (() => {
         const c = CATEGORY_CONFIG.find((x) => x.slug === activeCategory);
         if (!c) return null;
-        const items = (products as any[]).filter((p) => p.category === c.slug);
+        const items = (products as any[]).filter((p) => inCategory(p, c.slug));
         return (
           <CategorySection
             key={c.slug}
@@ -577,7 +589,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
           </span>
         )}
         <img
-          src={optimizeImg(p.image_url, 500) || categoryImg[p.category] || tireCar}
+          src={optimizeImg(p.image_url, 500) || categoryImg[primaryCategory(p)] || tireCar}
           alt={`${p.brand} ${p.model}`}
           loading={eager ? "eager" : "lazy"}
           decoding="async"
@@ -587,7 +599,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
           onError={(e) => {
             const el = e.currentTarget;
             const original = p.image_url || "";
-            const placeholder = categoryImg[p.category] || tireCar;
+            const placeholder = categoryImg[primaryCategory(p)] || tireCar;
             if (original && el.src !== original && !el.dataset.triedOriginal) {
               el.dataset.triedOriginal = "1";
               el.src = original;
