@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { CartProvider } from "@/lib/cart";
 import { CurrencyProvider } from "@/lib/currency";
+import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 
 import appCss from "../styles.css?url";
 
@@ -80,14 +81,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Le Radial SRL — Ultra High Performance" },
       { property: "og:description", content: "Cubiertas y neumáticos para autos, camionetas, camiones, agro e industriales. Envíos a toda la Argentina." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: DEFAULT_OG_IMAGE },
+      { property: "og:url", content: SITE_URL },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Le Radial SRL — Ultra High Performance" },
       { name: "twitter:description", content: "Cubiertas y neumáticos para autos, camionetas, camiones, agro e industriales. Envíos a toda la Argentina." },
+      { name: "twitter:image", content: DEFAULT_OG_IMAGE },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "stylesheet", href: "https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" },
+      { rel: "canonical", href: SITE_URL },
     ],
   }),
   shellComponent: RootShell,

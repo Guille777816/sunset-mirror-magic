@@ -7,6 +7,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { getSettings } from "@/lib/settings.functions";
 import { useCart } from "@/lib/cart";
+import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
 import tireTruck from "@/assets/tire-truck.jpg";
@@ -39,13 +40,89 @@ export const Route = createFileRoute("/producto/$slug")({
     const description = p
       ? (p.description?.slice(0, 155) || `${p.brand} ${p.model} medida ${p.size}. Comprá online en Le Radial, envíos a toda la Argentina.`)
       : "Cubiertas y neumáticos para autos, camionetas, camiones y agro.";
+    const productUrl = p ? `${SITE_URL}/producto/${p.slug}` : SITE_URL;
+    const imageUrl = p?.image_url || DEFAULT_OG_IMAGE;
+
+    const scripts: Array<{ type: string; children: string }> = [];
+
+    if (p) {
+      // Schema.org Product + Offer JSON-LD
+      const categoryLabel = (Array.isArray(p.categories) && p.categories.length ? p.categories[0] : p.category) || "";
+      const productJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: `${p.brand} ${p.model} ${p.size}`,
+        description: p.description || `Neumático ${p.brand} ${p.model} medida ${p.size}.`,
+        image: p.image_url || undefined,
+        sku: p.slug,
+        brand: {
+          "@type": "Brand",
+          name: p.brand,
+        },
+        offers: {
+          "@type": "Offer",
+          url: productUrl,
+          priceCurrency: "ARS",
+          price: Number(p.price_ars),
+          availability: p.stock > 0
+            ? "https://schema.org/InStock"
+            : "https://schema.org/OutOfStock",
+          seller: {
+            "@type": "Organization",
+            name: "Le Radial SRL",
+          },
+        },
+      };
+
+      // Schema.org BreadcrumbList JSON-LD
+      const breadcrumbJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Inicio",
+            item: SITE_URL,
+          },
+          ...(categoryLabel
+            ? [{
+                "@type": "ListItem" as const,
+                position: 2,
+                name: categoryLabel.charAt(0).toUpperCase() + categoryLabel.slice(1),
+                item: `${SITE_URL}/#catalogo`,
+              }]
+            : []),
+          {
+            "@type": "ListItem",
+            position: categoryLabel ? 3 : 2,
+            name: `${p.brand} ${p.model} ${p.size}`,
+          },
+        ],
+      };
+
+      scripts.push(
+        { type: "application/ld+json", children: JSON.stringify(productJsonLd) },
+        { type: "application/ld+json", children: JSON.stringify(breadcrumbJsonLd) },
+      );
+    }
+
     return {
       meta: [
         { title },
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
+        { property: "og:type", content: "product" },
+        { property: "og:image", content: imageUrl },
+        { property: "og:url", content: productUrl },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: imageUrl },
       ],
+      links: [
+        { rel: "canonical", href: productUrl },
+      ],
+      scripts,
     };
   },
   component: ProductDetail,

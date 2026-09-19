@@ -1,8 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
-
-const SITE_URL = 'https://leradial.com.ar';
+import { SITE_URL } from '@/lib/seo.constants';
 
 export const Route = createFileRoute('/sitemap.xml')({
   server: {

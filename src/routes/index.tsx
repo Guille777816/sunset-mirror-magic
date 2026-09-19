@@ -19,19 +19,61 @@ import { listPublicBanners } from "@/lib/banners.functions";
 import { listApprovedTestimonials, submitTestimonial } from "@/lib/testimonials.functions";
 import { useCart } from "@/lib/cart";
 import { useCurrency, CURRENCIES, type Currency } from "@/lib/currency";
+import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 
 const HEADER_LOGO_URL = leRadialHeaderAsset.url;
 const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Le Radial — Cubiertas y neumáticos en Buenos Aires" },
-      { name: "description", content: "Venta de cubiertas para autos, camionetas, camiones y maquinaria agrícola. Buscá por medida, elegí tu moneda y comprá online. Envíos a toda la Argentina." },
-      { property: "og:title", content: "Le Radial — Cubiertas y neumáticos" },
-      { property: "og:description", content: "Cubiertas para autos, camionetas, camiones y agro. Envíos a toda la Argentina." },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const s = (loaderData as any)?.settings as Record<string, any> | null;
+    const logoUrl = s?.logo_url || DEFAULT_OG_IMAGE;
+
+    // Schema.org Organization JSON-LD
+    const orgJsonLd: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Le Radial SRL",
+      url: SITE_URL,
+      logo: logoUrl,
+    };
+    if (s?.phone) orgJsonLd.telephone = s.phone;
+    if (s?.email) orgJsonLd.email = s.email;
+    if (s?.address) {
+      orgJsonLd.address = {
+        "@type": "PostalAddress",
+        streetAddress: s.address,
+        addressCountry: "AR",
+      };
+    }
+    const sameAs: string[] = [];
+    if (s?.instagram) sameAs.push(s.instagram);
+    if (s?.facebook) sameAs.push(s.facebook);
+    if (sameAs.length) orgJsonLd.sameAs = sameAs;
+
+    return {
+      meta: [
+        { title: "Le Radial — Cubiertas y neumáticos en Buenos Aires" },
+        { name: "description", content: "Venta de cubiertas para autos, camionetas, camiones y maquinaria agrícola. Buscá por medida, elegí tu moneda y comprá online. Envíos a toda la Argentina." },
+        { property: "og:title", content: "Le Radial — Cubiertas y neumáticos" },
+        { property: "og:description", content: "Cubiertas para autos, camionetas, camiones y agro. Envíos a toda la Argentina." },
+        { property: "og:type", content: "website" },
+        { property: "og:image", content: logoUrl },
+        { property: "og:url", content: SITE_URL },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: logoUrl },
+      ],
+      links: [
+        { rel: "canonical", href: SITE_URL },
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(orgJsonLd),
+        },
+      ],
+    };
+  },
   // Carga los datos en el servidor: la portada llega al navegador con los
   // productos ya renderizados, sin la espera de 3-5 s del fetch en el cliente.
   loader: async () => {
