@@ -484,16 +484,16 @@ function Index() {
       {!searchActive && !activeCategory && (
         <>
           {autos.length > 0 && (
-            <AutoCarousel id="auto-autos" eyebrow="Autos" title="Cubiertas para autos" items={autos} bg="bg-muted" direction="left" />
+            <AutoCarousel id="auto-autos" eyebrow="Autos" title="Cubiertas para autos" items={autos} bg="bg-muted" direction="left" onSeeAll={() => handleCategoryNav("autos")} />
           )}
           {camionetas.length > 0 && (
-            <AutoCarousel id="auto-camionetas" eyebrow="Camionetas" title="Cubiertas para camionetas" items={camionetas} bg="bg-background" direction="right" />
+            <AutoCarousel id="auto-camionetas" eyebrow="Camionetas" title="Cubiertas para camionetas" items={camionetas} bg="bg-background" direction="right" onSeeAll={() => handleCategoryNav("camionetas")} />
           )}
           {suv.length > 0 && (
-            <AutoCarousel id="auto-suv" eyebrow="SUV" title="Cubiertas para SUV" items={suv} bg="bg-muted" direction="left" />
+            <AutoCarousel id="auto-suv" eyebrow="SUV" title="Cubiertas para SUV" items={suv} bg="bg-muted" direction="left" onSeeAll={() => handleCategoryNav("suv")} />
           )}
           {camiones.length > 0 && (
-            <AutoCarousel id="auto-camiones" eyebrow="Camiones" title="Cubiertas para camiones" items={camiones} bg="bg-muted" direction="left" />
+            <AutoCarousel id="auto-camiones" eyebrow="Camiones" title="Cubiertas para camiones" items={camiones} bg="bg-muted" direction="left" onSeeAll={() => handleCategoryNav("camiones")} />
           )}
         </>
       )}
@@ -724,7 +724,7 @@ function Select({ label, value, onChange, options }: { label: string; value: str
 }
 
 function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow: string; title: string; items: any[]; bg: string }) {
-  const scrollerRef = (typeof window !== "undefined") ? (null as any) : null;
+  const displayItems = useMemo(() => items.slice(0, 12), [items]);
   function scroll(dir: -1 | 1) {
     const el = document.getElementById(`${id}-scroller`);
     if (!el) return;
@@ -747,7 +747,7 @@ function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow:
           id={`${id}-scroller`}
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]"
         >
-          {items.map((p, idx) => (
+          {displayItems.map((p, idx) => (
             <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[32%] lg:w-[24%]">
               <ProductCard p={p} eager={idx < 2} />
             </div>
@@ -821,17 +821,44 @@ function CategorySection({ slug, label, items, onBack }: { slug: string; label: 
   );
 }
 
-function AutoCarousel({ id, eyebrow, title, items, bg, direction = "left" }: { id: string; eyebrow: string; title: string; items: any[]; bg: string; direction?: "left" | "right" }) {
-  // Duplicamos los items para conseguir el efecto de scroll infinito
-  const loop = [...items, ...items];
+function AutoCarousel({
+  id,
+  eyebrow,
+  title,
+  items,
+  bg,
+  direction = "left",
+  onSeeAll,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  items: any[];
+  bg: string;
+  direction?: "left" | "right";
+  onSeeAll?: () => void;
+}) {
+  const displayItems = useMemo(() => items.slice(0, 10), [items]);
+  // Duplicamos solo 10 items para conseguir el efecto de scroll infinito fluido y súper liviano
+  const loop = [...displayItems, ...displayItems];
   const animClass = direction === "left" ? "animate-marquee-left" : "animate-marquee-right";
-  const durationSec = Math.max(20, items.length * 6);
+  const durationSec = Math.max(20, displayItems.length * 3.5);
   return (
     <section id={id} className={`overflow-hidden py-12 ${bg}`}>
       <div className="container mx-auto px-4">
-        <div className="mb-5">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{eyebrow}</p>
-          <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{title}</h2>
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{eyebrow}</p>
+            <h2 className="mt-1 text-2xl font-black text-secondary md:text-3xl">{title}</h2>
+          </div>
+          {onSeeAll && items.length > 10 && (
+            <button
+              onClick={onSeeAll}
+              className="rounded-full border border-secondary/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary hover:text-secondary-foreground transition"
+            >
+              Ver todos ({items.length}) →
+            </button>
+          )}
         </div>
       </div>
       <div className="group relative">
