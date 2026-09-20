@@ -157,6 +157,16 @@ function AdminPage() {
             <Link to="/" className="text-xs text-muted-foreground hover:text-primary">← Sitio</Link>
             <span className="text-muted-foreground">/</span>
             <h1 className="text-xl font-black text-secondary">Panel Admin</h1>
+            <span className="text-muted-foreground">·</span>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate({ to: "/login", replace: true });
+              }}
+              className="text-xs text-muted-foreground hover:text-destructive transition"
+            >
+              Cerrar sesión
+            </button>
           </div>
           <button
             onClick={() => setEditing({ ...empty })}

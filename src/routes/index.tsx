@@ -315,15 +315,6 @@ function Index() {
                 {phone}
               </a>
             )}
-            {authed ? (
-              <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
-                <User className="h-5 w-5" /> Salir
-              </button>
-            ) : (
-              <Link to="/login" className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
-                <User className="h-5 w-5" /> Login
-              </Link>
-            )}
             <CurrencySelect value={currency} onChange={setCurrency} />
             <button onClick={cart.open} aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground hover:scale-105 transition">
               <ShoppingCart className="h-5 w-5" />

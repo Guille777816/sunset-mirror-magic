@@ -229,20 +229,13 @@ function Index() {
             />
           </a>
           <div className="hidden items-center gap-6 lg:flex">
-            <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
-                <Phone className="h-4 w-4" />
-              </span>
-              {phone}
-            </a>
-            {authed ? (
-              <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
-                <User className="h-5 w-5" /> Salir
-              </button>
-            ) : (
-              <Link to="/login" className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
-                <User className="h-5 w-5" /> Login
-              </Link>
+            {phone && (
+              <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
+                  <Phone className="h-4 w-4" />
+                </span>
+                {phone}
+              </a>
             )}
             <CurrencySelect value={currency} onChange={setCurrency} />
             <button onClick={cart.open} aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground hover:scale-105 transition">
