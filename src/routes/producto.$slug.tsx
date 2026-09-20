@@ -25,6 +25,24 @@ export const getProductBySlug = createServerFn({ method: "GET" })
     return p;
   });
 
+function optimizeImg(url: string | undefined | null, width = 900, quality = 80): string {
+  if (!url) return "";
+  if (url.includes("/storage/v1/object/public/")) {
+    const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+    const sep = rewritten.includes("?") ? "&" : "?";
+    return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
+  }
+  return url;
+}
+
+function formatDescription(desc: string | null | undefined): string {
+  if (!desc) return "";
+  return desc
+    .replace(/:\s*\n\s*/g, ": ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
@@ -36,12 +54,13 @@ export const Route = createFileRoute("/producto/$slug")({
   },
   head: ({ loaderData }) => {
     const p = loaderData?.product as any;
-    const title = p ? `${p.brand} ${p.model} ${p.size} — Le Radial` : "Producto — Le Radial";
+    const fullName = p ? [p.brand, p.model, p.size].filter(Boolean).join(" ").trim() : "Producto";
+    const title = p ? `${fullName} — Le Radial` : "Producto — Le Radial";
     const description = p
-      ? (p.description?.slice(0, 155) || `${p.brand} ${p.model} medida ${p.size}. Comprá online en Le Radial, envíos a toda la Argentina.`)
+      ? (p.description ? formatDescription(p.description).slice(0, 155) : `${fullName}. Comprá online en Le Radial, envíos a toda la Argentina.`)
       : "Cubiertas y neumáticos para autos, camionetas, camiones y agro.";
     const productUrl = p ? `${SITE_URL}/producto/${p.slug}` : SITE_URL;
-    const imageUrl = p?.image_url || DEFAULT_OG_IMAGE;
+    const imageUrl = p?.image_url ? optimizeImg(p.image_url, 900) : DEFAULT_OG_IMAGE;
 
     const scripts: Array<{ type: string; children: string }> = [];
 
@@ -51,9 +70,9 @@ export const Route = createFileRoute("/producto/$slug")({
       const productJsonLd = {
         "@context": "https://schema.org",
         "@type": "Product",
-        name: `${p.brand} ${p.model} ${p.size}`,
-        description: p.description || `Neumático ${p.brand} ${p.model} medida ${p.size}.`,
-        image: p.image_url || undefined,
+        name: fullName,
+        description: p.description ? formatDescription(p.description) : `Neumático ${fullName}.`,
+        image: imageUrl,
         sku: p.slug,
         brand: {
           "@type": "Brand",
@@ -64,6 +83,7 @@ export const Route = createFileRoute("/producto/$slug")({
           url: productUrl,
           priceCurrency: "ARS",
           price: Number(p.price_ars),
+          itemCondition: "https://schema.org/NewCondition",
           availability: p.stock > 0
             ? "https://schema.org/InStock"
             : "https://schema.org/OutOfStock",
@@ -96,7 +116,7 @@ export const Route = createFileRoute("/producto/$slug")({
           {
             "@type": "ListItem",
             position: categoryLabel ? 3 : 2,
-            name: `${p.brand} ${p.model} ${p.size}`,
+            name: fullName,
           },
         ],
       };
@@ -151,7 +171,8 @@ function ProductDetail() {
 
   const phone = s?.phone ?? "";
   const wa = s?.whatsapp ?? "";
-  const msg = encodeURIComponent(`Hola! Estoy interesado en ${p.brand} ${p.model} ${p.size}.`);
+  const fullName = [p.brand, p.model, p.size].filter(Boolean).join(" ").trim();
+  const msg = encodeURIComponent(`Hola! Estoy interesado en ${fullName}.`);
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,17 +183,13 @@ function ProductDetail() {
         <div className="grid gap-8 md:grid-cols-2">
           <div className="overflow-hidden rounded-2xl bg-muted shadow-[var(--shadow-product)]">
             <img
-              src={p.image_url ? (/^https?:\/\//i.test(p.image_url) && !p.image_url.includes("/storage/v1/") ? `https://images.weserv.nl/?url=${encodeURIComponent(p.image_url.replace(/^https?:\/\//i, ""))}&w=900&q=80&output=webp` : p.image_url) : (categoryImg[(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories[0] : p.category) as string] || tireCar)}
-              alt={`${p.brand} ${p.model}`}
+              src={optimizeImg(p.image_url, 900) || (categoryImg[(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories[0] : p.category) as string] || tireCar)}
+              alt={fullName}
               referrerPolicy="no-referrer"
               onError={(e) => {
                 const el = e.currentTarget;
-                const original = p.image_url || "";
                 const placeholder = categoryImg[(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories[0] : p.category) as string] || tireCar;
-                if (original && el.src !== original && !el.dataset.triedOriginal) {
-                  el.dataset.triedOriginal = "1";
-                  el.src = original;
-                } else if (el.src !== placeholder) {
+                if (el.src !== placeholder) {
                   el.src = placeholder;
                 }
               }}
@@ -182,11 +199,11 @@ function ProductDetail() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{p.brand}</p>
             <h1 className="mt-2 text-3xl font-black text-secondary md:text-4xl">{p.model}</h1>
-            <p className="mt-2 text-lg text-muted-foreground">Medida: <strong>{p.size}</strong></p>
+            {p.size ? <p className="mt-2 text-lg text-muted-foreground">Medida: <strong>{p.size}</strong></p> : null}
             <p className="mt-1 text-sm capitalize text-muted-foreground">Categoría: {(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories : [p.category]).join(", ")}</p>
             <p className="mt-6 text-4xl font-black text-secondary">$ {Number(p.price_ars).toLocaleString("es-AR")}</p>
             <p className="mt-2 text-sm text-muted-foreground">{p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}</p>
-            {p.description && <p className="mt-6 whitespace-pre-line text-sm leading-relaxed text-foreground/80">{p.description}</p>}
+            {p.description && <p className="mt-6 whitespace-pre-line text-sm leading-relaxed text-foreground/80">{formatDescription(p.description)}</p>}
             <div className="mt-8 flex flex-wrap gap-3">
               <button
                 onClick={() => {
