@@ -99,11 +99,10 @@ export const updateSettings = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!role) throw new Error("No autorizado");
     const payload: Record<string, any> = { ...data };
-    if (payload.hours && !payload.business_hours) {
-      payload.business_hours = payload.hours;
-    } else if (payload.business_hours && !payload.hours) {
+    if (payload.business_hours && !payload.hours) {
       payload.hours = payload.business_hours;
     }
+    delete payload.business_hours;
     const { error } = await supabase
       .from("site_settings")
       .update({ ...payload, updated_at: new Date().toISOString() })

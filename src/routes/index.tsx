@@ -226,7 +226,7 @@ function Index() {
   const phone = settings?.phone ?? "";
   const phoneHref = phone ? "tel:" + phone.replace(/\s/g, "") : "";
   const whatsappHref = settings?.whatsapp ? `https://wa.me/${settings.whatsapp}` : "https://wa.me/5491123951455";
-  const businessHours = (settings as any)?.business_hours || settings?.hours || "Lunes a Viernes de 8:00 a 17:00";
+  const businessHours = settings?.hours || (settings as any)?.business_hours || "Lunes a Viernes de 8:00 a 17:00";
 
   // Search filter
   const searchResults = useMemo(() => {
