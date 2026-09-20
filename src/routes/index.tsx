@@ -38,7 +38,7 @@ export const Route = createFileRoute("/")({
   head: ({ loaderData }) => {
     const s = (loaderData as any)?.settings as Record<string, any> | null;
     const logoUrl = s?.logo_url || DEFAULT_OG_IMAGE;
-    const heroImgUrl = optimizeImg(s?.hero_image_url, 1200, 75);
+    const heroImgUrl = optimizeImg(s?.hero_image_url, 1000, 70);
 
     // Schema.org Organization JSON-LD
     const orgJsonLd: Record<string, unknown> = {
@@ -363,18 +363,19 @@ function Index() {
         </nav>
       </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
-        <img
-          src={optimizeImg(settings?.hero_image_url, 1200, 75) || settings?.hero_image_url || heroTire}
-          alt="Cubierta off-road"
-          width={1600}
-          height={700}
-          loading="eager"
-          decoding="async"
-          {...({ fetchPriority: "high" } as any)}
-          className="absolute inset-0 h-full w-full object-cover opacity-50"
-        />
+      <main id="main-content">
+        {/* Hero */}
+        <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
+          <img
+            src={optimizeImg(settings?.hero_image_url, 1000, 70) || settings?.hero_image_url || heroTire}
+            alt="Cubierta off-road"
+            width={1200}
+            height={600}
+            loading="eager"
+            decoding="async"
+            {...({ fetchPriority: "high" } as any)}
+            className="absolute inset-0 h-full w-full object-cover opacity-50"
+          />
         <div className="relative container mx-auto px-4 py-20 md:py-32">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">{settings?.hero_eyebrow ?? "Nueva línea 2026"}</p>
           <h1 className="max-w-2xl text-4xl font-black uppercase leading-[0.95] text-white md:text-6xl">
@@ -554,14 +555,19 @@ function Index() {
           </div>
         ))}
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="bg-secondary text-secondary-foreground">
         <div className="container mx-auto grid gap-8 px-4 py-12 md:grid-cols-4">
           <div>
             <img
-              src={settings?.logo_url || CIRCLE_LOGO_URL}
+              src={optimizeImg(settings?.logo_url, 200, 80) || settings?.logo_url || CIRCLE_LOGO_URL}
               alt={settings?.business_name || "Le Radial"}
+              width={140}
+              height={80}
+              loading="lazy"
+              decoding="async"
               className="h-20 w-auto object-contain"
             />
             <p className="mt-3 text-sm opacity-70">Cubiertas y neumáticos para autos, camionetas, camiones y agro.</p>
@@ -643,7 +649,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
   const { format } = useCurrency();
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1">
-      <Link to="/producto/$slug" params={{ slug: p.slug }} className="relative block aspect-square overflow-hidden bg-muted">
+      <Link to="/producto/$slug" params={{ slug: p.slug }} aria-label={`Ver ${p.brand} ${p.model}`} className="relative block aspect-square overflow-hidden bg-muted">
         {p.is_featured && (
           <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
             Promo
@@ -688,6 +694,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
             <Link
               to="/producto/$slug"
               params={{ slug: p.slug }}
+              aria-label={`Ver ${p.brand} ${p.model}`}
               className="flex-1 rounded-full border border-secondary/20 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-secondary hover:bg-secondary hover:text-secondary-foreground transition"
             >
               Ver
@@ -953,7 +960,7 @@ function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circ
               key={i}
               aria-label={`Ir al banner ${i + 1}`}
               onClick={() => emblaApi?.scrollTo(i)}
-              className={`h-2 rounded-full transition-all ${
+              className={`h-2 rounded-full transition-colors ${
                 selected === i ? "w-8 bg-primary" : "w-2 bg-muted-foreground/40 hover:bg-muted-foreground/70"
               }`}
             />
@@ -1053,7 +1060,7 @@ function TestimonialCard({ t }: { t: Testi }) {
     <div className="flex h-full flex-col rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
       <div className="flex items-center gap-3">
         {t.image_url ? (
-          <img src={t.image_url} alt={t.name} className="h-14 w-14 rounded-full object-cover border-2 border-primary/30" loading="lazy" />
+          <img src={t.image_url} alt={t.name} width={56} height={56} className="h-14 w-14 rounded-full object-cover border-2 border-primary/30" loading="lazy" />
         ) : (
           <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
             <User className="h-6 w-6" />
@@ -1061,7 +1068,7 @@ function TestimonialCard({ t }: { t: Testi }) {
         )}
         <div>
           <p className="font-bold text-secondary">{t.name}</p>
-          <div className="flex text-primary" aria-label={`${t.rating} de 5`}>
+          <div className="flex text-primary" role="img" aria-label={`${t.rating} de 5 estrellas`}>
             {Array.from({ length: 5 }).map((_, i) => (
               <Star key={i} className={`h-3.5 w-3.5 ${i < t.rating ? "fill-current" : "opacity-30"}`} />
             ))}
