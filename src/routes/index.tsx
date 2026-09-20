@@ -42,7 +42,7 @@ export const Route = createFileRoute("/")({
   head: ({ loaderData }) => {
     const s = (loaderData as any)?.settings as Record<string, any> | null;
     const logoUrl = s?.logo_url || DEFAULT_OG_IMAGE;
-    const heroImgUrl = optimizeImg(s?.hero_image_url, 1000, 70);
+    const heroImgUrl = optimizeImg(s?.hero_image_url, 800, 60);
 
     // Schema.org Organization JSON-LD
     const orgJsonLd: Record<string, unknown> = {
@@ -300,9 +300,9 @@ function Index() {
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-4">
           <a href="/" className="flex items-center gap-2">
             <img
-              src={optimizeImg(settings?.logo_url, 300, 85) || settings?.logo_url || HEADER_LOGO_URL}
+              src={optimizeImg(settings?.logo_url, 200, 75) || settings?.logo_url || HEADER_LOGO_URL}
               alt={settings?.business_name || "Le Radial"}
-              width={240}
+              width={140}
               height={56}
               loading="eager"
               decoding="async"
@@ -371,10 +371,10 @@ function Index() {
         {/* Hero */}
         <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
           <img
-            src={optimizeImg(settings?.hero_image_url, 1000, 70) || settings?.hero_image_url || heroTire}
+            src={optimizeImg(settings?.hero_image_url, 800, 60) || settings?.hero_image_url || heroTire}
             alt="Cubierta off-road"
-            width={1200}
-            height={600}
+            width={1000}
+            height={500}
             loading="eager"
             decoding="async"
             {...({ fetchPriority: "high" } as any)}
@@ -653,7 +653,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
   const { format } = useCurrency();
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1">
-      <Link to="/producto/$slug" params={{ slug: p.slug }} aria-label={`Ver ${p.brand} ${p.model}`} className="relative block aspect-square overflow-hidden bg-muted">
+      <Link to="/producto/$slug" params={{ slug: p.slug }} aria-label={`Ver ${p.brand} ${p.model}${p.size ? ` ${p.size}` : ""}`} className="relative block aspect-square overflow-hidden bg-muted">
         {p.is_featured && (
           <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
             Promo
@@ -698,7 +698,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
             <Link
               to="/producto/$slug"
               params={{ slug: p.slug }}
-              aria-label={`Ver ${p.brand} ${p.model}`}
+              aria-label={`Ver ${p.brand} ${p.model}${p.size ? ` ${p.size}` : ""}`}
               className="flex-1 rounded-full border border-secondary/20 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-secondary hover:bg-secondary hover:text-secondary-foreground transition"
             >
               Ver
