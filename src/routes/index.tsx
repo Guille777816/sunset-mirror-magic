@@ -24,10 +24,21 @@ import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 const HEADER_LOGO_URL = leRadialHeaderAsset.url;
 const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
 
+function optimizeImg(url: string | undefined | null, width: number, quality = 70): string {
+  if (!url) return "";
+  if (url.includes("/storage/v1/object/public/")) {
+    const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+    const sep = rewritten.includes("?") ? "&" : "?";
+    return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
+  }
+  return url;
+}
+
 export const Route = createFileRoute("/")({
   head: ({ loaderData }) => {
     const s = (loaderData as any)?.settings as Record<string, any> | null;
     const logoUrl = s?.logo_url || DEFAULT_OG_IMAGE;
+    const heroImgUrl = optimizeImg(s?.hero_image_url, 1200, 75);
 
     // Schema.org Organization JSON-LD
     const orgJsonLd: Record<string, unknown> = {
@@ -80,6 +91,7 @@ export const Route = createFileRoute("/")({
       ],
       links: [
         { rel: "canonical", href: SITE_URL },
+        ...(heroImgUrl ? [{ rel: "preload", as: "image", href: heroImgUrl, fetchPriority: "high" as any }] : []),
       ],
       scripts: [
         {
@@ -131,23 +143,6 @@ function inCategory(p: any, slug: string): boolean {
 }
 function primaryCategory(p: any): string {
   return productCategories(p)[0] ?? "";
-}
-
-// Optimiza URLs: Supabase Storage usa el endpoint de render; URLs externas
-// (sunset.com.py, fate.com.ar, etc.) se enrutan por images.weserv.nl para
-// evitar bloqueos de hotlinking (Referer) y servir con CDN + resize.
-function optimizeImg(url: string | undefined | null, width: number, quality = 70): string {
-  if (!url) return "";
-  if (url.includes("/storage/v1/object/public/")) {
-    const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
-    const sep = rewritten.includes("?") ? "&" : "?";
-    return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
-  }
-  // Direct provider URLs (sunset.com.py, dac.com.py, etc.) load fine on
-  // their own — routing them through the images.weserv.nl proxy added an
-  // extra hop that was slow/unreliable under the burst of simultaneous
-  // requests a product grid or carousel makes on page load.
-  return url;
 }
 
 const widths = [
@@ -301,8 +296,12 @@ function Index() {
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-4">
           <a href="/" className="flex items-center gap-2">
             <img
-              src={settings?.logo_url || HEADER_LOGO_URL}
+              src={optimizeImg(settings?.logo_url, 300, 85) || settings?.logo_url || HEADER_LOGO_URL}
               alt={settings?.business_name || "Le Radial"}
+              width={240}
+              height={56}
+              loading="eager"
+              decoding="async"
               className="h-14 w-auto max-w-[240px] object-contain"
             />
           </a>
@@ -366,8 +365,16 @@ function Index() {
 
       {/* Hero */}
       <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
-        <img src={settings?.hero_image_url || heroTire} alt="Cubierta off-road" width={1600} height={700}
-          className="absolute inset-0 h-full w-full object-cover opacity-50" />
+        <img
+          src={optimizeImg(settings?.hero_image_url, 1200, 75) || settings?.hero_image_url || heroTire}
+          alt="Cubierta off-road"
+          width={1600}
+          height={700}
+          loading="eager"
+          decoding="async"
+          {...({ fetchPriority: "high" } as any)}
+          className="absolute inset-0 h-full w-full object-cover opacity-50"
+        />
         <div className="relative container mx-auto px-4 py-20 md:py-32">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">{settings?.hero_eyebrow ?? "Nueva línea 2026"}</p>
           <h1 className="max-w-2xl text-4xl font-black uppercase leading-[0.95] text-white md:text-6xl">
@@ -648,13 +655,13 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
           </span>
         )}
         <img
-          src={optimizeImg(p.image_url, 500) || categoryImg[primaryCategory(p)] || tireCar}
+          src={optimizeImg(p.image_url, 400, 70) || categoryImg[primaryCategory(p)] || tireCar}
           alt={`${p.brand} ${p.model}`}
           loading={eager ? "eager" : "lazy"}
           decoding="async"
           referrerPolicy="no-referrer"
-          width={500}
-          height={500}
+          width={400}
+          height={400}
           onError={(e) => {
             const el = e.currentTarget;
             const original = p.image_url || "";
@@ -740,9 +747,9 @@ function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow:
           id={`${id}-scroller`}
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]"
         >
-          {items.map((p) => (
+          {items.map((p, idx) => (
             <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[32%] lg:w-[24%]">
-              <ProductCard p={p} eager />
+              <ProductCard p={p} eager={idx < 2} />
             </div>
           ))}
         </div>
@@ -834,7 +841,7 @@ function AutoCarousel({ id, eyebrow, title, items, bg, direction = "left" }: { i
         >
           {loop.map((p, idx) => (
             <div key={`${p.id}-${idx}`} className="w-[260px] shrink-0 sm:w-[280px] md:w-[300px]">
-              <ProductCard p={p} eager />
+              <ProductCard p={p} eager={idx < 2} />
             </div>
           ))}
         </div>
