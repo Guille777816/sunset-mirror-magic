@@ -177,6 +177,7 @@ export type Database = {
           hero_subtitle: string
           hero_title: string
           hours: string
+          business_hours?: string
           id: string
           instagram: string
           logo_url: string
@@ -206,6 +207,7 @@ export type Database = {
           hero_subtitle?: string
           hero_title?: string
           hours?: string
+          business_hours?: string
           id?: string
           instagram?: string
           logo_url?: string
@@ -235,6 +237,7 @@ export type Database = {
           hero_subtitle?: string
           hero_title?: string
           hours?: string
+          business_hours?: string
           id?: string
           instagram?: string
           logo_url?: string
@@ -314,6 +317,7 @@ export type Database = {
           hero_subtitle: string | null
           hero_title: string | null
           hours: string | null
+          business_hours?: string | null
           id: string | null
           instagram: string | null
           logo_url: string | null
@@ -337,6 +341,7 @@ export type Database = {
           hero_subtitle?: string | null
           hero_title?: string | null
           hours?: string | null
+          business_hours?: string | null
           id?: string | null
           instagram?: string | null
           logo_url?: string | null
@@ -360,6 +365,7 @@ export type Database = {
           hero_subtitle?: string | null
           hero_title?: string | null
           hours?: string | null
+          business_hours?: string | null
           id?: string | null
           instagram?: string | null
           logo_url?: string | null

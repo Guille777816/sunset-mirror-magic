@@ -36,6 +36,21 @@ export const Route = createFileRoute("/")({
       name: "Le Radial SRL",
       url: SITE_URL,
       logo: logoUrl,
+      image: logoUrl,
+      openingHoursSpecification: [
+        {
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+          ],
+          opens: "08:00",
+          closes: "17:00",
+        },
+      ],
     };
     if (s?.phone) orgJsonLd.telephone = s.phone;
     if (s?.email) orgJsonLd.email = s.email;
@@ -208,9 +223,10 @@ function Index() {
     });
   }, [settings, setRates]);
 
-  const phone = settings?.phone ?? "(376) 4-000000";
-  const phoneHref = "tel:" + (settings?.phone ?? "").replace(/\s/g, "");
-  const whatsappHref = `https://wa.me/${settings?.whatsapp ?? "5493764000000"}`;
+  const phone = settings?.phone ?? "";
+  const phoneHref = phone ? "tel:" + phone.replace(/\s/g, "") : "";
+  const whatsappHref = settings?.whatsapp ? `https://wa.me/${settings.whatsapp}` : "https://wa.me/5491123951455";
+  const businessHours = (settings as any)?.business_hours || settings?.hours || "Lunes a Viernes de 8:00 a 17:00";
 
   // Search filter
   const searchResults = useMemo(() => {
@@ -259,17 +275,23 @@ function Index() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
       <div className="bg-secondary text-secondary-foreground text-xs">
-        <div className="container mx-auto flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-2">
+        <div className="container mx-auto flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+          <div className="flex flex-wrap items-center gap-4">
             {settings?.address && (
-              <>
-                <MapPin className="h-3.5 w-3.5 text-primary" />
+              <div className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span>{settings.address}</span>
-              </>
+              </div>
+            )}
+            {phone && (
+              <a href={phoneHref} className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                <Phone className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>{phone}</span>
+              </a>
             )}
           </div>
-          <div className="hidden gap-4 md:flex">
-            <span>{(settings as any)?.hours || "Lun a Vie 8:00 – 18:00"}</span>
+          <div className="hidden gap-4 md:flex items-center">
+            <span>{businessHours}</span>
           </div>
         </div>
       </div>
@@ -285,12 +307,14 @@ function Index() {
             />
           </a>
           <div className="hidden items-center gap-6 lg:flex">
-            <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
-                <Phone className="h-4 w-4" />
-              </span>
-              {phone}
-            </a>
+            {phone && (
+              <a href={phoneHref} className="flex items-center gap-2 text-sm font-semibold">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
+                  <Phone className="h-4 w-4" />
+                </span>
+                {phone}
+              </a>
+            )}
             {authed ? (
               <>
                 <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
@@ -317,9 +341,11 @@ function Index() {
               <ShoppingCart className="h-5 w-5" />
               {cart.count > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold text-secondary-foreground">{cart.count}</span>}
             </button>
-            <a href={phoneHref} aria-label="Llamar" className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-secondary-foreground">
-              <Phone className="h-5 w-5" />
-            </a>
+            {phone && (
+              <a href={phoneHref} aria-label="Llamar" className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-secondary-foreground">
+                <Phone className="h-5 w-5" />
+              </a>
+            )}
           </div>
         </div>
         {/* Nav — Inicio + categorías clickeables */}

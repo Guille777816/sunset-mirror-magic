@@ -655,7 +655,7 @@ function SettingsPanel() {
       cuit: (data as any).cuit ?? "",
       instagram: (data as any).instagram ?? "",
       facebook: (data as any).facebook ?? "",
-      hours: (data as any).hours ?? "",
+      hours: (data as any).hours ?? (data as any).business_hours ?? "",
       hero_eyebrow: data.hero_eyebrow, hero_title: data.hero_title, hero_subtitle: data.hero_subtitle,
       hero_description: data.hero_description, promo_banner: data.promo_banner,
       logo_url: (data as any).logo_url ?? "",

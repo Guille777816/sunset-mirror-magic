@@ -16,6 +16,7 @@ type PublicSettings = {
   instagram: string;
   facebook: string;
   hours: string;
+  business_hours?: string;
   hero_eyebrow: string;
   hero_title: string;
   hero_subtitle: string;
@@ -66,6 +67,7 @@ const settingsSchema = z.object({
   instagram: z.string().max(200).default(""),
   facebook: z.string().max(200).default(""),
   hours: z.string().max(200).default(""),
+  business_hours: z.string().max(200).optional(),
   hero_eyebrow: z.string().max(120),
   hero_title: z.string().max(120),
   hero_subtitle: z.string().max(160),
@@ -96,9 +98,15 @@ export const updateSettings = createServerFn({ method: "POST" })
       .eq("role", "admin")
       .maybeSingle();
     if (!role) throw new Error("No autorizado");
+    const payload: Record<string, any> = { ...data };
+    if (payload.hours && !payload.business_hours) {
+      payload.business_hours = payload.hours;
+    } else if (payload.business_hours && !payload.hours) {
+      payload.hours = payload.business_hours;
+    }
     const { error } = await supabase
       .from("site_settings")
-      .update({ ...data, updated_at: new Date().toISOString() })
+      .update({ ...payload, updated_at: new Date().toISOString() })
       .eq("id", "main");
     if (error) throw new Error(error.message);
     return { ok: true };
