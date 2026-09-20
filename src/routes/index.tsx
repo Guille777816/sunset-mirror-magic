@@ -316,14 +316,9 @@ function Index() {
               </a>
             )}
             {authed ? (
-              <>
-                <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
-                  <Users className="h-5 w-5" /> Admin
-                </Link>
-                <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
-                  <User className="h-5 w-5" /> Salir
-                </button>
-              </>
+              <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
+                <User className="h-5 w-5" /> Salir
+              </button>
             ) : (
               <Link to="/login" className="flex items-center gap-2 text-sm font-semibold hover:text-primary">
                 <User className="h-5 w-5" /> Login
