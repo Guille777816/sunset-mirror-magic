@@ -27,10 +27,14 @@ export const getProductBySlug = createServerFn({ method: "GET" })
 
 function optimizeImg(url: string | undefined | null, width = 900, quality = 80): string {
   if (!url) return "";
+  if (url.startsWith("data:") || url.startsWith("blob:")) return url;
   if (url.includes("/storage/v1/object/public/")) {
     const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
     const sep = rewritten.includes("?") ? "&" : "?";
     return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
+  }
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&output=webp&q=${quality}&fit=contain`;
   }
   return url;
 }
@@ -188,8 +192,12 @@ function ProductDetail() {
               referrerPolicy="no-referrer"
               onError={(e) => {
                 const el = e.currentTarget;
+                const original = p.image_url || "";
                 const placeholder = categoryImg[(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories[0] : p.category) as string] || tireCar;
-                if (el.src !== placeholder) {
+                if (original && el.src !== original && !el.dataset.triedOriginal) {
+                  el.dataset.triedOriginal = "1";
+                  el.src = original;
+                } else if (el.src !== placeholder) {
                   el.src = placeholder;
                 }
               }}

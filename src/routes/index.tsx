@@ -26,10 +26,14 @@ const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
 
 function optimizeImg(url: string | undefined | null, width: number, quality = 70): string {
   if (!url) return "";
+  if (url.startsWith("data:") || url.startsWith("blob:")) return url;
   if (url.includes("/storage/v1/object/public/")) {
     const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
     const sep = rewritten.includes("?") ? "&" : "?";
     return `${rewritten}${sep}width=${width}&quality=${quality}&resize=contain`;
+  }
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&output=webp&q=${quality}&fit=contain`;
   }
   return url;
 }
@@ -754,9 +758,9 @@ function PromoCarousel({ id, eyebrow, title, items, bg }: { id: string; eyebrow:
           id={`${id}-scroller`}
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]"
         >
-          {displayItems.map((p, idx) => (
+          {displayItems.map((p) => (
             <div key={p.id} className="w-[70%] shrink-0 snap-start sm:w-[45%] md:w-[32%] lg:w-[24%]">
-              <ProductCard p={p} eager={idx < 2} />
+              <ProductCard p={p} eager={false} />
             </div>
           ))}
         </div>
@@ -875,7 +879,7 @@ function AutoCarousel({
         >
           {loop.map((p, idx) => (
             <div key={`${p.id}-${idx}`} className="w-[260px] shrink-0 sm:w-[280px] md:w-[300px]">
-              <ProductCard p={p} eager={idx < 2} />
+              <ProductCard p={p} eager={false} />
             </div>
           ))}
         </div>
@@ -915,9 +919,8 @@ function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circ
                   src={optimizeImg(b.image_url, 1200, 75) || b.image_url || circleLogoUrl}
                   alt={b.title || "Banner"}
                   className="h-full w-full object-cover"
-                  loading={idx === 0 ? "eager" : "lazy"}
+                  loading="lazy"
                   decoding="async"
-                  {...(idx === 0 ? { fetchPriority: "high" as any } : {})}
                   onError={(e) => {
                     const el = e.currentTarget;
                     const fallback = b.image_url || circleLogoUrl;
