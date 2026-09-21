@@ -47,8 +47,172 @@ function formatDescription(desc: string | null | undefined): string {
     .trim();
 }
 
+function cleanText(str?: string | null): string {
+  return (str || "").replace(/\s+/g, " ").trim();
+}
+
+function getCleanFullName(
+  p?: { brand?: string | null; model?: string | null; size?: string | null } | null,
+): string {
+  if (!p) return "Producto";
+  const brand = cleanText(p.brand);
+  const model = cleanText(p.model);
+  const size = cleanText(p.size);
+  return [brand, model, size].filter(Boolean).join(" ").replace(/\s+/g, " ").trim() || "Producto";
+}
+
+function extractIndices(desc?: string | null, model?: string | null): string | null {
+  const d = desc || "";
+
+  const mCargaTable = d.match(
+    /Indice de Carga[^:]*:\s*\n?\s*([0-9]{2,3}(?:\/[0-9]{2,3})?(?:\s*\([0-9\s.,]+(?:kg|kilos)?\))?)/i,
+  );
+  const mVelTable = d.match(/Indice de Velocidad[^:]*:\s*\n?\s*([A-Z](?:\s*\([^)]+\))?)/i);
+  if (mCargaTable || mVelTable) {
+    const parts: string[] = [];
+    if (mCargaTable) parts.push(`índice de carga ${cleanText(mCargaTable[1])}`);
+    if (mVelTable) parts.push(`índice de velocidad ${cleanText(mVelTable[1])}`);
+    return parts.join(" e ");
+  }
+
+  const mCombined = d.match(/Índice de carga y velocidad:\s*([^\n\r.]+)/i);
+  if (mCombined) {
+    return `índice de carga y velocidad ${cleanText(mCombined[1])}`;
+  }
+
+  const mCarga = d.match(/Índice de carga:\s*([^\n\r.]+)/i);
+  const mVel = d.match(/Índice de velocidad:\s*([^\n\r.]+)/i);
+  if (mCarga || mVel) {
+    const parts: string[] = [];
+    if (mCarga) parts.push(`índice de carga ${cleanText(mCarga[1])}`);
+    if (mVel) parts.push(`índice de velocidad ${cleanText(mVel[1])}`);
+    return parts.join(" e ");
+  }
+
+  if (model) {
+    const mModel = model.match(/\b([0-9]{2,3}(?:\/[0-9]{2,3})?[A-Z])\b/);
+    if (mModel) return `índice ${mModel[1]}`;
+  }
+
+  return null;
+}
+
+function isGenericVendorDescription(desc?: string | null): boolean {
+  if (!desc) return true;
+  return (
+    /las especificaciones del producto son dadas por el fabricante/i.test(desc) &&
+    !/DESCRIPCIÓN/i.test(desc) &&
+    !/Neumático de/i.test(desc)
+  );
+}
+
+function buildFichaBriefDescription(p?: ProductMetaInput | null): string {
+  if (!p) return "";
+  const brand = cleanText(p.brand);
+  const model = cleanText(p.model);
+  const size = cleanText(p.size);
+  const catRaw =
+    (Array.isArray(p.categories) && p.categories.length ? p.categories[0] : p.category) || "";
+  const catMap: Record<string, string> = {
+    autos: "autos",
+    camionetas: "camionetas",
+    suv: "SUV",
+    camiones: "camiones",
+    agricolas: "agrícolas",
+    industriales: "industriales",
+  };
+  const cat = catMap[catRaw.toLowerCase()] || catRaw.toLowerCase();
+
+  const titleParts = [brand, model, size].filter(Boolean).join(" ");
+  const intro = titleParts ? `Neumático ${titleParts}` : "Neumático";
+  const forCat = cat ? ` para ${cat}` : "";
+  const indices = extractIndices(p.description, model);
+  const indicesText = indices ? `, con ${indices}` : "";
+
+  return `${intro}${forCat}${indicesText}. Diseñado para brindar excelente rendimiento, seguridad y durabilidad.`;
+}
+
+interface ProductMetaInput {
+  brand?: string | null;
+  model?: string | null;
+  size?: string | null;
+  category?: string | null;
+  categories?: string[] | null;
+  description?: string | null;
+}
+
+function buildProductMetaDescription(p?: ProductMetaInput | null): string {
+  if (!p) {
+    return "Cubiertas y neumáticos para autos, camionetas, camiones y agro. Envíos a todo el país. Comprá online en Le Radial.";
+  }
+
+  const brand = cleanText(p.brand);
+  const model = cleanText(p.model);
+  const size = cleanText(p.size);
+
+  const nameParts = [brand, model, size].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  const intro = nameParts ? `Cubierta ${nameParts}` : "Cubierta";
+
+  const catRaw =
+    (Array.isArray(p.categories) && p.categories.length ? p.categories[0] : p.category) || "";
+  const catMap: Record<string, string> = {
+    autos: "autos",
+    camionetas: "camionetas",
+    suv: "SUV",
+    camiones: "camiones",
+    agricolas: "agrícolas",
+    industriales: "industriales",
+  };
+  const catText = catMap[catRaw.toLowerCase()] || catRaw.toLowerCase();
+  const forCat = catText ? ` para ${catText}` : "";
+
+  let indexStr = "";
+  if (p.description) {
+    const mCombined = p.description.match(
+      /Índice de carga y velocidad:\s*([0-9]{2,3}(?:\/[0-9]{2,3})?\s*[A-Z])/i,
+    );
+    if (mCombined) {
+      indexStr = `Índice ${mCombined[1].replace(/\s+/g, "")}.`;
+    } else {
+      const mCarga = p.description.match(/Índice de carga:\s*([0-9]{2,3}(?:\/[0-9]{2,3})?)/i);
+      const mVel = p.description.match(/Índice de velocidad:\s*([A-Z])/i);
+      if (mCarga && mVel) {
+        indexStr = `Índice ${mCarga[1].trim()}${mVel[1].trim()}.`;
+      } else if (mCarga) {
+        indexStr = `Índice de carga ${mCarga[1].trim()}.`;
+      }
+    }
+  }
+  if (!indexStr && model) {
+    const mModel = model.match(/\b([0-9]{2,3}(?:\/[0-9]{2,3})?[A-Z])\b/);
+    if (mModel) {
+      indexStr = `Índice ${mModel[1]}.`;
+    }
+  }
+
+  const baseSentence = `${intro}${forCat}.`;
+  const tail = "Envíos a todo el país. Comprá online en Le Radial.";
+
+  let desc = [baseSentence, indexStr, tail].filter(Boolean).join(" ");
+  if (desc.length > 155) {
+    desc = [baseSentence, tail].filter(Boolean).join(" ");
+  }
+  if (desc.length > 155) {
+    desc = [baseSentence, "Envíos a todo el país. Le Radial."].filter(Boolean).join(" ");
+  }
+  if (desc.length > 155) {
+    desc = desc.slice(0, 152).trim() + "...";
+  }
+
+  return desc;
+}
+
 const categoryImg: Record<string, string> = {
-  autos: tireCar, camionetas: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
+  autos: tireCar,
+  camionetas: tireSuv,
+  camiones: tireTruck,
+  agricolas: tireAgro,
+  industriales: tireTruck,
 };
 
 export const Route = createFileRoute("/producto/$slug")({
@@ -58,19 +222,18 @@ export const Route = createFileRoute("/producto/$slug")({
   },
   head: ({ loaderData }) => {
     const p = loaderData?.product as any;
-    const fullName = p ? [p.brand, p.model, p.size].filter(Boolean).join(" ").trim() : "Producto";
+    const fullName = getCleanFullName(p);
     const title = p ? `${fullName} — Le Radial` : "Producto — Le Radial";
-    const description = p
-      ? (p.description ? formatDescription(p.description).slice(0, 155) : `${fullName}. Comprá online en Le Radial, envíos a toda la Argentina.`)
-      : "Cubiertas y neumáticos para autos, camionetas, camiones y agro.";
+    const description = buildProductMetaDescription(p);
     const productUrl = p ? `${SITE_URL}/producto/${p.slug}` : SITE_URL;
-    const imageUrl = p?.image_url ? optimizeImg(p.image_url, 900) : DEFAULT_OG_IMAGE;
+    const imageUrl = p?.image_url || DEFAULT_OG_IMAGE;
 
     const scripts: Array<{ type: string; children: string }> = [];
 
     if (p) {
       // Schema.org Product + Offer JSON-LD
-      const categoryLabel = (Array.isArray(p.categories) && p.categories.length ? p.categories[0] : p.category) || "";
+      const categoryLabel =
+        (Array.isArray(p.categories) && p.categories.length ? p.categories[0] : p.category) || "";
       const productJsonLd = {
         "@context": "https://schema.org",
         "@type": "Product",
@@ -88,9 +251,8 @@ export const Route = createFileRoute("/producto/$slug")({
           priceCurrency: "ARS",
           price: Number(p.price_ars),
           itemCondition: "https://schema.org/NewCondition",
-          availability: p.stock > 0
-            ? "https://schema.org/InStock"
-            : "https://schema.org/OutOfStock",
+          availability:
+            p.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
           seller: {
             "@type": "Organization",
             name: "Le Radial SRL",
@@ -110,12 +272,14 @@ export const Route = createFileRoute("/producto/$slug")({
             item: SITE_URL,
           },
           ...(categoryLabel
-            ? [{
-                "@type": "ListItem" as const,
-                position: 2,
-                name: categoryLabel.charAt(0).toUpperCase() + categoryLabel.slice(1),
-                item: `${SITE_URL}/#catalogo`,
-              }]
+            ? [
+                {
+                  "@type": "ListItem" as const,
+                  position: 2,
+                  name: categoryLabel.charAt(0).toUpperCase() + categoryLabel.slice(1),
+                  item: `${SITE_URL}/#catalogo`,
+                },
+              ]
             : []),
           {
             "@type": "ListItem",
@@ -141,11 +305,11 @@ export const Route = createFileRoute("/producto/$slug")({
         { property: "og:image", content: imageUrl },
         { property: "og:url", content: productUrl },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: fullName },
+        { name: "twitter:description", content: description },
         { name: "twitter:image", content: imageUrl },
       ],
-      links: [
-        { rel: "canonical", href: productUrl },
-      ],
+      links: [{ rel: "canonical", href: productUrl }],
       scripts,
     };
   },
@@ -166,34 +330,56 @@ function ProductDetail() {
   const cart = useCart();
 
   if (isLoading) return <div className="p-16 text-center text-muted-foreground">Cargando...</div>;
-  if (!p) return (
-    <div className="container mx-auto max-w-xl p-16 text-center">
-      <h1 className="text-2xl font-bold text-secondary">Producto no encontrado</h1>
-      <Link to="/" className="mt-6 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground">Volver</Link>
-    </div>
-  );
+  if (!p)
+    return (
+      <div className="container mx-auto max-w-xl p-16 text-center">
+        <h1 className="text-2xl font-bold text-secondary">Producto no encontrado</h1>
+        <Link
+          to="/"
+          className="mt-6 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground"
+        >
+          Volver
+        </Link>
+      </div>
+    );
 
   const phone = s?.phone ?? "";
   const wa = s?.whatsapp ?? "";
-  const fullName = [p.brand, p.model, p.size].filter(Boolean).join(" ").trim();
+  const fullName = getCleanFullName(p);
   const msg = encodeURIComponent(`Hola! Estoy interesado en ${fullName}.`);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary">
+        <Link
+          to="/"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary"
+        >
           <ArrowLeft className="h-4 w-4" /> Volver
         </Link>
         <div className="grid gap-8 md:grid-cols-2">
           <div className="overflow-hidden rounded-2xl bg-muted shadow-[var(--shadow-product)]">
             <img
-              src={optimizeImg(p.image_url, 900) || (categoryImg[(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories[0] : p.category) as string] || tireCar)}
+              src={
+                optimizeImg(p.image_url, 900) ||
+                categoryImg[
+                  (Array.isArray((p as any).categories) && (p as any).categories.length
+                    ? (p as any).categories[0]
+                    : p.category) as string
+                ] ||
+                tireCar
+              }
               alt={fullName}
               referrerPolicy="no-referrer"
               onError={(e) => {
                 const el = e.currentTarget;
                 const original = p.image_url || "";
-                const placeholder = categoryImg[(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories[0] : p.category) as string] || tireCar;
+                const placeholder =
+                  categoryImg[
+                    (Array.isArray((p as any).categories) && (p as any).categories.length
+                      ? (p as any).categories[0]
+                      : p.category) as string
+                  ] || tireCar;
                 if (original && el.src !== original && !el.dataset.triedOriginal) {
                   el.dataset.triedOriginal = "1";
                   el.src = original;
@@ -205,36 +391,82 @@ function ProductDetail() {
             />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{p.brand}</p>
-            <h1 className="mt-2 text-3xl font-black text-secondary md:text-4xl">{p.model}</h1>
-            {p.size ? <p className="mt-2 text-lg text-muted-foreground">Medida: <strong>{p.size}</strong></p> : null}
-            <p className="mt-1 text-sm capitalize text-muted-foreground">Categoría: {(Array.isArray((p as any).categories) && (p as any).categories.length ? (p as any).categories : [p.category]).join(", ")}</p>
-            <p className="mt-6 text-4xl font-black text-secondary">$ {Number(p.price_ars).toLocaleString("es-AR")}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}</p>
-            {p.description && <p className="mt-6 whitespace-pre-line text-sm leading-relaxed text-foreground/80">{formatDescription(p.description)}</p>}
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+              {cleanText(p.brand)}
+            </p>
+            <h1 className="mt-2 text-3xl font-black text-secondary md:text-4xl">
+              {cleanText(p.model)}
+            </h1>
+            {p.size ? (
+              <p className="mt-2 text-lg text-muted-foreground">
+                Medida: <strong>{cleanText(p.size)}</strong>
+              </p>
+            ) : null}
+            <p className="mt-1 text-sm capitalize text-muted-foreground">
+              Categoría:{" "}
+              {(Array.isArray((p as any).categories) && (p as any).categories.length
+                ? (p as any).categories
+                : [p.category]
+              ).join(", ")}
+            </p>
+            <p className="mt-6 text-4xl font-black text-secondary">
+              $ {Number(p.price_ars).toLocaleString("es-AR")}
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}
+            </p>
+            {isGenericVendorDescription(p.description) && (
+              <p className="mt-6 text-sm leading-relaxed text-foreground/90 font-medium">
+                {buildFichaBriefDescription(p)}
+              </p>
+            )}
+            {p.description && (
+              <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-foreground/80">
+                {formatDescription(p.description)}
+              </p>
+            )}
             <div className="mt-8 flex flex-wrap gap-3">
               <button
                 onClick={() => {
-                  cart.add({ id: p.id, brand: p.brand, model: p.model, size: p.size, price_ars: Number(p.price_ars), image_url: p.image_url });
+                  cart.add({
+                    id: p.id,
+                    brand: cleanText(p.brand),
+                    model: cleanText(p.model),
+                    size: cleanText(p.size),
+                    price_ars: Number(p.price_ars),
+                    image_url: p.image_url,
+                  });
                   cart.open();
                 }}
                 className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:scale-105 transition"
               >
                 <Plus className="h-4 w-4" /> Agregar al carrito
               </button>
-              <a href={`https://wa.me/${wa}?text=${msg}`} target="_blank" rel="noopener" className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-7 py-3 text-sm font-bold uppercase tracking-wider text-secondary">
+              <a
+                href={`https://wa.me/${wa}?text=${msg}`}
+                target="_blank"
+                rel="noopener"
+                className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-7 py-3 text-sm font-bold uppercase tracking-wider text-secondary"
+              >
                 <ShoppingCart className="h-4 w-4" /> Consultar por WhatsApp
               </a>
               {phone && (
-                <a href={`tel:${phone.replace(/\s/g, "")}`} className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-7 py-3 text-sm font-bold uppercase tracking-wider text-secondary">
+                <a
+                  href={`tel:${phone.replace(/\s/g, "")}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-7 py-3 text-sm font-bold uppercase tracking-wider text-secondary"
+                >
                   <Phone className="h-4 w-4" /> {phone}
                 </a>
               )}
             </div>
             <div className="mt-8 flex items-center gap-6 border-t border-border/60 pt-6">
-             <img src="/inmetro.webp" alt="INMETRO" className="h-14 w-auto object-contain" />
-<img src="/tuv.webp" alt="TÜV SÜD" className="h-14 w-auto object-contain" />
-<img src="/garantia.webp" alt="Garantía 5 años" className="h-14 w-auto object-contain" />
+              <img src="/inmetro.webp" alt="INMETRO" className="h-14 w-auto object-contain" />
+              <img src="/tuv.webp" alt="TÜV SÜD" className="h-14 w-auto object-contain" />
+              <img
+                src="/garantia.webp"
+                alt="Garantía 5 años"
+                className="h-14 w-auto object-contain"
+              />
             </div>
           </div>
         </div>
