@@ -61,37 +61,128 @@ function getCleanFullName(
   return [brand, model, size].filter(Boolean).join(" ").replace(/\s+/g, " ").trim() || "Producto";
 }
 
-function extractIndices(desc?: string | null, model?: string | null): string | null {
-  const d = desc || "";
+interface ProductMetaInput {
+  brand?: string | null;
+  model?: string | null;
+  size?: string | null;
+  category?: string | null;
+  categories?: string[] | null;
+  description?: string | null;
+}
 
-  const mCargaTable = d.match(
-    /Indice de Carga[^:]*:\s*\n?\s*([0-9]{2,3}(?:\/[0-9]{2,3})?(?:\s*\([0-9\s.,]+(?:kg|kilos)?\))?)/i,
-  );
-  const mVelTable = d.match(/Indice de Velocidad[^:]*:\s*\n?\s*([A-Z](?:\s*\([^)]+\))?)/i);
-  if (mCargaTable || mVelTable) {
-    const parts: string[] = [];
-    if (mCargaTable) parts.push(`índice de carga ${cleanText(mCargaTable[1])}`);
-    if (mVelTable) parts.push(`índice de velocidad ${cleanText(mVelTable[1])}`);
-    return parts.join(" e ");
-  }
+function normalizeSize(s?: string | null): string {
+  return (s || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+}
 
-  const mCombined = d.match(/Índice de carga y velocidad:\s*([^\n\r.]+)/i);
-  if (mCombined) {
-    return `índice de carga y velocidad ${cleanText(mCombined[1])}`;
-  }
+function extractSafeIndices(
+  p?: ProductMetaInput | null,
+): { formattedMeta: string; formattedFicha: string } | null {
+  if (!p) return null;
+  const model = cleanText(p.model);
+  const size = cleanText(p.size);
+  const desc = p.description || "";
+  const normSize = normalizeSize(size);
 
-  const mCarga = d.match(/Índice de carga:\s*([^\n\r.]+)/i);
-  const mVel = d.match(/Índice de velocidad:\s*([^\n\r.]+)/i);
-  if (mCarga || mVel) {
-    const parts: string[] = [];
-    if (mCarga) parts.push(`índice de carga ${cleanText(mCarga[1])}`);
-    if (mVel) parts.push(`índice de velocidad ${cleanText(mVel[1])}`);
-    return parts.join(" e ");
-  }
-
+  // 1. Check if model name has an explicit index (e.g. 111V, 121/118Q, 149/146L, 108T)
   if (model) {
     const mModel = model.match(/\b([0-9]{2,3}(?:\/[0-9]{2,3})?[A-Z])\b/);
-    if (mModel) return `índice ${mModel[1]}`;
+    if (mModel) {
+      const idx = mModel[1];
+      return {
+        formattedMeta: `Índice ${idx}.`,
+        formattedFicha: `índice ${idx}`,
+      };
+    }
+  }
+
+  if (!desc) return null;
+
+  // Detect all tire measures mentioned in the description
+  const allSizesInDesc = Array.from(
+    new Set(
+      (desc.match(/\b\d{2,3}(?:\/\d{2,3})?\s*(?:R|RF|ZR|D|B|-)\s*\d{1,2}(?:\.5)?\b/gi) || []).map(
+        normalizeSize,
+      ),
+    ),
+  );
+
+  // 2. Conflict check: if description mentions a single size that contradicts the product size
+  if (allSizesInDesc.length === 1 && normSize && allSizesInDesc[0] !== normSize) {
+    return null;
+  }
+
+  // 3. Multi-row table or multiple measures in description:
+  // Must match the row corresponding to product size with certainty
+  if (allSizesInDesc.length > 1) {
+    if (!normSize) return null;
+    const lines = desc
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const matchingLine = lines.find((l) => normalizeSize(l).includes(normSize));
+    if (!matchingLine) {
+      return null;
+    }
+    const mRow = matchingLine.match(/([0-9]{2,3}(?:\/[0-9]{2,3})?\s*[A-Z])/i);
+    if (mRow) {
+      const val = mRow[1].replace(/\s+/g, "");
+      return {
+        formattedMeta: `Índice ${val}.`,
+        formattedFicha: `índice ${val}`,
+      };
+    }
+    return null;
+  }
+
+  // 4. Single-measure description matching product size (or generic specs format)
+  const mCargaTable = desc.match(
+    /Indice de Carga[^:]*:\s*\n?\s*([0-9]{2,3}(?:\/[0-9]{2,3})?(?:\s*\([0-9\s.,]+(?:kg|kilos)?\))?)/i,
+  );
+  const mVelTable = desc.match(/Indice de Velocidad[^:]*:\s*\n?\s*([A-Z](?:\s*\([^)]+\))?)/i);
+  if (mCargaTable || mVelTable) {
+    const partsMeta: string[] = [];
+    const partsFicha: string[] = [];
+    if (mCargaTable) {
+      const cleanVal = cleanText(mCargaTable[1]);
+      partsMeta.push(`Índice de carga ${cleanVal}`);
+      partsFicha.push(`índice de carga ${cleanVal}`);
+    }
+    if (mVelTable) {
+      const cleanVal = cleanText(mVelTable[1]);
+      partsMeta.push(`índice de velocidad ${cleanVal}`);
+      partsFicha.push(`índice de velocidad ${cleanVal}`);
+    }
+    return {
+      formattedMeta: `${partsMeta.join(" e ")}.`,
+      formattedFicha: partsFicha.join(" e "),
+    };
+  }
+
+  const mCombined = desc.match(
+    /Índice de carga y velocidad:\s*([0-9]{2,3}(?:\/[0-9]{2,3})?\s*[A-Z])/i,
+  );
+  if (mCombined) {
+    const val = mCombined[1].replace(/\s+/g, "");
+    return {
+      formattedMeta: `Índice ${val}.`,
+      formattedFicha: `índice ${val}`,
+    };
+  }
+
+  const mCarga = desc.match(/Índice de carga:\s*([0-9]{2,3}(?:\/[0-9]{2,3})?)/i);
+  const mVel = desc.match(/Índice de velocidad:\s*([A-Z])/i);
+  if (mCarga && mVel) {
+    const val = `${mCarga[1].trim()}${mVel[1].trim()}`;
+    return {
+      formattedMeta: `Índice ${val}.`,
+      formattedFicha: `índice ${val}`,
+    };
+  } else if (mCarga) {
+    const val = mCarga[1].trim();
+    return {
+      formattedMeta: `Índice de carga ${val}.`,
+      formattedFicha: `índice de carga ${val}`,
+    };
   }
 
   return null;
@@ -126,19 +217,10 @@ function buildFichaBriefDescription(p?: ProductMetaInput | null): string {
   const titleParts = [brand, model, size].filter(Boolean).join(" ");
   const intro = titleParts ? `Neumático ${titleParts}` : "Neumático";
   const forCat = cat ? ` para ${cat}` : "";
-  const indices = extractIndices(p.description, model);
-  const indicesText = indices ? `, con ${indices}` : "";
+  const safeIdx = extractSafeIndices(p);
+  const indicesText = safeIdx ? `, con ${safeIdx.formattedFicha}` : "";
 
   return `${intro}${forCat}${indicesText}. Diseñado para brindar excelente rendimiento, seguridad y durabilidad.`;
-}
-
-interface ProductMetaInput {
-  brand?: string | null;
-  model?: string | null;
-  size?: string | null;
-  category?: string | null;
-  categories?: string[] | null;
-  description?: string | null;
 }
 
 function buildProductMetaDescription(p?: ProductMetaInput | null): string {
@@ -166,29 +248,8 @@ function buildProductMetaDescription(p?: ProductMetaInput | null): string {
   const catText = catMap[catRaw.toLowerCase()] || catRaw.toLowerCase();
   const forCat = catText ? ` para ${catText}` : "";
 
-  let indexStr = "";
-  if (p.description) {
-    const mCombined = p.description.match(
-      /Índice de carga y velocidad:\s*([0-9]{2,3}(?:\/[0-9]{2,3})?\s*[A-Z])/i,
-    );
-    if (mCombined) {
-      indexStr = `Índice ${mCombined[1].replace(/\s+/g, "")}.`;
-    } else {
-      const mCarga = p.description.match(/Índice de carga:\s*([0-9]{2,3}(?:\/[0-9]{2,3})?)/i);
-      const mVel = p.description.match(/Índice de velocidad:\s*([A-Z])/i);
-      if (mCarga && mVel) {
-        indexStr = `Índice ${mCarga[1].trim()}${mVel[1].trim()}.`;
-      } else if (mCarga) {
-        indexStr = `Índice de carga ${mCarga[1].trim()}.`;
-      }
-    }
-  }
-  if (!indexStr && model) {
-    const mModel = model.match(/\b([0-9]{2,3}(?:\/[0-9]{2,3})?[A-Z])\b/);
-    if (mModel) {
-      indexStr = `Índice ${mModel[1]}.`;
-    }
-  }
+  const safeIdx = extractSafeIndices(p);
+  const indexStr = safeIdx?.formattedMeta || "";
 
   const baseSentence = `${intro}${forCat}.`;
   const tail = "Envíos a todo el país. Comprá online en Le Radial.";
