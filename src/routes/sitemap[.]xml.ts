@@ -1,44 +1,75 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/integrations/supabase/types';
-import { SITE_URL } from '@/lib/seo.constants';
+import { createFileRoute } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute('/sitemap.xml')({
+const BASE_URL = "https://leradial.com.ar";
+const PAGE_SIZE = 1000;
+
+function escapeXml(unsafe: string): string {
+  return unsafe.replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case "&":
+        return "&amp;";
+      case "'":
+        return "&apos;";
+      case '"':
+        return "&quot;";
+      default:
+        return c;
+    }
+  });
+}
+
+export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
-        const SUPABASE_URL = process.env['SUPABASE_URL'] ?? process.env['VITE_SUPABASE_URL'];
-        const KEY =
-          process.env['SUPABASE_PUBLISHABLE_KEY'] ??
-          process.env['SUPABASE_ANON_KEY'] ??
-          process.env['VITE_SUPABASE_PUBLISHABLE_KEY'];
+        const productUrls: string[] = [];
+        let from = 0;
+        let hasMore = true;
 
-        let productUrls: string[] = [];
+        while (hasMore) {
+          const to = from + PAGE_SIZE - 1;
+          const { data, error } = await supabase.from("products").select("slug").range(from, to);
 
-        if (SUPABASE_URL && KEY) {
-          const supabase = createClient<Database>(SUPABASE_URL, KEY, {
-            auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-          });
-          const { data } = await supabase
-            .from('products')
-            .select('slug')
-            .eq('is_active', true)
-            .returns<{ slug: string }[]>();
-          productUrls = (data ?? []).map((p) => `${SITE_URL}/producto/${p.slug}`);
+          if (error) {
+            console.error("Error fetching products for sitemap:", error);
+            break;
+          }
+
+          if (data && data.length > 0) {
+            for (const item of data) {
+              if (item.slug) {
+                productUrls.push(`${BASE_URL}/producto/${item.slug}`);
+              }
+            }
+
+            if (data.length < PAGE_SIZE) {
+              hasMore = false;
+            } else {
+              from += PAGE_SIZE;
+            }
+          } else {
+            hasMore = false;
+          }
         }
 
-        const staticUrls = [SITE_URL, `${SITE_URL}/politica-devoluciones`];
+        const staticUrls = [BASE_URL, `${BASE_URL}/politica-devoluciones`];
 
         const urls = [...staticUrls, ...productUrls];
+
         const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
+${urls.map((u) => `  <url><loc>${escapeXml(u)}</loc></url>`).join("\n")}
 </urlset>`;
 
         return new Response(body, {
           headers: {
-            'content-type': 'application/xml; charset=utf-8',
-            'cache-control': 'public, max-age=3600',
+            "Content-Type": "application/xml",
+            "Cache-Control": "public, max-age=3600",
           },
         });
       },
