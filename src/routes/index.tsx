@@ -108,14 +108,16 @@ export const Route = createFileRoute("/")({
   // Carga los datos en el servidor: la portada llega al navegador con los
   // productos ya renderizados, sin la espera de 3-5 s del fetch en el cliente.
   loader: async () => {
+    // Si el backend no responde, la portada igual se muestra y el navegador reintenta.
     const [products, settings, banners, testimonials] = await Promise.all([
-      listPublicProducts(),
+      listPublicProducts().catch(() => null),
       getSettings().catch(() => null),
       listPublicBanners().catch(() => []),
       listApprovedTestimonials().catch(() => []),
     ]);
     return { products, settings, banners, testimonials };
   },
+
   staleTime: 60_000,
   errorComponent: ({ error }: { error: unknown }) => (
     <div role="alert" className="p-8 text-center">{(error as Error)?.message ?? "Error"}</div>
