@@ -189,9 +189,10 @@ function Index() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["public-products"],
     queryFn: () => fetchProducts(),
-    initialData: initial.products as any,
+    ...(initial.products ? { initialData: initial.products as any } : {}),
     staleTime: 60_000,
   });
+
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: () => fetchSettings(),
