@@ -75,7 +75,7 @@ const settingsSchema = z.object({
   promo_banner: z.string().max(300),
   logo_url: z.string().max(500).default(""),
   hero_image_url: z.string().max(500).default(""),
-  category_images: z.record(z.string(), z.string().max(500)).default({}),
+  category_images: z.record(z.string(), z.string().max(1000000)).default({}),
   bank_name: z.string().max(120).default(""),
   bank_holder: z.string().max(150).default(""),
   bank_cbu: z.string().max(60).default(""),

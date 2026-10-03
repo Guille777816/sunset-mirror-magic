@@ -13,7 +13,7 @@ import { getSettings, getAdminSettings, updateSettings } from "@/lib/settings.fu
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check } from "lucide-react";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 export const Route = createFileRoute("/admin")({
@@ -59,7 +59,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   industriales: "Industriales",
 };
 
-type Tab = "productos" | "pedidos" | "banners" | "testimonios" | "imagenes" | "ajustes";
+type Tab = "productos" | "marcas" | "pedidos" | "banners" | "testimonios" | "imagenes" | "ajustes";
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -177,9 +177,10 @@ function AdminPage() {
           </button>
         </div>
         {/* Tabs */}
-        <div className="container mx-auto flex gap-1 px-4 pb-0">
+        <div className="container mx-auto flex gap-1 px-4 pb-0 overflow-x-auto">
           {([ 
             { id: "productos", label: "Productos", icon: Package },
+            { id: "marcas", label: "Marcas y Logos", icon: Tag },
             { id: "pedidos", label: "Pedidos", icon: ClipboardList },
             { id: "banners", label: "Banners", icon: ImageLucide },
             { id: "testimonios", label: "Testimonios", icon: MessageSquare },
@@ -326,6 +327,9 @@ function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* ── TAB: MARCAS Y LOGOS ── */}
+        {tab === "marcas" && <BrandLogosPanel />}
 
         {/* ── TAB: PEDIDOS ── */}
         {tab === "pedidos" && <OrdersPanel />}
@@ -1084,6 +1088,272 @@ function CategoryImageCard({
             <X className="h-3 w-3" />
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── BRAND LOGOS PANEL ─────────────────── */
+function BrandLogosPanel() {
+  const qc = useQueryClient();
+  const fetchS = useServerFn(getAdminSettings);
+  const saveS = useServerFn(updateSettings);
+  const fetchP = useServerFn(listAllProducts);
+
+  const { data: settingsData } = useQuery({ queryKey: ["admin-settings"], queryFn: () => fetchS() });
+  const { data: productsData } = useQuery({ queryKey: ["admin-products"], queryFn: () => fetchP() });
+
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [newBrandName, setNewBrandName] = useState("");
+  const [editingUrlBrand, setEditingUrlBrand] = useState<string | null>(null);
+  const [tempUrl, setTempUrl] = useState("");
+
+  const products = (productsData ?? []) as any[];
+  const settings = settingsData as any;
+  const categoryImages: Record<string, string> = settings?.category_images ?? {};
+
+  // Extract all unique brands from products in DB + default list + custom added
+  const dbBrands = Array.from(new Set(products.map((p) => (p.brand || "").trim()).filter(Boolean)));
+  const defaultBrands = ["XBRI", "Linglong", "Sunset Tires", "Firemax", "Pirelli", "Michelin", "Goodyear"];
+  
+  // Custom brands stored in category_images with key `brand:...`
+  const customBrandKeys = Object.keys(categoryImages)
+    .filter((k) => k.startsWith("brand:"))
+    .map((k) => k.replace("brand:", ""));
+
+  const allBrandNames = Array.from(
+    new Set([...dbBrands, ...defaultBrands, ...customBrandKeys])
+  ).sort((a, b) => a.localeCompare(b));
+
+  const countForBrand = (b: string) =>
+    products.filter((p) => (p.brand || "").trim().toLowerCase() === b.toLowerCase()).length;
+
+  const saveBrandLogo = async (brandName: string, logoValue: string | null) => {
+    if (!settings) return;
+    setSaving(true);
+    try {
+      const normalized = brandName.trim().toLowerCase();
+      const updatedImages = { ...categoryImages };
+      if (logoValue) {
+        updatedImages[`brand:${normalized}`] = logoValue;
+      } else {
+        delete updatedImages[`brand:${normalized}`];
+      }
+      const nextSettings = {
+        ...settings,
+        category_images: updatedImages,
+      };
+      await saveS({ data: nextSettings });
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      setMsg(`Logo de ${brandName} actualizado ✓`);
+      setTimeout(() => setMsg(null), 3000);
+    } catch (e: any) {
+      setMsg("Error al guardar: " + (e?.message ?? "Error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFileUpload = (brandName: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const src = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxW = 320;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const webpData = canvas.toDataURL("image/webp", 0.92);
+          saveBrandLogo(brandName, webpData);
+        }
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddBrand = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBrandName.trim()) return;
+    const name = newBrandName.trim();
+    saveBrandLogo(name, "");
+    setNewBrandName("");
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Mensaje de estado */}
+      {msg && (
+        <div className="sticky top-20 z-40 rounded-xl bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground shadow-lg animate-in fade-in">
+          {msg}
+        </div>
+      )}
+
+      {/* Banner de Especificaciones de Imagen */}
+      <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-red-50 to-orange-50 p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-black uppercase tracking-tight text-secondary flex items-center gap-2">
+              <Tag className="h-5 w-5 text-primary" /> Medidas y Especificaciones de los Logotipos
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground max-w-2xl leading-relaxed">
+              Subí el logo de cada marca <strong>una sola vez acá</strong>. Al subir o publicar cualquier neumático con esa marca, el sistema le asigna automáticamente este logo a todas las cubiertas de la tienda.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-xl border bg-white px-3 py-1.5 font-bold shadow-sm">
+              📐 Medida ideal: <strong className="text-primary font-black">200 × 63 px</strong> (proporción ~ 3:1)
+            </span>
+            <span className="rounded-xl border bg-white px-3 py-1.5 font-bold shadow-sm">
+              🖼️ Formato: <strong className="text-secondary font-black">PNG o WebP transparente</strong>
+            </span>
+            <span className="rounded-xl border bg-white px-3 py-1.5 font-bold shadow-sm">
+              ⚡ Peso: <strong className="text-emerald-700 font-black">&lt; 200 KB</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Agregar Nueva Marca */}
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-bold text-secondary">¿Trabajás con una marca nueva?</h3>
+          <p className="text-xs text-muted-foreground">Agregala acá para poder asignarle su logotipo y usarla en tus cubiertas.</p>
+        </div>
+        <form onSubmit={handleAddBrand} className="flex w-full sm:w-auto items-center gap-2">
+          <input
+            className={input + " w-full sm:w-64"}
+            placeholder="Nombre de la marca (ej: Bridgestone)"
+            value={newBrandName}
+            onChange={(e) => setNewBrandName(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={!newBrandName.trim() || saving}
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> Agregar
+          </button>
+        </form>
+      </div>
+
+      {/* Cuadrícula de Marcas y Logos */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {allBrandNames.map((brand) => {
+          const norm = brand.trim().toLowerCase();
+          const customLogo = categoryImages[`brand:${norm}`];
+          const hasCustom = Boolean(customLogo);
+          const count = countForBrand(brand);
+
+          return (
+            <div
+              key={brand}
+              className="flex flex-col justify-between rounded-2xl border bg-card p-5 shadow-sm transition hover:shadow-md"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-base font-black tracking-tight text-secondary">{brand}</h4>
+                    <span className="text-[11px] font-semibold text-muted-foreground">
+                      {count} neumático{count !== 1 ? "s" : ""} en catálogo
+                    </span>
+                  </div>
+                  {hasCustom ? (
+                    <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                      Personalizado ✓
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
+                      De fábrica
+                    </span>
+                  )}
+                </div>
+
+                {/* Previsualización del Logo */}
+                <div className="my-4 flex h-20 w-full items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-neutral-50/60 p-3">
+                  <BrandLogo brand={brand} customLogoUrl={customLogo} className="max-h-12 w-auto max-w-[180px] object-contain drop-shadow-sm" />
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="space-y-2 border-t pt-3">
+                <div className="flex items-center gap-2">
+                  <label className="flex-1 cursor-pointer">
+                    <span className="flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white transition hover:bg-neutral-800 text-center">
+                      <Upload className="h-3.5 w-3.5" /> Subir logo (200×63)
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/png,image/webp,image/svg+xml,image/jpeg"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleFileUpload(brand, f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingUrlBrand === brand) {
+                        setEditingUrlBrand(null);
+                      } else {
+                        setEditingUrlBrand(brand);
+                        setTempUrl(customLogo || "");
+                      }
+                    }}
+                    className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
+                    title="Pegar URL directa"
+                  >
+                    URL
+                  </button>
+
+                  {hasCustom && (
+                    <button
+                      type="button"
+                      onClick={() => saveBrandLogo(brand, null)}
+                      className="rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
+                      title="Restablecer logo oficial"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Editor de URL desplegable */}
+                {editingUrlBrand === brand && (
+                  <div className="flex items-center gap-2 pt-1 animate-in fade-in">
+                    <input
+                      className={input + " text-xs h-8 flex-1"}
+                      placeholder="https://ejemplo.com/logo.png"
+                      value={tempUrl}
+                      onChange={(e) => setTempUrl(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveBrandLogo(brand, tempUrl.trim() || null);
+                        setEditingUrlBrand(null);
+                      }}
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
