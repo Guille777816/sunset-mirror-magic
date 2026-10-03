@@ -15,6 +15,7 @@ import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functi
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
 import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { optimizeAndReadImage } from "@/lib/image-utils";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -412,23 +413,14 @@ function ImageManager({ products, onRefresh }: { products: Product[]; onRefresh:
     setUploading(product.id);
     setMsg(null);
     try {
-      const ext = file.name.split(".").pop();
-      const path = `${product.id}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-
-      const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
-      const publicUrl = urlData.publicUrl + "?t=" + Date.now();
-
-      await save({ data: { ...product, price_ars: Number(product.price_ars), image_url: publicUrl } });
+      const dataUrl = await optimizeAndReadImage(file, 600, 0.88);
+      await save({ data: { ...product, price_ars: Number(product.price_ars), image_url: dataUrl } });
       qc.invalidateQueries({ queryKey: ["admin-products"] });
       qc.invalidateQueries({ queryKey: ["public-products"] });
       onRefresh();
       setMsg({ type: "ok", text: `Imagen de "${product.brand} ${product.model}" actualizada ✓` });
     } catch (e: any) {
-      setMsg({ type: "err", text: e?.message ?? "Error al subir imagen" });
+      setMsg({ type: "err", text: e?.message ?? "Error al procesar la imagen" });
     } finally {
       setUploading(null);
     }
@@ -562,16 +554,10 @@ function ProductForm({
   async function handleFileUpload(file: File) {
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${p.id ?? "tmp-" + Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
-      set("image_url", urlData.publicUrl + "?t=" + Date.now());
+      const dataUrl = await optimizeAndReadImage(file, 600, 0.88);
+      set("image_url", dataUrl);
     } catch (e: any) {
-      alert(e?.message ?? "Error al subir imagen");
+      alert(e?.message ?? "Error al procesar la imagen");
     } finally {
       setUploading(false);
     }
@@ -1210,27 +1196,13 @@ function BrandLogosPanel() {
     }
   };
 
-  const handleFileUpload = (brandName: string, file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const src = e.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const maxW = 320;
-        const scale = Math.min(1, maxW / img.width);
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const webpData = canvas.toDataURL("image/webp", 0.92);
-          saveBrandLogo(brandName, webpData);
-        }
-      };
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
+  const handleFileUpload = async (brandName: string, file: File) => {
+    try {
+      const dataUrl = await optimizeAndReadImage(file, 320, 0.92);
+      saveBrandLogo(brandName, dataUrl);
+    } catch (e: any) {
+      setMsg("Error al procesar el logo: " + (e?.message ?? "Error"));
+    }
   };
 
   const handleAddBrand = (e: React.FormEvent) => {

@@ -20,7 +20,7 @@ export const productSchema = z
     categories: z.array(categoryEnum).min(1).max(5),
     price_ars: z.number().min(0),
     stock: z.number().int().min(0),
-    image_url: z.string().url().max(500).nullable().optional(),
+    image_url: z.string().max(2000000).nullable().optional(),
     description: z.string().max(2000).nullable().optional(),
     is_active: z.boolean(),
     is_featured: z.boolean(),
