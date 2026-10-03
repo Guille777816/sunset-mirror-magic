@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 63">
+  <g transform="translate(8, 16)">
+    <circle cx="17" cy="17" r="16" fill="#FFA500"/>
+    <path d="M13 25 C13 25 15 18 19 15 C21 13 23 10 21 8 C19 6 17 8 16 9 C15 7 16 5 18 5 C21 5 24 8 24 12 C24 15 21 18 19 20 C17 22 17 25 17 25 Z" fill="#000000"/>
+    <text x="38" y="24" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="18" fill="#FFA500" letter-spacing="-0.5">Continental</text>
+  </g>
+</svg>

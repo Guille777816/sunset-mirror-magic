@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 63">
+  <g transform="translate(8, 16)">
+    <path d="M5 0 L15 0 L25 18 L15 34 L5 34 L15 18 Z" fill="#E3151A"/>
+    <text x="30" y="25" font-family="Arial Black, sans-serif" font-weight="900" font-size="19" fill="#111111" letter-spacing="0.5">YOKOHAMA</text>
+  </g>
+</svg>

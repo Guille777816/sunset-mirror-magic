@@ -552,32 +552,29 @@ function ProductForm({
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <input
+                  list="known-brands-list"
                   className={input + " flex-1"}
                   value={p.brand}
                   onChange={(e) => set("brand", e.target.value)}
-                  placeholder="ej: XBRI, Firemax, Linglong, Pirelli..."
+                  placeholder="Escribí cualquier marca (ej: Hankook, Continental, Bridgestone, XBRI...)"
                 />
+                <datalist id="known-brands-list">
+                  {[
+                    "Hankook", "Continental", "Bridgestone", "Michelin", "Pirelli", "Goodyear",
+                    "Dunlop", "Yokohama", "Firestone", "Kumho", "Maxxis", "Toyo", "Cooper",
+                    "Nexen", "Falken", "BFGoodrich", "XBRI", "Linglong", "Firemax", "Sunset Tires",
+                    "Fate", "Kelly", "General Tire", "GT Radial", "Federal"
+                  ].map((b) => (
+                    <option key={b} value={b} />
+                  ))}
+                </datalist>
                 <div className="flex h-10 min-w-[90px] items-center justify-center rounded-xl border bg-neutral-50 px-2">
                   <BrandLogo brand={p.brand} className="h-4 max-w-[80px]" />
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <span className="text-[11px] font-semibold text-muted-foreground">Marcas con logo oficial:</span>
-                {["XBRI", "Firemax", "Linglong", "Sunset Tires", "Pirelli", "Michelin", "Goodyear"].map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => set("brand", b)}
-                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-semibold transition ${
-                      p.brand?.toLowerCase() === b.toLowerCase()
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/50 hover:bg-muted text-foreground"
-                    }`}
-                  >
-                    {b}
-                  </button>
-                ))}
-              </div>
+              <p className="text-[11px] text-muted-foreground">
+                💡 Podés ingresar libremente cualquiera de tus más de 100 marcas. Al escribirla, el sistema la asocia con su logo correspondiente.
+              </p>
             </div>
           </Field>
           <Field label="Modelo"><input className={input} value={p.model} onChange={(e) => set("model", e.target.value)} /></Field>
@@ -1115,7 +1112,11 @@ function BrandLogosPanel() {
 
   // Extract all unique brands from products in DB + default list + custom added
   const dbBrands = Array.from(new Set(products.map((p) => (p.brand || "").trim()).filter(Boolean)));
-  const defaultBrands = ["XBRI", "Linglong", "Sunset Tires", "Firemax", "Pirelli", "Michelin", "Goodyear"];
+  const defaultBrands = [
+    "XBRI", "Linglong", "Sunset Tires", "Firemax", "Pirelli", "Michelin", "Goodyear",
+    "Hankook", "Continental", "Bridgestone", "Dunlop", "Yokohama", "Firestone", "Kumho",
+    "Maxxis", "Toyo", "Cooper", "Nexen", "Falken", "BFGoodrich", "Fate"
+  ];
   
   // Custom brands stored in category_images with key `brand:...`
   const customBrandKeys = Object.keys(categoryImages)
@@ -1128,6 +1129,22 @@ function BrandLogosPanel() {
 
   const countForBrand = (b: string) =>
     products.filter((p) => (p.brand || "").trim().toLowerCase() === b.toLowerCase()).length;
+
+  const [searchBrand, setSearchBrand] = useState("");
+  const [filterMode, setFilterMode] = useState<"todas" | "catalogo" | "personalizado">("todas");
+
+  const displayedBrands = allBrandNames.filter((b) => {
+    if (searchBrand && !b.toLowerCase().includes(searchBrand.toLowerCase().trim())) {
+      return false;
+    }
+    if (filterMode === "catalogo" && countForBrand(b) === 0) {
+      return false;
+    }
+    if (filterMode === "personalizado" && !categoryImages[`brand:${b.toLowerCase().trim()}`]) {
+      return false;
+    }
+    return true;
+  });
 
   const saveBrandLogo = async (brandName: string, logoValue: string | null) => {
     if (!settings) return;
@@ -1204,7 +1221,7 @@ function BrandLogosPanel() {
               <Tag className="h-5 w-5 text-primary" /> Medidas y Especificaciones de los Logotipos
             </h2>
             <p className="mt-1 text-xs text-muted-foreground max-w-2xl leading-relaxed">
-              Subí el logo de cada marca <strong>una sola vez acá</strong>. Al subir o publicar cualquier neumático con esa marca, el sistema le asigna automáticamente este logo a todas las cubiertas de la tienda.
+              Podés gestionar <strong>más de 100 marcas</strong> sin problema de espacio. Subís el logo una sola vez por marca acá, y al cargar cubiertas con esa marca se publica automáticamente con su logo oficial.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
@@ -1224,13 +1241,13 @@ function BrandLogosPanel() {
       {/* Agregar Nueva Marca */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <h3 className="text-sm font-bold text-secondary">¿Trabajás con una marca nueva?</h3>
-          <p className="text-xs text-muted-foreground">Agregala acá para poder asignarle su logotipo y usarla en tus cubiertas.</p>
+          <h3 className="text-sm font-bold text-secondary">¿Querés incorporar una nueva marca?</h3>
+          <p className="text-xs text-muted-foreground">Escribí su nombre (ej: Hankook, Continental, Bridgestone) y agregala a tu lista.</p>
         </div>
         <form onSubmit={handleAddBrand} className="flex w-full sm:w-auto items-center gap-2">
           <input
             className={input + " w-full sm:w-64"}
-            placeholder="Nombre de la marca (ej: Bridgestone)"
+            placeholder="Nombre de la marca..."
             value={newBrandName}
             onChange={(e) => setNewBrandName(e.target.value)}
           />
@@ -1244,9 +1261,59 @@ function BrandLogosPanel() {
         </form>
       </div>
 
+      {/* Barra de búsqueda y filtros para 100+ marcas */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-4 rounded-2xl shadow-sm border">
+        <div className="relative flex-1">
+          <input
+            className={input + " pl-10"}
+            placeholder={`Buscar entre las ${allBrandNames.length} marcas registradas...`}
+            value={searchBrand}
+            onChange={(e) => setSearchBrand(e.target.value)}
+          />
+          <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {searchBrand && (
+            <button
+              onClick={() => setSearchBrand("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            type="button"
+            onClick={() => setFilterMode("todas")}
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+              filterMode === "todas" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Todas ({allBrandNames.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode("catalogo")}
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+              filterMode === "catalogo" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            En catálogo ({dbBrands.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode("personalizado")}
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition whitespace-nowrap ${
+              filterMode === "personalizado" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Con logo subido ({customBrandKeys.length})
+          </button>
+        </div>
+      </div>
+
       {/* Cuadrícula de Marcas y Logos */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {allBrandNames.map((brand) => {
+        {displayedBrands.map((brand) => {
           const norm = brand.trim().toLowerCase();
           const customLogo = categoryImages[`brand:${norm}`];
           const hasCustom = Boolean(customLogo);
@@ -1354,6 +1421,14 @@ function BrandLogosPanel() {
             </div>
           );
         })}
+
+        {displayedBrands.length === 0 && (
+          <div className="col-span-full rounded-2xl border border-dashed p-8 text-center bg-card">
+            <Tag className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+            <p className="text-sm font-bold text-secondary">No se encontró ninguna marca con ese nombre</p>
+            <p className="text-xs text-muted-foreground mt-1">Podés agregarla escribiendo su nombre arriba y tocando "Agregar".</p>
+          </div>
+        )}
       </div>
     </div>
   );

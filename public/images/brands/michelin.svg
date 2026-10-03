@@ -1,4 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 45">
-      <text x="10" y="31" font-family="Arial, sans-serif" font-weight="900" font-size="24" fill="#002F6C" font-style="italic" letter-spacing="2">MICHELIN</text>
-      <rect x="10" y="35" width="155" height="3" fill="#FFE600"/>
-    </svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 63">
+  <g transform="translate(10, 16)">
+    <rect x="0" y="2" width="28" height="30" rx="6" fill="#002F6C"/>
+    <text x="14" y="23" font-family="Arial Black, sans-serif" font-size="18" fill="#FDB813" text-anchor="middle">M</text>
+    <text x="34" y="25" font-family="Arial Black, sans-serif" font-weight="900" font-style="italic" font-size="20" fill="#002F6C" letter-spacing="0.5">MICHELIN</text>
+  </g>
+</svg>

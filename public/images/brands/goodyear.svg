@@ -1,3 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 45">
-      <text x="10" y="31" font-family="Impact, sans-serif" font-size="26" fill="#002B66" font-style="italic" letter-spacing="1.5">GOOD<tspan fill="#F5B800">YEAR</tspan></text>
-    </svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 63">
+  <g transform="translate(10, 16)">
+    <text x="0" y="25" font-family="Impact, Arial Black, sans-serif" font-style="italic" font-size="22" fill="#002F6C" letter-spacing="1">GOOD</text>
+    <polygon points="58,18 68,10 74,18 68,14" fill="#FDB813"/>
+    <text x="75" y="25" font-family="Impact, Arial Black, sans-serif" font-style="italic" font-size="22" fill="#002F6C" letter-spacing="1">YEAR</text>
+  </g>
+</svg>

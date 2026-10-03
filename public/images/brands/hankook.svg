@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 63">
+  <g transform="translate(10, 16)">
+    <path d="M0 4 L14 16 L28 4 L22 0 L14 8 L6 0 Z" fill="#FF6B00"/>
+    <path d="M6 14 L14 22 L22 14 L18 10 L14 14 L10 10 Z" fill="#E3151A"/>
+    <text x="34" y="25" font-family="Impact, Arial Black, sans-serif" font-style="italic" font-size="22" fill="#1A1A1A" letter-spacing="1">HANKOOK</text>
+  </g>
+</svg>
