@@ -110,12 +110,20 @@ export const Route = createFileRoute("/")({
   loader: async () => {
     // Si el backend no responde, la portada igual se muestra y el navegador reintenta.
     const [products, settings, banners, testimonials] = await Promise.all([
-      listPublicProducts().catch(() => null),
+      listPublicProducts().catch((err) => {
+        console.error("Error loading products in loader:", err);
+        return [];
+      }),
       getSettings().catch(() => null),
       listPublicBanners().catch(() => []),
       listApprovedTestimonials().catch(() => []),
     ]);
-    return { products, settings, banners, testimonials };
+    return {
+      products: Array.isArray(products) ? products : [],
+      settings: settings ?? null,
+      banners: Array.isArray(banners) ? banners : [],
+      testimonials: Array.isArray(testimonials) ? testimonials : [],
+    };
   },
 
   staleTime: 60_000,
@@ -186,30 +194,30 @@ function Index() {
   const fetchProducts = useServerFn(listPublicProducts);
   const fetchSettings = useServerFn(getSettings);
   const fetchBanners = useServerFn(listPublicBanners);
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const { data: rawProducts = [], isLoading: productsLoading } = useQuery({
     queryKey: ["public-products"],
-    queryFn: () => fetchProducts(),
-    ...(initial.products ? { initialData: initial.products as any } : {}),
+    queryFn: () => fetchProducts().catch(() => []),
+    initialData: (initial?.products as any) ?? [],
     staleTime: 60_000,
   });
-
+  const products = useMemo(() => (Array.isArray(rawProducts) ? rawProducts : []), [rawProducts]);
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: () => fetchSettings(),
-    initialData: initial.settings as any,
+    queryFn: () => fetchSettings().catch(() => null),
+    initialData: (initial?.settings as any) ?? null,
     staleTime: 60_000,
   });
   const { data: banners = [] } = useQuery({
     queryKey: ["public-banners"],
-    queryFn: () => fetchBanners(),
-    initialData: initial.banners as any,
+    queryFn: () => fetchBanners().catch(() => []),
+    initialData: (initial?.banners as any) ?? [],
     staleTime: 60_000,
   });
   const fetchTestimonials = useServerFn(listApprovedTestimonials);
   const { data: testimonials = [] } = useQuery({
     queryKey: ["public-testimonials"],
-    queryFn: () => fetchTestimonials(),
-    initialData: initial.testimonials as any,
+    queryFn: () => fetchTestimonials().catch(() => []),
+    initialData: (initial?.testimonials as any) ?? [],
     staleTime: 60_000,
   });
 
@@ -243,7 +251,7 @@ function Index() {
     // Aro: después de R, - o espacio, y sin más dígitos pegados
     const rimStripped = r.replace(/^0+(?=\d)/, ""); // "08" -> "8"
     const rimRe = r === "Todos" ? null : new RegExp(`(R|-|\\s)${esc(rimStripped)}(?![0-9.])`, "i");
-    return (products as any[]).filter((p) => {
+    return products.filter((p) => {
       const size = norm(p.size);
       if (widthRe && !widthRe.test(size)) return false;
       if (heightRe && !heightRe.test(size)) return false;
@@ -255,14 +263,14 @@ function Index() {
 
   // Solo productos destacados (promo) en la portada
   const featured = useMemo(
-    () => (products as any[]).filter((p) => p.is_featured),
+    () => products.filter((p) => p.is_featured),
     [products]
   );
   // Carruseles auto-scroll por categoría
-  const autos = useMemo(() => (products as any[]).filter((p) => inCategory(p, "autos")), [products]);
-  const camionetas = useMemo(() => (products as any[]).filter((p) => inCategory(p, "camionetas")), [products]);
-  const suv = useMemo(() => (products as any[]).filter((p) => inCategory(p, "suv")), [products]);
-  const camiones = useMemo(() => (products as any[]).filter((p) => inCategory(p, "camiones")), [products]);
+  const autos = useMemo(() => products.filter((p) => inCategory(p, "autos")), [products]);
+  const camionetas = useMemo(() => products.filter((p) => inCategory(p, "camionetas")), [products]);
+  const suv = useMemo(() => products.filter((p) => inCategory(p, "suv")), [products]);
+  const camiones = useMemo(() => products.filter((p) => inCategory(p, "camiones")), [products]);
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
@@ -526,7 +534,7 @@ function Index() {
       {!searchActive && activeCategory && (() => {
         const c = CATEGORY_CONFIG.find((x) => x.slug === activeCategory);
         if (!c) return null;
-        const items = (products as any[]).filter((p) => inCategory(p, c.slug));
+        const items = products.filter((p) => inCategory(p, c.slug));
         return (
           <CategorySection
             key={c.slug}
