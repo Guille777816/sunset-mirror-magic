@@ -38,6 +38,14 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
     ? "/images/featured/xcurve.webp"
     : "/images/featured/fastway.webp";
 
+  const vehicleImg = isPickup
+    ? "/images/featured/brutus-bg.jpg"
+    : isTruck
+    ? "/images/featured/xcurve-bg.jpg"
+    : "/images/featured/fastway-bg.jpg";
+
+  const vehicleLabel = isPickup ? "Camioneta / SUV" : isTruck ? "Camión Pesado" : "Auto / Calle";
+
   const tireImg = p.image_url || fallbackImg;
 
   // Secondary price conversions for multi-currency preview
@@ -59,35 +67,56 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
 
   return (
     <div className="group relative flex flex-col md:flex-row items-center justify-between gap-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:shadow-md">
-      {/* 1. Imagen del neumático con botón de favoritos */}
-      <div className="relative flex h-36 w-36 sm:h-44 sm:w-44 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-50/60 p-2">
+      {/* 1. Cuadro 3D de imagen con giro de 180° en hover */}
+      <div className="relative h-36 w-36 sm:h-44 sm:w-44 flex-shrink-0 [perspective:1000px] group/flip">
+        {/* Botón de favoritos siempre visible por encima */}
         <button
           type="button"
           onClick={() => setIsFavorite(!isFavorite)}
           aria-label="Agregar a favoritos"
-          className="absolute left-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-neutral-400 shadow-sm backdrop-blur-sm transition hover:text-red-500 hover:bg-white"
+          className="absolute left-2 top-2 z-20 grid h-8 w-8 place-items-center rounded-full bg-white/95 text-neutral-400 shadow-sm backdrop-blur-sm transition hover:text-red-500 hover:bg-white"
         >
           <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
         </button>
 
+        {/* Tarjeta 3D que gira 180 grados al pasar el mouse */}
         <Link
           to="/producto/$slug"
           params={{ slug: p.slug }}
-          className="flex h-full w-full items-center justify-center select-none"
+          className="relative block h-full w-full rounded-2xl transition-transform duration-700 [transform-style:preserve-3d] group-hover/flip:[transform:rotateY(180deg)] select-none"
         >
-          <img
-            src={tireImg}
-            alt={`${p.brand} ${p.model} ${p.size}`}
-            loading={eager ? "eager" : "lazy"}
-            decoding="async"
-            className="max-h-full max-w-full object-contain drop-shadow transition-transform duration-300 group-hover:scale-105"
-            onError={(e) => {
-              const el = e.currentTarget;
-              if (!el.src.endsWith(fallbackImg)) {
-                el.src = fallbackImg;
-              }
-            }}
-          />
+          {/* Cara frontal: Neumático */}
+          <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-neutral-50/80 p-3 [backface-visibility:hidden] border border-neutral-200/70 shadow-sm">
+            <img
+              src={tireImg}
+              alt={`${p.brand} ${p.model} ${p.size}`}
+              loading={eager ? "eager" : "lazy"}
+              decoding="async"
+              className="max-h-full max-w-full object-contain drop-shadow transition-transform duration-300 group-hover/flip:scale-105"
+              onError={(e) => {
+                const el = e.currentTarget;
+                if (!el.src.endsWith(fallbackImg)) {
+                  el.src = fallbackImg;
+                }
+              }}
+            />
+          </div>
+
+          {/* Cara trasera (girada 180°): Vehículo correspondiente */}
+          <div className="absolute inset-0 overflow-hidden rounded-2xl border border-neutral-200/80 [transform:rotateY(180deg)] [backface-visibility:hidden] shadow-md bg-neutral-900">
+            <img
+              src={vehicleImg}
+              alt={vehicleLabel}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-700 group-hover/flip:scale-110"
+            />
+            {/* Overlay con gradiente y etiqueta del vehículo */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-2.5">
+              <span className="text-[10px] font-black uppercase tracking-wider text-white bg-black/60 backdrop-blur-md px-2 py-1 rounded-md text-center border border-white/20 shadow-sm">
+                {vehicleLabel}
+              </span>
+            </div>
+          </div>
         </Link>
       </div>
 
