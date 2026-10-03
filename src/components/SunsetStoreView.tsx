@@ -51,6 +51,7 @@ export function SunsetStoreView({
   const [filterAspect, setFilterAspect] = useState(selectedMeasure?.aspect || "");
   const [filterRim, setFilterRim] = useState(selectedMeasure?.rim || "");
   const [filterBrand, setFilterBrand] = useState<string>("");
+  const [brandSearchText, setBrandSearchText] = useState<string>("");
   const [textSearch, setTextSearch] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<number>(0);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -386,10 +387,32 @@ export function SunsetStoreView({
             {/* 3. Marcas */}
             {availableBrands.length > 0 && (
               <div className="rounded-2xl border border-neutral-200/90 bg-white p-5 shadow-sm space-y-3">
-                <h3 className="text-sm font-black uppercase tracking-wide text-neutral-900 border-b border-neutral-100 pb-3">
-                  Marca
-                </h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                  <h3 className="text-sm font-black uppercase tracking-wide text-neutral-900">
+                    Marca
+                  </h3>
+                  {filterBrand && (
+                    <button
+                      type="button"
+                      onClick={() => setFilterBrand("")}
+                      className="text-[11px] font-bold text-red-600 hover:underline"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+
+                {availableBrands.length > 8 && (
+                  <input
+                    type="text"
+                    placeholder="Filtrar marcas..."
+                    value={brandSearchText}
+                    onChange={(e) => setBrandSearchText(e.target.value)}
+                    className="w-full rounded-lg border border-neutral-200 px-2.5 py-1 text-xs focus:border-neutral-900 focus:outline-none"
+                  />
+                )}
+
+                <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto pr-1">
                   <button
                     type="button"
                     onClick={() => setFilterBrand("")}
@@ -399,21 +422,23 @@ export function SunsetStoreView({
                   >
                     Todas
                   </button>
-                  {availableBrands.map((b) => {
-                    const isSelected = filterBrand.toLowerCase() === b.toLowerCase();
-                    return (
-                      <button
-                        key={b}
-                        type="button"
-                        onClick={() => setFilterBrand(isSelected ? "" : b)}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-bold uppercase transition ${
-                          isSelected ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                        }`}
-                      >
-                        {b}
-                      </button>
-                    );
-                  })}
+                  {availableBrands
+                    .filter((b) => !brandSearchText || b.toLowerCase().includes(brandSearchText.toLowerCase().trim()))
+                    .map((b) => {
+                      const isSelected = filterBrand.toLowerCase() === b.toLowerCase();
+                      return (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => setFilterBrand(isSelected ? "" : b)}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-bold uppercase transition ${
+                            isSelected ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                          }`}
+                        >
+                          {b}
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             )}

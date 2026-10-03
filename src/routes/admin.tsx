@@ -70,6 +70,7 @@ function AdminPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [tab, setTab] = useState<Tab>("productos");
   const [filterCat, setFilterCat] = useState<string>("todas");
+  const [searchProd, setSearchProd] = useState<string>("");
 
   const fetchAll = useServerFn(listAllProducts);
   const save = useServerFn(upsertProduct);
@@ -142,9 +143,19 @@ function AdminPage() {
   }
 
 
-  const filteredProducts = filterCat === "todas"
-    ? (products as Product[])
-    : (products as Product[]).filter((p) => catsOf(p).includes(filterCat));
+  const filteredProducts = (products as Product[]).filter((p) => {
+    if (filterCat !== "todas" && !catsOf(p).includes(filterCat)) return false;
+    if (searchProd.trim()) {
+      const q = searchProd.toLowerCase().trim();
+      const match =
+        (p.brand || "").toLowerCase().includes(q) ||
+        (p.model || "").toLowerCase().includes(q) ||
+        (p.size || "").toLowerCase().includes(q) ||
+        (p.category || "").toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
 
   const countByCategory = (cat: string) =>
     (products as Product[]).filter((p) => catsOf(p).includes(cat)).length;
@@ -225,16 +236,42 @@ function AdminPage() {
               ))}
             </div>
 
-            {/* Filtro activo */}
-            <div className="mb-4 flex items-center justify-between">
+            {/* Buscador y filtro activo */}
+            <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <input
+                  className={input + " pl-10 text-xs sm:text-sm"}
+                  placeholder="🔍 Buscar por marca (ej: Bri...), modelo o medida..."
+                  value={searchProd}
+                  onChange={(e) => setSearchProd(e.target.value)}
+                />
+                <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                {searchProd && (
+                  <button
+                    onClick={() => setSearchProd("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
               <div className="flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold text-secondary">
-                  {filterCat === "todas" ? `Todos los productos (${(products as any[]).length})` : `${CATEGORY_LABELS[filterCat]} (${filteredProducts.length})`}
+                <span className="text-xs sm:text-sm font-semibold text-secondary">
+                  {filterCat === "todas"
+                    ? `Mostrando ${filteredProducts.length} de ${(products as any[]).length} cubiertas`
+                    : `${CATEGORY_LABELS[filterCat]} (${filteredProducts.length})`}
                 </span>
-                {filterCat !== "todas" && (
-                  <button onClick={() => setFilterCat("todas")} className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground hover:text-destructive">
-                    × Limpiar filtro
+                {(filterCat !== "todas" || searchProd) && (
+                  <button
+                    onClick={() => {
+                      setFilterCat("todas");
+                      setSearchProd("");
+                    }}
+                    className="ml-1 rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-destructive"
+                  >
+                    × Limpiar filtros
                   </button>
                 )}
               </div>
