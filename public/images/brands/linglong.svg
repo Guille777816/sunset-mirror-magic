@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 45">
+      <rect width="200" height="45" rx="6" fill="none"/>
+      <!-- Linglong distinctive red & black racing logo -->
+      <path d="M15 8 L32 8 L24 37 L7 37 Z" fill="#D91C24"/>
+      <path d="M26 8 L33 8 L25 37 L18 37 Z" fill="#111111"/>
+      <text x="42" y="30" font-family="Arial, sans-serif" font-weight="900" font-size="24" font-style="italic" fill="#111111" letter-spacing="1">LINGLONG</text>
+    </svg>

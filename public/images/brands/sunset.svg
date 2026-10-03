@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 45">
+      <circle cx="22" cy="22" r="14" fill="none" stroke="#E3151A" stroke-width="4"/>
+      <path d="M14 22 L30 22" stroke="#E3151A" stroke-width="4"/>
+      <text x="44" y="29" font-family="Arial, sans-serif" font-weight="900" font-size="21" fill="#111111" letter-spacing="1.5">SUNSET</text>
+      <text x="136" y="29" font-family="Arial, sans-serif" font-weight="700" font-size="14" fill="#E3151A" letter-spacing="1">TIRES</text>
+    </svg>

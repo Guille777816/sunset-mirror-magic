@@ -23,6 +23,9 @@ import { FeaturedWhiteSection } from "@/components/FeaturedWhiteSection";
 import { FloatingSearchButton } from "@/components/FloatingSearchButton";
 import { SocialCollageSection } from "@/components/SocialCollageSection";
 import { BranchLocationSection } from "@/components/BranchLocationSection";
+import { SunsetStoreView } from "@/components/SunsetStoreView";
+import { AllSizesBrowser } from "@/components/AllSizesBrowser";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const HEADER_LOGO_URL = "/images/logo-leradial.png";
 const CIRCLE_LOGO_URL = "/images/logo-leradial.png";
@@ -184,6 +187,7 @@ function Index() {
   const [searchActive, setSearchActive] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [viewAllSizes, setViewAllSizes] = useState(false);
   const cart = useCart();
   const { currency, setCurrency, setRates } = useCurrency();
 
@@ -245,14 +249,10 @@ function Index() {
   const searchResults = useMemo(() => {
     if (!searchActive) return [];
     const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    // Normaliza espacios y separadores raros dentro de la medida
     const norm = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
-    // Ancho: número al inicio (posiblemente con prefijo LT), seguido de / o - o espacio
     const widthRe = w === "Todos" ? null : new RegExp(`(^|\\s|LT)${esc(w)}(?=[\\s/\\-])`, "i");
-    // Alto: número después de "/" y antes de R, - o espacio
     const heightRe = h === "Todos" ? null : new RegExp(`/\\s*${esc(h)}(?=\\s*[R\\-\\s])`, "i");
-    // Aro: después de R, - o espacio, y sin más dígitos pegados
-    const rimStripped = r.replace(/^0+(?=\d)/, ""); // "08" -> "8"
+    const rimStripped = r.replace(/^0+(?=\d)/, "");
     const rimRe = r === "Todos" ? null : new RegExp(`(R|-|\\s)${esc(rimStripped)}(?![0-9.])`, "i");
     return products.filter((p) => {
       const size = norm(p.size);
@@ -262,7 +262,6 @@ function Index() {
       return true;
     });
   }, [products, w, h, r, searchActive]);
-
 
   // Solo productos destacados (promo) en la portada
   const featured = useMemo(
@@ -278,9 +277,10 @@ function Index() {
   // Handle nav category click
   function handleCategoryNav(slug: string) {
     setSearchActive(false);
+    setViewAllSizes(false);
     setActiveCategory(slug);
     setTimeout(() => {
-      document.getElementById(`cat-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
   }
 
@@ -351,13 +351,18 @@ function Index() {
             )}
           </div>
         </div>
-        {/* Nav — Inicio + categorías clickeables */}
+        {/* Nav — Inicio + categorías clickeables + Todas las medidas */}
         <nav className="border-t bg-muted">
           <div className="container mx-auto flex items-center overflow-x-auto px-4">
             <button
-              onClick={() => { setActiveCategory(null); setSearchActive(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              onClick={() => {
+                setActiveCategory(null);
+                setSearchActive(false);
+                setViewAllSizes(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={`whitespace-nowrap px-4 py-3 text-sm font-semibold uppercase tracking-wide transition ${
-                !activeCategory && !searchActive
+                !activeCategory && !searchActive && !viewAllSizes
                   ? "border-b-2 border-primary text-primary"
                   : "text-secondary hover:text-primary"
               }`}
@@ -369,7 +374,7 @@ function Index() {
                 key={c.slug}
                 onClick={() => handleCategoryNav(c.slug)}
                 className={`whitespace-nowrap px-4 py-3 text-sm font-semibold uppercase tracking-wide transition ${
-                  activeCategory === c.slug
+                  activeCategory === c.slug && !viewAllSizes
                     ? "border-b-2 border-primary text-primary"
                     : "text-secondary hover:text-primary"
                 }`}
@@ -377,6 +382,23 @@ function Index() {
                 {c.label}
               </button>
             ))}
+            <button
+              onClick={() => {
+                setViewAllSizes(true);
+                setActiveCategory(null);
+                setSearchActive(false);
+                setTimeout(() => {
+                  document.getElementById("todas-las-medidas")?.scrollIntoView({ behavior: "smooth" });
+                }, 50);
+              }}
+              className={`whitespace-nowrap px-4 py-3 text-sm font-semibold uppercase tracking-wide transition ${
+                viewAllSizes
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-secondary hover:text-primary"
+              }`}
+            >
+              Todas las medidas
+            </button>
           </div>
         </nav>
       </header>
@@ -438,7 +460,10 @@ function Index() {
                 onClick={() => {
                   setSearchActive(true);
                   setActiveCategory(null);
-                  document.getElementById("resultados-busqueda")?.scrollIntoView({ behavior: "smooth" });
+                  setViewAllSizes(false);
+                  setTimeout(() => {
+                    document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
+                  }, 50);
                 }}
                 className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-[1.02]"
               >
@@ -459,25 +484,63 @@ function Index() {
 
 
 
-      {/* Resultados de búsqueda */}
-      {searchActive && (
-        <section id="resultados-busqueda" className="bg-background py-12">
-          <div className="container mx-auto px-4">
-            <div className="mb-6">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Resultados</p>
-              <h2 className="mt-1 text-2xl font-black text-secondary">{searchResults.length} producto(s) encontrado(s)</h2>
-            </div>
-            {searchResults.length === 0 ? (
-              <div className="rounded-2xl bg-muted p-10 text-center text-muted-foreground">
-                No encontramos cubiertas con esa medida. Probá ajustar los filtros o consultanos directamente.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {searchResults.map((p: any) => <ProductCard key={p.id} p={p} />)}
-              </div>
-            )}
-          </div>
-        </section>
+      {/* Vista de Tienda y Catálogo estilo Sunset / XBRI */}
+      {(searchActive || activeCategory) && (
+        <SunsetStoreView
+          products={products as any[]}
+          selectedCategory={activeCategory}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            if (!cat && !searchActive) {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+          selectedMeasure={
+            searchActive
+              ? {
+                  width: w !== "Todos" ? w : undefined,
+                  aspect: h !== "Todos" ? h : undefined,
+                  rim: r !== "Todos" ? r : undefined,
+                }
+              : null
+          }
+          onClearMeasure={() => {
+            setSearchActive(false);
+            setW("Todos");
+            setH("Todos");
+            setR("Todos");
+          }}
+          onBackToHome={() => {
+            setActiveCategory(null);
+            setSearchActive(false);
+            setViewAllSizes(false);
+            setW("Todos");
+            setH("Todos");
+            setR("Todos");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      )}
+
+      {/* Vista 'Todas las medidas' estilo Sunset / XBRI */}
+      {viewAllSizes && (
+        <AllSizesBrowser
+          products={products as any[]}
+          onSelectSize={(size) => {
+            const m = size.match(/([0-9]{3})\s*(?:\/|\s*-\s*)([0-9]{2})\s*R\s*([0-9]{2}(?:\.[0-9]+)?)/i);
+            if (m) {
+              setW(m[1]);
+              setH(m[2]);
+              setR(m[3]);
+            }
+            setViewAllSizes(false);
+            setSearchActive(true);
+            setActiveCategory(null);
+            setTimeout(() => {
+              document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
+            }, 50);
+          }}
+        />
       )}
 
       {/* Banner */}
@@ -499,24 +562,24 @@ function Index() {
       </section>
 
       {/* Rueda giratoria interactiva ("Cómo leer la medida de su neumático") */}
-      {!searchActive && !activeCategory && (
+      {!searchActive && !activeCategory && !viewAllSizes && (
         <TireSizeGuide />
       )}
 
       {/* Productos Destacados (Fondo blanco solicitado) */}
-      {!searchActive && !activeCategory && (
+      {!searchActive && !activeCategory && !viewAllSizes && (
         <FeaturedWhiteSection products={products as any[]} />
       )}
 
       {/* Banners administrables (rotan solos) */}
-      {!searchActive && !activeCategory && banners.length > 0 && (
+      {!searchActive && !activeCategory && !viewAllSizes && banners.length > 0 && (
         <section id="banners" className="container mx-auto px-4 py-10">
           <BannerCarousel banners={banners as any[]} circleLogoUrl={CIRCLE_LOGO_URL} />
         </section>
       )}
 
       {/* Carruseles auto-scroll por categoría (estilo página original) */}
-      {!searchActive && !activeCategory && (
+      {!searchActive && !activeCategory && !viewAllSizes && (
         <>
           {autos.length > 0 && (
             <AutoCarousel id="auto-autos" eyebrow="Autos" title="Cubiertas para autos" items={autos} bg="bg-muted" direction="left" onSeeAll={() => handleCategoryNav("autos")} />
@@ -534,7 +597,7 @@ function Index() {
       )}
 
       {/* Sección Redes Sociales Collage estilo Sunset */}
-      {!searchActive && !activeCategory && (
+      {!searchActive && !activeCategory && !viewAllSizes && (
         <SocialCollageSection
           instagramUrl={(settings as any)?.instagram || "https://www.instagram.com/leradialsrl"}
           facebookUrl={(settings as any)?.facebook || "https://www.facebook.com/leradialsrl"}
@@ -542,7 +605,7 @@ function Index() {
       )}
 
       {/* Sucursales estilo Sunset */}
-      {!searchActive && !activeCategory && (
+      {!searchActive && !activeCategory && !viewAllSizes && (
         <BranchLocationSection
           address={settings?.address || "Bartolomé Mitre 480, C1036AAH, Ciudad Autónoma de Buenos Aires, Argentina"}
           hours={businessHours}
@@ -551,31 +614,16 @@ function Index() {
       )}
 
       {/* Estado vacío */}
-     {!searchActive && productsLoading && (
-  <section className="py-12 text-center text-muted-foreground">
-    <p>Cargando productos...</p>
-  </section>
-)}
-{!searchActive && !productsLoading && featured.length === 0 && autos.length === 0 && camionetas.length === 0 && camiones.length === 0 && (
-  <section className="py-12 text-center text-muted-foreground">
-    <p>Todavía no hay productos cargados. Agregalos desde el panel admin.</p>
-  </section>
-)}
-      {/* Sección de categoría activa (solo cuando el usuario hace click en una categoría) */}
-      {!searchActive && activeCategory && (() => {
-        const c = CATEGORY_CONFIG.find((x) => x.slug === activeCategory);
-        if (!c) return null;
-        const items = products.filter((p) => inCategory(p, c.slug));
-        return (
-          <CategorySection
-            key={c.slug}
-            slug={c.slug}
-            label={c.label}
-            items={items}
-            onBack={() => setActiveCategory(null)}
-          />
-        );
-      })()}
+      {!searchActive && !viewAllSizes && productsLoading && (
+        <section className="py-12 text-center text-muted-foreground">
+          <p>Cargando productos...</p>
+        </section>
+      )}
+      {!searchActive && !viewAllSizes && !productsLoading && featured.length === 0 && autos.length === 0 && camionetas.length === 0 && camiones.length === 0 && (
+        <section className="py-12 text-center text-muted-foreground">
+          <p>Todavía no hay productos cargados. Agregalos desde el panel admin.</p>
+        </section>
+      )}
 
       {/* Testimonios */}
       {!searchActive && (
@@ -731,7 +779,9 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
       </Link>
       <div className="flex flex-1 flex-col p-4">
         <Link to="/producto/$slug" params={{ slug: p.slug }} className="block">
-          <p className="text-sm font-extrabold uppercase tracking-wider text-primary">{p.brand}</p>
+          <div className="mb-1 flex items-center">
+            <BrandLogo brand={p.brand} className="h-5 w-auto max-w-[110px]" />
+          </div>
           <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary hover:text-primary">{p.model}</h3>
           <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
         </Link>
