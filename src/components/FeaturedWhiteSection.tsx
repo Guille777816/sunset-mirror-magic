@@ -50,11 +50,22 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {displayList.map((p) => {
-            const tireImg = p.image_url || (p.category === "camionetas" || p.category === "suv" 
+            const isPickup = p.category === "camionetas" || p.category === "suv" || p.model?.toLowerCase().includes("brutus");
+            const isTruck = p.category === "camiones" || p.category === "pesados" || p.model?.toLowerCase().includes("xcurve");
+
+            const tireImg = p.image_url || (isPickup
               ? "/images/featured/brutus.webp" 
-              : p.category === "camiones" 
+              : isTruck 
               ? "/images/featured/xcurve.webp" 
               : "/images/featured/fastway.webp");
+
+            const vehicleBg = isPickup
+              ? "/images/featured/brutus-bg.jpg"
+              : isTruck
+              ? "/images/featured/xcurve-bg.jpg"
+              : "/images/featured/fastway-bg.jpg";
+
+            const vehicleLabel = isPickup ? "Camionetas" : isTruck ? "Camión" : "Auto";
 
             const mainCategory = Array.isArray(p.categories) && p.categories.length > 0 
               ? p.categories[0] 
@@ -63,74 +74,88 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
             return (
               <div
                 key={p.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-neutral-200/80 bg-neutral-50/50 p-6 transition-all duration-300 hover:border-neutral-900 hover:bg-white hover:shadow-2xl"
+                className="group relative flex min-h-[460px] flex-col justify-between overflow-hidden rounded-3xl border border-neutral-200 bg-neutral-50/70 p-6 transition-all duration-500 hover:border-neutral-900 hover:shadow-2xl"
               >
-                {/* Top badges */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-neutral-800 shadow-sm">
+                {/* 1. Fondo del Vehículo (Oculto normalmente, aparece en hover con zoom sutil) */}
+                <div className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-hidden">
+                  <img
+                    src={vehicleBg}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-full w-full object-cover opacity-0 transition-all duration-700 ease-out group-hover:scale-105 group-hover:opacity-100"
+                  />
+                  {/* Degradado para máxima legibilidad del texto en hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/35 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                </div>
+
+                {/* 2. Top Badges */}
+                <div className="relative z-10 flex items-center justify-between gap-2">
+                  <span className="rounded-full border border-neutral-300 bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-neutral-800 shadow-sm backdrop-blur-sm transition-colors group-hover:border-white/40 group-hover:bg-black/50 group-hover:text-white">
                     Más elegido
                   </span>
                   {p.free_shipping && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-green-700">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-green-700 group-hover:bg-green-600/90 group-hover:text-white">
                       <Truck className="h-3 w-3" /> Envío gratis
                     </span>
                   )}
                 </div>
 
-                {/* Tire Image */}
+                {/* 3. Neumático Aislado (Visible normalmente, se desvanece suavemente en hover) */}
                 <Link
                   to="/producto/$slug"
                   params={{ slug: p.slug }}
-                  className="my-6 block aspect-square w-full overflow-hidden p-4 select-none"
+                  className="relative z-10 my-4 block aspect-square w-full select-none"
                 >
                   <img
                     src={tireImg}
                     alt={`${p.brand} ${p.model} ${p.size}`}
-                    className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110 drop-shadow-lg"
+                    className="h-full w-full object-contain drop-shadow-xl transition-all duration-500 ease-out group-hover:scale-95 group-hover:opacity-0"
                     loading="lazy"
                     decoding="async"
                   />
                 </Link>
 
-                {/* Info */}
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="rounded-full bg-neutral-200/70 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-neutral-700">
+                {/* 4. Información y Detalles */}
+                <div className="relative z-10 transition-transform duration-300">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-neutral-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-neutral-800 transition-colors group-hover:bg-white/20 group-hover:text-white">
                       {p.brand}
                     </span>
-                    <span className="rounded-full bg-neutral-200/70 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-neutral-700 capitalize">
-                      {mainCategory}
+                    <span className="rounded-full bg-neutral-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-neutral-800 transition-colors group-hover:bg-white/20 group-hover:text-white">
+                      {vehicleLabel}
                     </span>
                   </div>
 
-                  {/* Size as headline */}
+                  {/* Rodado / Medida */}
                   <Link to="/producto/$slug" params={{ slug: p.slug }} className="block">
-                    <h3 className="text-2xl font-black uppercase tracking-tight text-neutral-900 group-hover:text-[#E3151A] transition-colors">
+                    <h3 className="text-2xl font-black uppercase tracking-tight text-neutral-900 transition-colors group-hover:text-white md:text-3xl">
                       {p.size || p.model}
                     </h3>
-                    <p className="mt-1 line-clamp-1 text-sm font-semibold text-neutral-600">
+                    <p className="mt-1 line-clamp-1 text-sm font-semibold text-neutral-600 transition-colors group-hover:text-neutral-300">
                       {p.brand} {p.model}
                     </p>
                   </Link>
 
-                  {/* Price */}
-                  <div className="mt-4 flex items-baseline justify-between pt-3 border-t border-neutral-200/60">
+                  {/* Precio */}
+                  <div className="mt-4 flex items-baseline justify-between border-t border-neutral-200/60 pt-3 transition-colors group-hover:border-white/20">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Precio contado / online</p>
-                      <p className="text-2xl font-black text-neutral-900">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 transition-colors group-hover:text-neutral-400">
+                        Precio contado / online
+                      </p>
+                      <p className="text-2xl font-black text-neutral-900 transition-colors group-hover:text-white">
                         {format(Number(p.price_ars))}
                       </p>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="mt-5 flex gap-2">
+                  {/* Acciones */}
+                  <div className="mt-4 flex gap-2">
                     <Link
                       to="/producto/$slug"
                       params={{ slug: p.slug }}
-                      className="flex-1 rounded-full border border-neutral-900 py-2.5 text-center text-xs font-black uppercase tracking-wider text-neutral-900 hover:bg-neutral-900 hover:text-white transition duration-200"
+                      className="flex-1 rounded-full border border-neutral-900 py-2.5 text-center text-xs font-black uppercase tracking-wider text-neutral-900 transition duration-300 hover:bg-neutral-900 hover:text-white group-hover:border-white group-hover:text-white group-hover:hover:bg-white group-hover:hover:text-black"
                     >
-                      Saber más
+                      Saber más →
                     </Link>
                     <button
                       onClick={() => {
@@ -144,7 +169,7 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                         });
                         cart.open();
                       }}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E3151A] text-white hover:bg-[#c31116] transition shadow-md"
+                      className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E3151A] text-white shadow-md transition hover:bg-[#c31116] hover:scale-105"
                       title="Agregar al carrito"
                       aria-label="Agregar al carrito"
                     >
