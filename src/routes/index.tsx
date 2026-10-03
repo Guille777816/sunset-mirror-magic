@@ -20,6 +20,11 @@ import { listApprovedTestimonials, submitTestimonial } from "@/lib/testimonials.
 import { useCart } from "@/lib/cart";
 import { useCurrency, CURRENCIES, type Currency } from "@/lib/currency";
 import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
+import { TireSizeGuide } from "@/components/TireSizeGuide";
+import { FeaturedWhiteSection } from "@/components/FeaturedWhiteSection";
+import { FloatingSearchButton } from "@/components/FloatingSearchButton";
+import { SocialCollageSection } from "@/components/SocialCollageSection";
+import { BranchLocationSection } from "@/components/BranchLocationSection";
 
 const HEADER_LOGO_URL = leRadialHeaderAsset.url;
 const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
@@ -379,35 +384,41 @@ function Index() {
       </header>
 
       <main id="main-content">
-        {/* Hero */}
-        <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
-          <img
-            src={optimizeImg(settings?.hero_image_url, 800, 60) || settings?.hero_image_url || heroTire}
-            alt="Cubierta off-road"
-            width={1000}
-            height={500}
-            loading="eager"
-            decoding="async"
-            {...({ fetchPriority: "high" } as any)}
+        {/* Hero con Video Loop estilo Sunset / XBRI */}
+        <section className="relative overflow-hidden min-h-[500px] md:min-h-[580px] flex items-center bg-[#0b0d10]">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
             className="absolute inset-0 h-full w-full object-cover opacity-50"
-          />
-        <div className="relative container mx-auto px-4 py-20 md:py-32">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">{settings?.hero_eyebrow ?? "Nueva línea 2026"}</p>
-          <h1 className="max-w-2xl text-4xl font-black uppercase leading-[0.95] text-white md:text-6xl">
-            {settings?.hero_title ?? "Brutus A/T"}
-            <span className="mt-2 block text-primary">{settings?.hero_subtitle ?? "Dominio total del terreno"}</span>
-          </h1>
-          <p className="mt-5 max-w-xl text-base text-white/80 md:text-lg">{settings?.hero_description ?? ""}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#banners" className="rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-105">
-              Ver productos
-            </a>
-            <a href="#buscador" className="rounded-full border border-white/30 px-7 py-3 text-sm font-bold uppercase tracking-wider text-white hover:bg-white/10">
-              Buscar por medida
-            </a>
+            poster={optimizeImg(settings?.hero_image_url, 800, 60) || heroTire}
+          >
+            <source src="/videos/hero-loop.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0d10] via-black/40 to-black/80 pointer-events-none" />
+
+          <div className="relative container mx-auto px-4 py-20 md:py-28 z-10">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.3em] text-[#E3151A]">{settings?.hero_eyebrow ?? "Línea Oficial 2026"}</p>
+            <h1 className="max-w-3xl text-3xl font-black uppercase leading-[1.0] text-white sm:text-5xl md:text-6xl tracking-tight">
+              {settings?.hero_title ?? "Buscar el neumático ideal"}
+              <span className="mt-2 block text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-200 to-neutral-400">
+                {settings?.hero_subtitle ?? "Dominio total del terreno"}
+              </span>
+            </h1>
+            <p className="mt-4 max-w-xl text-sm text-white/80 md:text-base leading-relaxed">
+              {settings?.hero_description ?? "Neumáticos de máxima resistencia, rendimiento y durabilidad en todas las condiciones de suelo y velocidad."}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="#buscador" className="rounded-full bg-[#E3151A] px-7 py-3 text-xs font-black uppercase tracking-wider text-white shadow-xl hover:bg-[#c31116] transition-all hover:scale-105">
+                Buscar por medida
+              </a>
+              <a href="#productos-destacados" className="rounded-full border border-white/40 px-7 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-white/10 transition">
+                Ver destacados
+              </a>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* Buscador */}
       <section id="buscador" className="bg-muted py-12">
@@ -489,6 +500,16 @@ function Index() {
         </div>
       </section>
 
+      {/* Rueda giratoria interactiva ("Cómo leer la medida de su neumático") */}
+      {!searchActive && !activeCategory && (
+        <TireSizeGuide />
+      )}
+
+      {/* Productos Destacados (Fondo blanco solicitado) */}
+      {!searchActive && !activeCategory && (
+        <FeaturedWhiteSection products={products as any[]} />
+      )}
+
       {/* Banners administrables (rotan solos) */}
       {!searchActive && !activeCategory && banners.length > 0 && (
         <section id="banners" className="container mx-auto px-4 py-10">
@@ -514,9 +535,21 @@ function Index() {
         </>
       )}
 
-      {/* Carrusel destacados (promo) */}
-      {!searchActive && featured.length > 0 && (
-        <PromoCarousel id="promo-top" eyebrow="Promo destacada" title="Ofertas seleccionadas" items={featured} bg="bg-background" />
+      {/* Sección Redes Sociales Collage estilo Sunset */}
+      {!searchActive && !activeCategory && (
+        <SocialCollageSection
+          instagramUrl={(settings as any)?.instagram || "https://www.instagram.com/leradialsrl"}
+          facebookUrl={(settings as any)?.facebook || "https://www.facebook.com/leradialsrl"}
+        />
+      )}
+
+      {/* Sucursales estilo Sunset */}
+      {!searchActive && !activeCategory && (
+        <BranchLocationSection
+          address={settings?.address || "Bartolomé Mitre 480, C1036AAH, Ciudad Autónoma de Buenos Aires, Argentina"}
+          hours={businessHours}
+          phone={phone}
+        />
       )}
 
       {/* Estado vacío */}
@@ -655,6 +688,7 @@ function Index() {
           © {new Date().getFullYear()} Le Radial · Todos los derechos reservados
         </div>
       </footer>
+      <FloatingSearchButton />
     </div>
   );
 }
