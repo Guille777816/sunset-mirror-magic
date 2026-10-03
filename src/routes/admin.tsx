@@ -14,6 +14,7 @@ import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functio
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
 import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -266,7 +267,10 @@ function AdminPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-bold text-secondary">{p.brand}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <BrandLogo brand={p.brand} className="h-4 max-w-[70px]" />
+                          <span className="font-bold text-secondary text-sm">{p.brand}</span>
+                        </div>
                         <div className="text-xs text-muted-foreground">{p.model}</div>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs">{p.size}</td>
@@ -540,7 +544,38 @@ function ProductForm({
           <button onClick={onCancel} className="rounded-full p-1 hover:bg-muted"><X className="h-5 w-5" /></button>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Marca"><input className={input} value={p.brand} onChange={(e) => set("brand", e.target.value)} /></Field>
+          <Field label="Marca" col2>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <input
+                  className={input + " flex-1"}
+                  value={p.brand}
+                  onChange={(e) => set("brand", e.target.value)}
+                  placeholder="ej: XBRI, Firemax, Linglong, Pirelli..."
+                />
+                <div className="flex h-10 min-w-[90px] items-center justify-center rounded-xl border bg-neutral-50 px-2">
+                  <BrandLogo brand={p.brand} className="h-4 max-w-[80px]" />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[11px] font-semibold text-muted-foreground">Marcas con logo oficial:</span>
+                {["XBRI", "Firemax", "Linglong", "Sunset Tires", "Pirelli", "Michelin", "Goodyear"].map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => set("brand", b)}
+                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-semibold transition ${
+                      p.brand?.toLowerCase() === b.toLowerCase()
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/50 hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    {b}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Field>
           <Field label="Modelo"><input className={input} value={p.model} onChange={(e) => set("model", e.target.value)} /></Field>
           <Field label="Medida"><input className={input} placeholder="ej: 185/65R15" value={p.size} onChange={(e) => set("size", e.target.value)} /></Field>
           <Field label="Categorías (podés elegir varias)" col2>
@@ -746,6 +781,35 @@ function SettingsPanel() {
             onUrlChange={(v) => set("hero_image_url", v)}
             previewClass="h-32 object-cover"
           />
+        </div>
+      </div>
+
+      {/* Logos oficiales de marcas */}
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
+        <div className="mb-4">
+          <h3 className="text-base font-bold text-secondary">Logotipos de marcas oficiales</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Cada producto asocia de forma automática su logo oficial en la tienda según el nombre que tenga en el campo <strong>Marca</strong> (ej: XBRI, Firemax, Linglong, Pirelli). No necesitás subir un logo por cada neumático: se asigna solo.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          {[
+            { name: "XBRI", label: "XBRI Tires" },
+            { name: "Firemax", label: "Firemax" },
+            { name: "Linglong", label: "Linglong" },
+            { name: "Sunset Tires", label: "Sunset Tires" },
+            { name: "Pirelli", label: "Pirelli" },
+            { name: "Michelin", label: "Michelin" },
+            { name: "Goodyear", label: "Goodyear" },
+          ].map((b) => (
+            <div key={b.name} className="flex flex-col items-center justify-center p-3 rounded-xl border bg-neutral-50/50 hover:bg-neutral-100/50 transition">
+              <div className="h-8 flex items-center justify-center mb-2">
+                <BrandLogo brand={b.name} className="h-5 max-w-[80px]" />
+              </div>
+              <span className="text-[11px] font-bold text-secondary">{b.name}</span>
+              <span className="text-[9px] text-emerald-600 font-semibold mt-0.5">✓ Vinculado</span>
+            </div>
+          ))}
         </div>
       </div>
 

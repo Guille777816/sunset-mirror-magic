@@ -83,7 +83,9 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
             className="max-h-full max-w-full object-contain drop-shadow transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
               const el = e.currentTarget;
-              if (el.src !== fallbackImg) el.src = fallbackImg;
+              if (!el.src.endsWith(fallbackImg)) {
+                el.src = fallbackImg;
+              }
             }}
           />
         </Link>
