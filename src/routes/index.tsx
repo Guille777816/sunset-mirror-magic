@@ -10,8 +10,6 @@ import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
 import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
-import leRadialHeaderAsset from "@/assets/le-radial-header.jpg.asset.json";
-import leRadialCircleAsset from "@/assets/le-radial-circle.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
 import { getSettings } from "@/lib/settings.functions";
@@ -26,12 +24,12 @@ import { FloatingSearchButton } from "@/components/FloatingSearchButton";
 import { SocialCollageSection } from "@/components/SocialCollageSection";
 import { BranchLocationSection } from "@/components/BranchLocationSection";
 
-const HEADER_LOGO_URL = leRadialHeaderAsset.url;
-const CIRCLE_LOGO_URL = leRadialCircleAsset.url;
+const HEADER_LOGO_URL = "/images/logo-leradial.png";
+const CIRCLE_LOGO_URL = "/images/logo-leradial.png";
 
 function optimizeImg(url: string | undefined | null, width: number, quality = 70): string {
   if (!url) return "";
-  if (url.startsWith("data:") || url.startsWith("blob:")) return url;
+  if (url.startsWith("data:") || url.startsWith("blob:") || url.startsWith("/")) return url;
   if (url.includes("/storage/v1/object/public/")) {
     const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
     const sep = rewritten.includes("?") ? "&" : "?";

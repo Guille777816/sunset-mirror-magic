@@ -708,7 +708,12 @@ function SettingsPanel() {
       setMsg(`${kind === "logo" ? "Logo" : "Portada"} actualizado ✓`);
       setTimeout(() => setMsg(null), 2500);
     } catch (e: any) {
-      setMsg("Error: " + (e?.message ?? "no se pudo subir"));
+      const isRls = (e?.message || "").includes("row-level security");
+      if (isRls) {
+        setMsg("Aviso: El almacenamiento de Supabase no tiene el bucket 'site-assets'. Se recomienda usar el logo oficial (/images/logo-leradial.png) o una URL directa.");
+      } else {
+        setMsg("Error: " + (e?.message ?? "no se pudo subir"));
+      }
     } finally {
       setUploadingAsset(null);
     }
@@ -880,6 +885,15 @@ function AssetUploader({
           <Upload className="h-3 w-3" /> {uploading ? "Subiendo..." : "Subir imagen"}
         </button>
       </div>
+      {title.toLowerCase().includes("logo") && (
+        <button
+          type="button"
+          onClick={() => onUrlChange("/images/logo-leradial.png")}
+          className="mt-2 w-full rounded-xl border border-primary/30 bg-primary/5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition"
+        >
+          ✓ Usar Logo Oficial Le Radial (/images/logo-leradial.png)
+        </button>
+      )}
       <input
         className={input + " mt-2 text-xs"}
         placeholder="o pegá URL https://..."

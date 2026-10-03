@@ -27,7 +27,7 @@ export const getProductBySlug = createServerFn({ method: "GET" })
 
 function optimizeImg(url: string | undefined | null, width = 900, quality = 80): string {
   if (!url) return "";
-  if (url.startsWith("data:") || url.startsWith("blob:")) return url;
+  if (url.startsWith("data:") || url.startsWith("blob:") || url.startsWith("/")) return url;
   if (url.includes("/storage/v1/object/public/")) {
     const rewritten = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
     const sep = rewritten.includes("?") ? "&" : "?";
