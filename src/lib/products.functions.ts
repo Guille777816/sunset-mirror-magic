@@ -75,10 +75,11 @@ function extractModelFamily(model: string): string {
 const applyCatalogSchema = z.object({
   brand: z.string().trim().min(1).max(80),
   model: z.string().trim().min(1).max(120),
+  keyword: z.string().trim().max(100).optional(),
   catalog_url: z.string().max(2000).nullable(),
 });
 
-/** Copia el mismo catálogo PDF a todas las medidas de una marca + familia de modelo. */
+/** Copia el mismo catálogo PDF a todas las medidas de una marca + modelo/familia (ej: FORZA HT y FORZA H/T). */
 export const applyCatalogToModel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => applyCatalogSchema.parse(input))
@@ -86,22 +87,30 @@ export const applyCatalogToModel = createServerFn({ method: "POST" })
     const { supabase: supabaseAuthed, userId } = context;
     await assertAdmin(supabaseAuthed, userId);
     const exact = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
-    const family = extractModelFamily(data.model);
+    
+    const rawPattern = data.keyword?.trim() || extractModelFamily(data.model);
+    // Normaliza acrónimos con o sin barra (HT <-> H/T, AT <-> A/T, MT <-> M/T, TA <-> T/A, RT <-> R/T)
+    const normalizedPattern = exact(rawPattern)
+      .replace(/\bH(?:\/|\\\/)?T\b/gi, "H%T")
+      .replace(/\bA(?:\/|\\\/)?T\b/gi, "A%T")
+      .replace(/\bM(?:\/|\\\/)?T\b/gi, "M%T")
+      .replace(/\bT(?:\/|\\\/)?A\b/gi, "T%A")
+      .replace(/\bR(?:\/|\\\/)?T\b/gi, "R%T");
 
     let query = supabaseAuthed
       .from("products")
       .update({ catalog_url: data.catalog_url } as never)
       .ilike("brand", exact(data.brand));
 
-    if (family.length >= 3) {
-      query = query.ilike("model", `%${exact(family)}%`);
+    if (normalizedPattern.length >= 2) {
+      query = query.ilike("model", `%${normalizedPattern}%`);
     } else {
       query = query.ilike("model", exact(data.model));
     }
 
     const { data: updated, error } = await query.select("id");
     if (error) throw new Error(error.message);
-    return { count: updated?.length ?? 0, family };
+    return { count: updated?.length ?? 0, matchedPattern: rawPattern };
   });
 
 export const checkIsAdmin = createServerFn({ method: "GET" })

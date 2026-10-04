@@ -108,14 +108,19 @@ function AdminPage() {
 
 
   const saveMut = useMutation({
-    mutationFn: async (input: Product & { applyCatalogToModel?: boolean }) => {
-      const { applyCatalogToModel: applyAll, ...p } = input;
+    mutationFn: async (input: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string }) => {
+      const { applyCatalogToModel: applyAll, catalogKeyword, ...p } = input;
       const res = await save({ data: p });
       if (applyAll && p.brand.trim() && p.model.trim()) {
         const resApply = await applyCatalog({
-          data: { brand: p.brand.trim(), model: p.model.trim(), catalog_url: p.catalog_url ?? null },
+          data: {
+            brand: p.brand.trim(),
+            model: p.model.trim(),
+            keyword: catalogKeyword || undefined,
+            catalog_url: p.catalog_url ?? null,
+          },
         });
-        alert(`Catálogo aplicado a ${resApply.count} producto(s) de ${p.brand} (familia "${resApply.family}").`);
+        alert(`¡Listo! Catálogo aplicado a ${resApply.count} producto(s) de ${p.brand} que coinciden con "${resApply.matchedPattern}".`);
       }
       return res;
     },
@@ -556,7 +561,7 @@ function ProductForm({
 }: {
   value: Product;
   onCancel: () => void;
-  onSave: (p: Product & { applyCatalogToModel?: boolean }) => void;
+  onSave: (p: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string }) => void;
   saving: boolean;
   error: any;
 }) {
@@ -564,6 +569,14 @@ function ProductForm({
   const [uploading, setUploading] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [applyCatalogAll, setApplyCatalogAll] = useState(false);
+  const cleanFamily = (m: string) =>
+    m.replace(/\b(?:LT|LTR|SUV|AT|A\/T|MT|M\/T)?\s*\d{2,3}(?:\/\d{2,3})?[A-Z]\b/gi, "")
+     .replace(/\b\d{1,2}PR\b/gi, "")
+     .replace(/\b(?:LT|LTR)\b/gi, "")
+     .replace(/\b\d{2,3}(?:\.\d{1,2})?\/\d{2,3}(?:\.\d{1,2})?R\d{2}[A-Z]*/gi, "")
+     .replace(/\s+/g, " ")
+     .trim();
+  const [catalogKeyword, setCatalogKeyword] = useState(() => cleanFamily(value.model || ""));
   const set = <K extends keyof Product>(k: K, v: Product[K]) => setP({ ...p, [k]: v });
 
   async function handleFileUpload(file: File) {
@@ -735,21 +748,34 @@ function ProductForm({
               value={p.catalog_url ?? ""}
               onChange={(e) => set("catalog_url", e.target.value.trim() || null)}
             />
-            <label className="mt-2 flex items-start gap-2 text-xs text-secondary">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4"
-                checked={applyCatalogAll}
-                disabled={!p.brand.trim() || !p.model.trim()}
-                onChange={(e) => setApplyCatalogAll(e.target.checked)}
-              />
-              <span>
-                Aplicar este catálogo a <strong>todas las medidas</strong> de{" "}
-                <strong>{p.brand.trim() || "esta marca"} {p.model.trim() || "este modelo"}</strong> al guardar
-              </span>
-            </label>
+            <div className="mt-2.5 rounded-xl border border-emerald-300/80 bg-white/90 p-2.5 shadow-sm">
+              <label className="flex items-start gap-2 text-xs font-semibold text-secondary">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 text-emerald-600 rounded"
+                  checked={applyCatalogAll}
+                  disabled={!p.brand.trim() || !p.model.trim()}
+                  onChange={(e) => setApplyCatalogAll(e.target.checked)}
+                />
+                <div className="flex-1">
+                  <span>
+                    Aplicar este catálogo a todas las medidas de <strong>{p.brand.trim() || "esta marca"}</strong> que contengan:
+                  </span>
+                  <input
+                    type="text"
+                    className="mt-1 h-8 w-full rounded-lg border border-emerald-400 bg-white px-2.5 text-xs font-bold text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    value={catalogKeyword}
+                    onChange={(e) => setCatalogKeyword(e.target.value)}
+                    placeholder="ej: FORZA HT, BRUTUS, SPORT PLUS F1..."
+                  />
+                  <p className="mt-1 text-[11px] font-normal text-emerald-800">
+                    💡 <strong>Coincidencia inteligente:</strong> Si ponés <em>FORZA HT</em>, detecta tanto <em>FORZA HT</em> como <em>FORZA H/T</em> con o sin barra, todas las medidas de rodado y versiones de carga.
+                  </p>
+                </div>
+              </label>
+            </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Si el producto no tiene catálogo, el botón no aparece en la ficha. Máx. 20 MB.
+              Formatos admitidos: archivos PDF (máx. 20 MB).
             </p>
           </div>
           <label className="flex items-center gap-2 text-sm">
@@ -770,7 +796,7 @@ function ProductForm({
         {error && <p className="mt-3 text-sm text-destructive">{String(error?.message ?? error)}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onCancel} className="rounded-full border px-5 py-2 text-sm font-semibold">Cancelar</button>
-          <button disabled={saving || uploadingPdf} onClick={() => onSave({ ...p, applyCatalogToModel: applyCatalogAll })} className="rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60">
+          <button disabled={saving || uploadingPdf} onClick={() => onSave({ ...p, applyCatalogToModel: applyCatalogAll, catalogKeyword: catalogKeyword.trim() || undefined })} className="rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60">
             {saving ? "Guardando..." : "Guardar"}
           </button>
         </div>
