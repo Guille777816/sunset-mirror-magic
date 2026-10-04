@@ -112,10 +112,10 @@ function AdminPage() {
       const { applyCatalogToModel: applyAll, ...p } = input;
       const res = await save({ data: p });
       if (applyAll && p.brand.trim() && p.model.trim()) {
-        const { count } = await applyCatalog({
+        const resApply = await applyCatalog({
           data: { brand: p.brand.trim(), model: p.model.trim(), catalog_url: p.catalog_url ?? null },
         });
-        alert(`Catálogo aplicado a ${count} producto(s) de ${p.brand} ${p.model}.`);
+        alert(`Catálogo aplicado a ${resApply.count} producto(s) de ${p.brand} (familia "${resApply.family}").`);
       }
       return res;
     },

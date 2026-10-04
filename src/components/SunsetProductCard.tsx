@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingCart, CheckCircle, Package } from "lucide-react";
+import { Heart, ShoppingCart, CheckCircle, Package, Download } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
 import { BrandLogo } from "./BrandLogo";
@@ -17,6 +17,7 @@ interface Product {
   image_url?: string | null;
   is_featured?: boolean;
   free_shipping?: boolean;
+  catalog_url?: string | null;
 }
 
 interface SunsetProductCardProps {
@@ -167,18 +168,39 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
         </div>
 
         {/* Botones de acción */}
-        <div className="mt-4 flex w-full md:w-auto items-center gap-2">
+        <div className="mt-4 flex w-full md:w-auto flex-wrap items-center gap-2">
+          {p.catalog_url ? (
+            <a
+              href={p.catalog_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#059669] px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition hover:scale-105 hover:from-[#16A34A] hover:to-[#047857]"
+              title="Descargar catálogo en PDF"
+            >
+              <Download className="h-3.5 w-3.5" /> Catálogo
+            </a>
+          ) : (
+            <Link
+              to="/producto/$slug"
+              params={{ slug: p.slug }}
+              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#059669] px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition hover:scale-105 hover:from-[#16A34A] hover:to-[#047857]"
+              title="Ver catálogo"
+            >
+              <Download className="h-3.5 w-3.5" /> Catálogo
+            </Link>
+          )}
           <Link
             to="/producto/$slug"
             params={{ slug: p.slug }}
-            className="flex-1 md:flex-none rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-neutral-700 transition hover:bg-neutral-100"
+            className="flex-1 md:flex-none rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider text-neutral-700 transition hover:bg-neutral-100"
           >
             Ver detalles
           </Link>
           <button
             type="button"
             onClick={handleAddToCart}
-            className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#00A859] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-[#008f4c] hover:shadow"
+            className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#00A859] px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-[#008f4c] hover:shadow"
           >
             <ShoppingCart className="h-4 w-4" /> Comprar
           </button>

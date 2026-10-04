@@ -9,7 +9,7 @@ export const listPublicProducts = createServerFn({ method: "GET" }).handler(asyn
   // Sólo las columnas que usa la vitrina: evita mandar textos largos y acelera la carga.
   const { data, error } = await supabase
     .from("products")
-    .select("id,slug,brand,model,size,category,categories,price_ars,stock,image_url,is_featured,free_shipping")
+    .select("id,slug,brand,model,size,category,categories,price_ars,stock,image_url,is_featured,free_shipping,catalog_url")
     .eq("is_active", true)
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false });
@@ -61,13 +61,24 @@ export const deleteProduct = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+function extractModelFamily(model: string): string {
+  const cleaned = model
+    .replace(/\b(?:LT|LTR|SUV|AT|A\/T|MT|M\/T)?\s*\d{2,3}(?:\/\d{2,3})?[A-Z]\b/gi, "")
+    .replace(/\b\d{1,2}PR\b/gi, "")
+    .replace(/\b(?:LT|LTR)\b/gi, "")
+    .replace(/\b\d{2,3}(?:\.\d{1,2})?\/\d{2,3}(?:\.\d{1,2})?R\d{2}[A-Z]*/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned.length >= 3 ? cleaned : model.trim();
+}
+
 const applyCatalogSchema = z.object({
   brand: z.string().trim().min(1).max(80),
   model: z.string().trim().min(1).max(120),
   catalog_url: z.string().max(2000).nullable(),
 });
 
-/** Copia el mismo catálogo PDF a todas las medidas de una marca + modelo. */
+/** Copia el mismo catálogo PDF a todas las medidas de una marca + familia de modelo. */
 export const applyCatalogToModel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => applyCatalogSchema.parse(input))
@@ -75,14 +86,22 @@ export const applyCatalogToModel = createServerFn({ method: "POST" })
     const { supabase: supabaseAuthed, userId } = context;
     await assertAdmin(supabaseAuthed, userId);
     const exact = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
-    const { data: updated, error } = await supabaseAuthed
+    const family = extractModelFamily(data.model);
+
+    let query = supabaseAuthed
       .from("products")
       .update({ catalog_url: data.catalog_url } as never)
-      .ilike("brand", exact(data.brand))
-      .ilike("model", exact(data.model))
-      .select("id");
+      .ilike("brand", exact(data.brand));
+
+    if (family.length >= 3) {
+      query = query.ilike("model", `%${exact(family)}%`);
+    } else {
+      query = query.ilike("model", exact(data.model));
+    }
+
+    const { data: updated, error } = await query.select("id");
     if (error) throw new Error(error.message);
-    return { count: updated?.length ?? 0 };
+    return { count: updated?.length ?? 0, family };
   });
 
 export const checkIsAdmin = createServerFn({ method: "GET" })

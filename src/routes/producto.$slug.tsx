@@ -410,6 +410,10 @@ function ProductDetail() {
   const msg = encodeURIComponent(`Hola! Estoy interesado en ${fullName}.`);
   const rawCatalog = cleanText(p.catalog_url);
   const catalogUrl = /^https?:\/\//i.test(rawCatalog) ? rawCatalog : "";
+  const catalogMsg = encodeURIComponent(
+    `Hola! Quisiera solicitar el catálogo / ficha técnica de ${fullName}.`
+  );
+  const catalogHref = catalogUrl || (wa ? `https://wa.me/${wa}?text=${catalogMsg}` : undefined);
 
   return (
     <div className="min-h-screen bg-background">
@@ -521,17 +525,15 @@ function ProductDetail() {
                   <Phone className="h-4 w-4" /> {phone}
                 </a>
               )}
-              {catalogUrl && (
-                <a
-                  href={catalogUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#22C55E] to-[#059669] px-7 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_24px_-6px_rgba(16,185,129,0.65)] ring-1 ring-emerald-400/40 transition hover:scale-105 hover:from-[#16A34A] hover:to-[#047857] hover:shadow-[0_10px_28px_-6px_rgba(16,185,129,0.8)]"
-                >
-                  <Download className="h-4 w-4" /> Descargar catálogo
-                </a>
-              )}
+              <a
+                href={catalogHref || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                {...(catalogUrl ? { download: "" } : {})}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#22C55E] to-[#059669] px-7 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_24px_-6px_rgba(16,185,129,0.65)] ring-1 ring-emerald-400/40 transition hover:scale-105 hover:from-[#16A34A] hover:to-[#047857] hover:shadow-[0_10px_28px_-6px_rgba(16,185,129,0.8)]"
+              >
+                <Download className="h-4 w-4" /> Descargar catálogo
+              </a>
             </div>
             <div className="mt-8 flex items-center gap-6 border-t border-border/60 pt-6">
               <img src="/inmetro.webp" alt="INMETRO" className="h-14 w-auto object-contain" />
