@@ -22,6 +22,7 @@ export const productSchema = z
     stock: z.number().int().min(0),
     image_url: z.string().max(2000000).nullable().optional(),
     description: z.string().max(2000).nullable().optional(),
+    catalog_url: z.string().max(2000).nullable().optional(),
     is_active: z.boolean(),
     is_featured: z.boolean(),
     free_shipping: z.boolean().default(false),

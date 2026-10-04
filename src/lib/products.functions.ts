@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/lib/supabase-auth-middleware";
 import { supabase } from "@/integrations/supabase/client";
 import { productIdSchema, productSchema } from "@/lib/products.schema";
@@ -58,6 +59,30 @@ export const deleteProduct = createServerFn({ method: "POST" })
     const { error } = await supabaseAuthed.from("products").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+const applyCatalogSchema = z.object({
+  brand: z.string().trim().min(1).max(80),
+  model: z.string().trim().min(1).max(120),
+  catalog_url: z.string().max(2000).nullable(),
+});
+
+/** Copia el mismo catálogo PDF a todas las medidas de una marca + modelo. */
+export const applyCatalogToModel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => applyCatalogSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase: supabaseAuthed, userId } = context;
+    await assertAdmin(supabaseAuthed, userId);
+    const exact = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+    const { data: updated, error } = await supabaseAuthed
+      .from("products")
+      .update({ catalog_url: data.catalog_url } as never)
+      .ilike("brand", exact(data.brand))
+      .ilike("model", exact(data.model))
+      .select("id");
+    if (error) throw new Error(error.message);
+    return { count: updated?.length ?? 0 };
   });
 
 export const checkIsAdmin = createServerFn({ method: "GET" })

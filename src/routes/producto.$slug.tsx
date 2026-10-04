@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ArrowLeft, ShoppingCart, Plus } from "lucide-react";
+import { Phone, ArrowLeft, ShoppingCart, Plus, Download } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -408,6 +408,8 @@ function ProductDetail() {
   const wa = s?.whatsapp ?? "";
   const fullName = getCleanFullName(p);
   const msg = encodeURIComponent(`Hola! Estoy interesado en ${fullName}.`);
+  const rawCatalog = cleanText(p.catalog_url);
+  const catalogUrl = /^https?:\/\//i.test(rawCatalog) ? rawCatalog : "";
 
   return (
     <div className="min-h-screen bg-background">
@@ -517,6 +519,17 @@ function ProductDetail() {
                   className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-7 py-3 text-sm font-bold uppercase tracking-wider text-secondary"
                 >
                   <Phone className="h-4 w-4" /> {phone}
+                </a>
+              )}
+              {catalogUrl && (
+                <a
+                  href={catalogUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#22C55E] to-[#059669] px-7 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_24px_-6px_rgba(16,185,129,0.65)] ring-1 ring-emerald-400/40 transition hover:scale-105 hover:from-[#16A34A] hover:to-[#047857] hover:shadow-[0_10px_28px_-6px_rgba(16,185,129,0.8)]"
+                >
+                  <Download className="h-4 w-4" /> Descargar catálogo
                 </a>
               )}
             </div>

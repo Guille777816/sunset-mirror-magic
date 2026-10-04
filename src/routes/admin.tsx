@@ -7,13 +7,13 @@ import {
   listAllProducts,
   upsertProduct,
   deleteProduct,
-  
+  applyCatalogToModel,
 } from "@/lib/products.functions";
 import { getSettings, getAdminSettings, updateSettings } from "@/lib/settings.functions";
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw } from "lucide-react";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { optimizeAndReadImage } from "@/lib/image-utils";
 
@@ -35,6 +35,7 @@ type Product = {
   stock: number;
   image_url: string | null;
   description: string | null;
+  catalog_url?: string | null;
   is_active: boolean;
   is_featured: boolean;
   free_shipping: boolean;
@@ -42,7 +43,7 @@ type Product = {
 
 const empty: Product = {
   brand: "", model: "", size: "", categories: ["autos"],
-  price_ars: 0, stock: 0, image_url: null, description: null,
+  price_ars: 0, stock: 0, image_url: null, description: null, catalog_url: null,
   is_active: true, is_featured: false, free_shipping: false,
 };
 
@@ -76,6 +77,7 @@ function AdminPage() {
   const fetchAll = useServerFn(listAllProducts);
   const save = useServerFn(upsertProduct);
   const remove = useServerFn(deleteProduct);
+  const applyCatalog = useServerFn(applyCatalogToModel);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -106,10 +108,21 @@ function AdminPage() {
 
 
   const saveMut = useMutation({
-    mutationFn: (p: Product) => save({ data: p }),
+    mutationFn: async (input: Product & { applyCatalogToModel?: boolean }) => {
+      const { applyCatalogToModel: applyAll, ...p } = input;
+      const res = await save({ data: p });
+      if (applyAll && p.brand.trim() && p.model.trim()) {
+        const { count } = await applyCatalog({
+          data: { brand: p.brand.trim(), model: p.model.trim(), catalog_url: p.catalog_url ?? null },
+        });
+        alert(`Catálogo aplicado a ${count} producto(s) de ${p.brand} ${p.model}.`);
+      }
+      return res;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
       qc.invalidateQueries({ queryKey: ["public-products"] });
+      qc.invalidateQueries({ queryKey: ["product"] });
       setEditing(null);
     },
   });
@@ -543,12 +556,14 @@ function ProductForm({
 }: {
   value: Product;
   onCancel: () => void;
-  onSave: (p: Product) => void;
+  onSave: (p: Product & { applyCatalogToModel?: boolean }) => void;
   saving: boolean;
   error: any;
 }) {
    const [p, setP] = useState<Product>(value);
   const [uploading, setUploading] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [applyCatalogAll, setApplyCatalogAll] = useState(false);
   const set = <K extends keyof Product>(k: K, v: Product[K]) => setP({ ...p, [k]: v });
 
   async function handleFileUpload(file: File) {
@@ -560,6 +575,35 @@ function ProductForm({
       alert(e?.message ?? "Error al procesar la imagen");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handlePdfUpload(file: File) {
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      alert("El catálogo tiene que ser un archivo PDF.");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      alert("El PDF pesa más de 20 MB. Probá comprimirlo antes de subirlo.");
+      return;
+    }
+    setUploadingPdf(true);
+    try {
+      const base = `${p.brand}-${p.model}`
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "catalogo";
+      const path = `${base}-${Date.now()}.pdf`;
+      const { error: upErr } = await supabase.storage
+        .from("product-catalogs")
+        .upload(path, file, { upsert: true, contentType: "application/pdf" });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("product-catalogs").getPublicUrl(path);
+      setP((prev) => ({ ...prev, catalog_url: urlData.publicUrl }));
+    } catch (e: any) {
+      alert(e?.message ?? "Error al subir el PDF");
+    } finally {
+      setUploadingPdf(false);
     }
   }
 
@@ -658,6 +702,56 @@ function ProductForm({
               onChange={(e) => set("image_url", e.target.value || null)}
             />
           </Field>
+          <div className="col-span-2 rounded-2xl border border-emerald-500/30 bg-emerald-50/60 p-3">
+            <span className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-secondary">
+              <FileText className="h-4 w-4 text-emerald-600" /> Catálogo PDF (botón verde "Descargar catálogo")
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold uppercase text-white hover:bg-emerald-600">
+                <Upload className="h-4 w-4" />
+                {uploadingPdf ? "Subiendo PDF..." : p.catalog_url ? "Cambiar PDF" : "Subir PDF desde tu computadora"}
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  disabled={uploadingPdf}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f); e.target.value = ""; }}
+                />
+              </label>
+              {p.catalog_url && (
+                <>
+                  <a href={p.catalog_url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-emerald-700 underline">
+                    Ver catálogo actual
+                  </a>
+                  <button type="button" onClick={() => set("catalog_url", null)} className="text-xs font-semibold text-destructive hover:underline">
+                    Quitar
+                  </button>
+                </>
+              )}
+            </div>
+            <input
+              className={input + " mt-2"}
+              placeholder="o pegá el link del PDF: https://..."
+              value={p.catalog_url ?? ""}
+              onChange={(e) => set("catalog_url", e.target.value.trim() || null)}
+            />
+            <label className="mt-2 flex items-start gap-2 text-xs text-secondary">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4"
+                checked={applyCatalogAll}
+                disabled={!p.brand.trim() || !p.model.trim()}
+                onChange={(e) => setApplyCatalogAll(e.target.checked)}
+              />
+              <span>
+                Aplicar este catálogo a <strong>todas las medidas</strong> de{" "}
+                <strong>{p.brand.trim() || "esta marca"} {p.model.trim() || "este modelo"}</strong> al guardar
+              </span>
+            </label>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Si el producto no tiene catálogo, el botón no aparece en la ficha. Máx. 20 MB.
+            </p>
+          </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={p.is_active} onChange={(e) => set("is_active", e.target.checked)} /> Activo (visible en el sitio)
           </label>
@@ -676,7 +770,7 @@ function ProductForm({
         {error && <p className="mt-3 text-sm text-destructive">{String(error?.message ?? error)}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onCancel} className="rounded-full border px-5 py-2 text-sm font-semibold">Cancelar</button>
-          <button disabled={saving} onClick={() => onSave(p)} className="rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60">
+          <button disabled={saving || uploadingPdf} onClick={() => onSave({ ...p, applyCatalogToModel: applyCatalogAll })} className="rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60">
             {saving ? "Guardando..." : "Guardar"}
           </button>
         </div>
