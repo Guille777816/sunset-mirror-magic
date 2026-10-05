@@ -9,11 +9,11 @@ import {
   deleteProduct,
   applyCatalogToModel,
 } from "@/lib/products.functions";
-import { getSettings, getAdminSettings, updateSettings } from "@/lib/settings.functions";
+import { getSettings, getAdminSettings, updateSettings, parseBranches, type Branch } from "@/lib/settings.functions";
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText } from "lucide-react";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { optimizeAndReadImage } from "@/lib/image-utils";
 
@@ -61,7 +61,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   industriales: "Industriales",
 };
 
-type Tab = "productos" | "marcas" | "pedidos" | "banners" | "testimonios" | "imagenes" | "ajustes";
+type Tab = "productos" | "marcas" | "pedidos" | "sucursales" | "banners" | "testimonios" | "imagenes" | "ajustes";
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -212,6 +212,7 @@ function AdminPage() {
             { id: "productos", label: "Productos", icon: Package },
             { id: "marcas", label: "Marcas y Logos", icon: Tag },
             { id: "pedidos", label: "Pedidos", icon: ClipboardList },
+            { id: "sucursales", label: "Sucursales", icon: Store },
             { id: "banners", label: "Banners", icon: ImageLucide },
             { id: "testimonios", label: "Testimonios", icon: MessageSquare },
             { id: "imagenes", label: "Imágenes", icon: ImageIcon },
@@ -389,6 +390,9 @@ function AdminPage() {
 
         {/* ── TAB: PEDIDOS ── */}
         {tab === "pedidos" && <OrdersPanel />}
+
+        {/* ── TAB: SUCURSALES ── */}
+        {tab === "sucursales" && <BranchesAdminPanel />}
 
         {/* ── TAB: BANNERS ── */}
         {tab === "banners" && <BannersPanel />}
@@ -835,7 +839,7 @@ function SettingsPanel() {
   const { data } = useQuery({ queryKey: ["admin-settings"], queryFn: () => fetchS() });
   const [s, setS] = useState<Settings | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  const [uploadingAsset, setUploadingAsset] = useState<"logo" | "hero" | null>(null);
+  const [uploadingAsset, setUploadingAsset] = useState<"logo" | "hero" | "branch" | null>(null);
 
   useEffect(() => {
     if (data && !s) setS({
@@ -870,7 +874,7 @@ function SettingsPanel() {
     },
   });
 
-  async function handleAssetUpload(kind: "logo" | "hero", file: File) {
+  async function handleAssetUpload(kind: "logo" | "hero" | "branch", file: File) {
     if (!s) return;
     setUploadingAsset(kind);
     try {
@@ -880,11 +884,16 @@ function SettingsPanel() {
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
       const url = urlData.publicUrl + "?t=" + Date.now();
-      const next = { ...s, [kind === "logo" ? "logo_url" : "hero_image_url"]: url };
+      let next = { ...s };
+      if (kind === "logo") next.logo_url = url;
+      else if (kind === "hero") next.hero_image_url = url;
+      else if (kind === "branch") {
+        next.category_images = { ...(s.category_images || {}), sucursal: url };
+      }
       setS(next);
       await saveS({ data: next });
       qc.invalidateQueries({ queryKey: ["settings"] });
-      setMsg(`${kind === "logo" ? "Logo" : "Portada"} actualizado ✓`);
+      setMsg(`${kind === "logo" ? "Logo" : kind === "hero" ? "Portada" : "Foto de sucursal"} actualizado ✓`);
       setTimeout(() => setMsg(null), 2500);
     } catch (e: any) {
       const isRls = (e?.message || "").includes("row-level security");
@@ -906,7 +915,7 @@ function SettingsPanel() {
       {/* Identidad visual: logo + portada */}
       <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
         <h3 className="mb-4 text-base font-bold text-secondary">Identidad visual</h3>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-3">
           <AssetUploader
             title="Logo de la empresa"
             hint="PNG con fondo transparente recomendado. Se muestra en el encabezado del sitio."
@@ -923,6 +932,17 @@ function SettingsPanel() {
             uploading={uploadingAsset === "hero"}
             onFile={(f) => handleAssetUpload("hero", f)}
             onUrlChange={(v) => set("hero_image_url", v)}
+            previewClass="h-32 object-cover"
+          />
+          <AssetUploader
+            title="Foto de Sucursal (Mitre 480)"
+            hint="Foto de la sede central mostrada en la sección de sucursales en inicio."
+            currentUrl={s.category_images?.sucursal || "/images/sucursal-mitre.jpg"}
+            uploading={uploadingAsset === "branch"}
+            onFile={(f) => handleAssetUpload("branch", f)}
+            onUrlChange={(v) => {
+              set("category_images", { ...(s.category_images || {}), sucursal: v });
+            }}
             previewClass="h-32 object-cover"
           />
         </div>
@@ -1100,6 +1120,15 @@ function AssetUploader({
           className="mt-2 w-full rounded-xl border border-primary/30 bg-primary/5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition"
         >
           ✓ Usar Logo Oficial Le Radial (/images/logo-leradial.png)
+        </button>
+      )}
+      {title.toLowerCase().includes("sucursal") && (
+        <button
+          type="button"
+          onClick={() => onUrlChange("/images/sucursal-mitre.jpg")}
+          className="mt-2 w-full rounded-xl border border-primary/30 bg-primary/5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition"
+        >
+          ✓ Usar Foto Oficial Mitre 480 (/images/sucursal-mitre.jpg)
         </button>
       )}
       <input
@@ -1708,6 +1737,424 @@ function OrdersPanel() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────── BRANCHES (SUCURSALES) PANEL ─────────────────── */
+function BranchesAdminPanel() {
+  const qc = useQueryClient();
+  const fetchS = useServerFn(getAdminSettings);
+  const saveS = useServerFn(updateSettings);
+  const { data: settingsData } = useQuery({ queryKey: ["admin-settings"], queryFn: () => fetchS() });
+
+  const rawBranches = parseBranches((settingsData as any)?.category_images);
+  const branches: Branch[] = rawBranches.length > 0 ? rawBranches : [
+    {
+      id: "casa-central",
+      name: "Buenos Aires",
+      label: "Casa Central · Autocentro",
+      address: (settingsData as any)?.address || "Bartolomé Mitre 480, C1036AAH, Ciudad Autónoma de Buenos Aires, Argentina",
+      hours: (settingsData as any)?.hours || (settingsData as any)?.business_hours || "Lunes a Viernes de 8:00 a 17:00",
+      phone: (settingsData as any)?.phone || "+54 9 11 2395-1455",
+      image_url: (settingsData as any)?.category_images?.sucursal || "/images/sucursal-mitre.jpg",
+      is_main: true,
+    },
+  ];
+
+  const [editing, setEditing] = useState<Branch | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const saveMut = useMutation({
+    mutationFn: async (newList: Branch[]) => {
+      if (!settingsData) return;
+      const updatedCategoryImages = {
+        ...((settingsData as any).category_images || {}),
+        branches_data: JSON.stringify(newList),
+        sucursal: newList.find((b) => b.is_main)?.image_url || newList[0]?.image_url || "/images/sucursal-mitre.jpg",
+      };
+      const payload = {
+        ...settingsData,
+        category_images: updatedCategoryImages,
+      };
+      await saveS({ data: payload });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+      setEditing(null);
+      setError(null);
+      setMsg("Sucursales actualizadas con éxito ✓");
+      setTimeout(() => setMsg(null), 3000);
+    },
+    onError: (e: any) => setError(e?.message ?? "Error al guardar sucursales"),
+  });
+
+  async function handleFile(file: File) {
+    if (!editing) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `branch-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+        setEditing({ ...editing, image_url: urlData.publicUrl + "?t=" + Date.now() });
+      } else {
+        const dataUrl = await optimizeAndReadImage(file, 1200, 0.85);
+        setEditing({ ...editing, image_url: dataUrl });
+      }
+    } catch {
+      try {
+        const dataUrl = await optimizeAndReadImage(file, 1200, 0.85);
+        setEditing({ ...editing, image_url: dataUrl });
+      } catch (err: any) {
+        setError(err?.message ?? "Error al procesar la imagen");
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleSaveBranch(b: Branch) {
+    if (!b.name.trim() || !b.address.trim()) {
+      setError("El nombre de la ciudad/sucursal y la dirección son obligatorios.");
+      return;
+    }
+    let updated: Branch[];
+    const exists = branches.some((item) => item.id === b.id);
+    if (exists) {
+      updated = branches.map((item) => (item.id === b.id ? b : item));
+    } else {
+      updated = [...branches, { ...b, id: b.id || `branch-${Date.now()}` }];
+    }
+    if (b.is_main) {
+      updated = updated.map((item) => ({ ...item, is_main: item.id === b.id }));
+    } else if (!updated.some((item) => item.is_main) && updated.length > 0) {
+      updated[0].is_main = true;
+    }
+    saveMut.mutate(updated);
+  }
+
+  function handleDelete(id: string) {
+    if (branches.length <= 1) {
+      alert("Debe haber al menos una sucursal registrada en el sitio.");
+      return;
+    }
+    if (!confirm("¿Seguro que deseas eliminar esta sucursal?")) return;
+    let nextList = branches.filter((b) => b.id !== id);
+    if (!nextList.some((b) => b.is_main) && nextList.length > 0) {
+      nextList[0].is_main = true;
+    }
+    saveMut.mutate(nextList);
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-secondary">Gestión de Sucursales</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Configurá las sedes de atención con foto, dirección, horarios y mapa (estilo Sunset.com.py). Se muestran en la sección de inicio.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setEditing({
+              id: `branch-${Date.now()}`,
+              name: "",
+              label: "Sucursal Oficial",
+              address: "",
+              hours: "Lunes a Viernes de 8:00 a 17:00",
+              phone: (settingsData as any)?.phone || "+54 9 11 2395-1455",
+              image_url: "/images/sucursal-mitre.jpg",
+              is_main: branches.length === 0,
+            });
+            setError(null);
+          }}
+          className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-md hover:brightness-110 transition cursor-pointer"
+        >
+          <Plus className="h-4 w-4" /> Nueva Sucursal
+        </button>
+      </div>
+
+      {msg && (
+        <div className="mb-4 rounded-xl bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
+          {msg}
+        </div>
+      )}
+
+      {/* Grid de Sucursales */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {branches.map((b) => (
+          <div
+            key={b.id}
+            className="flex flex-col justify-between overflow-hidden rounded-2xl border bg-card p-5 shadow-[var(--shadow-product)] transition hover:border-primary/40"
+          >
+            <div>
+              {/* Foto de la sucursal */}
+              <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-neutral-900 border border-border">
+                <img
+                  src={b.image_url || "/images/sucursal-mitre.jpg"}
+                  alt={b.name}
+                  className="h-full w-full object-cover"
+                  onError={(e) => { e.currentTarget.src = "/images/sucursal-mitre.jpg"; }}
+                />
+                <div className="absolute top-2.5 left-2.5">
+                  <span
+                    className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase text-white ${
+                      b.is_main ? "bg-[#E3151A]" : "bg-black/70 backdrop-blur-sm"
+                    }`}
+                  >
+                    {b.is_main ? "Casa Central" : b.label || "Sucursal"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="mt-4">
+                <h3 className="text-lg font-black text-secondary">{b.name || "Sin nombre"}</h3>
+                <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 text-[#E3151A] shrink-0 mt-0.5" />
+                  <span>{b.address || "Sin dirección"}</span>
+                </p>
+                <div className="mt-2 space-y-1 text-[11px] text-muted-foreground border-t pt-2 border-border/50">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-neutral-400 shrink-0" />
+                    <span>{b.hours}</span>
+                  </div>
+                  {b.phone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-3 w-3 text-neutral-400 shrink-0" />
+                      <span>{b.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Acciones */}
+            <div className="mt-5 flex items-center justify-between border-t border-border pt-3">
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                {b.is_main ? "★ Sede Principal" : "Sucursal secundaria"}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setEditing({ ...b }); setError(null); }}
+                  className="rounded-lg border p-1.5 text-xs text-muted-foreground hover:bg-neutral-100 hover:text-secondary transition cursor-pointer"
+                  title="Editar sucursal"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(b.id)}
+                  disabled={saveMut.isPending || branches.length <= 1}
+                  className="rounded-lg border border-destructive/20 p-1.5 text-xs text-destructive hover:bg-destructive/10 transition disabled:opacity-40 cursor-pointer"
+                  title="Eliminar sucursal"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Modal / Formulario de edición o creación */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl rounded-3xl bg-card p-6 shadow-2xl border border-border my-8">
+            <button
+              onClick={() => setEditing(null)}
+              className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground hover:bg-neutral-100 transition cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-xl font-bold text-secondary mb-1">
+              {branches.some((item) => item.id === editing.id) ? "Editar Sucursal" : "Nueva Sucursal"}
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Completá los datos y la foto que se mostrarán en la sección interactiva del sitio.
+            </p>
+
+            {error && (
+              <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-2 text-xs font-semibold text-destructive">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              {/* Foto de la sucursal */}
+              <div>
+                <label className="block text-xs font-bold text-secondary mb-1">
+                  Foto de la Sucursal
+                </label>
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                  <div className="relative aspect-[16/10] w-full sm:w-48 overflow-hidden rounded-xl bg-neutral-900 border shrink-0">
+                    <img
+                      src={editing.image_url || "/images/sucursal-mitre.jpg"}
+                      alt="Previsualización"
+                      className="h-full w-full object-cover"
+                      onError={(e) => { e.currentTarget.src = "/images/sucursal-mitre.jpg"; }}
+                    />
+                  </div>
+                  <div className="w-full space-y-2">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleFile(f);
+                        e.target.value = "";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => fileRef.current?.click()}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-primary py-2 text-xs font-bold uppercase text-primary-foreground hover:brightness-110 transition disabled:opacity-60 cursor-pointer"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      {uploading ? "Subiendo foto..." : "Subir foto desde PC"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditing({ ...editing, image_url: "/images/sucursal-mitre.jpg" })}
+                      className="w-full rounded-xl border border-primary/30 bg-primary/5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition cursor-pointer"
+                    >
+                      ✓ Usar Foto Oficial Mitre 480
+                    </button>
+                    <input
+                      className={input + " text-xs"}
+                      placeholder="o ingresá URL directa https://..."
+                      value={editing.image_url}
+                      onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Nombre de la sucursal / ciudad */}
+              <div>
+                <label className="block text-xs font-bold text-secondary mb-1">
+                  Ciudad o Nombre de Sucursal *
+                </label>
+                <input
+                  className={input}
+                  placeholder="Ej: Buenos Aires, Minga Guazú, Rosario, Córdoba"
+                  value={editing.name}
+                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                />
+              </div>
+
+              {/* Etiqueta / Subtítulo */}
+              <div>
+                <label className="block text-xs font-bold text-secondary mb-1">
+                  Etiqueta / Tipo de Sucursal
+                </label>
+                <input
+                  className={input}
+                  placeholder="Ej: Casa Central · Autocentro, Sucursal Distribución, Punto de Retiro"
+                  value={editing.label || ""}
+                  onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                />
+              </div>
+
+              {/* Dirección */}
+              <div>
+                <label className="block text-xs font-bold text-secondary mb-1">
+                  Dirección completa *
+                </label>
+                <input
+                  className={input}
+                  placeholder="Ej: Bartolomé Mitre 480, C1036AAH, CABA"
+                  value={editing.address}
+                  onChange={(e) => setEditing({ ...editing, address: e.target.value })}
+                />
+              </div>
+
+              {/* Horarios */}
+              <div>
+                <label className="block text-xs font-bold text-secondary mb-1">
+                  Horarios de atención
+                </label>
+                <input
+                  className={input}
+                  placeholder="Ej: Lunes a Viernes de 8:00 a 17:00"
+                  value={editing.hours}
+                  onChange={(e) => setEditing({ ...editing, hours: e.target.value })}
+                />
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className="block text-xs font-bold text-secondary mb-1">
+                  Teléfono / WhatsApp de contacto
+                </label>
+                <input
+                  className={input}
+                  placeholder="Ej: +54 9 11 2395-1455"
+                  value={editing.phone || ""}
+                  onChange={(e) => setEditing({ ...editing, phone: e.target.value })}
+                />
+              </div>
+
+              {/* Enlace Google Maps */}
+              <div>
+                <label className="block text-xs font-bold text-secondary mb-1">
+                  Enlace personalizado a Google Maps (opcional)
+                </label>
+                <input
+                  className={input}
+                  placeholder="Dejá vacío para generar la búsqueda automática con la dirección"
+                  value={editing.maps_url || ""}
+                  onChange={(e) => setEditing({ ...editing, maps_url: e.target.value })}
+                />
+              </div>
+
+              {/* ¿Es Casa Central / Sede Principal? */}
+              <div className="flex items-center gap-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="is_main_branch"
+                  checked={!!editing.is_main}
+                  onChange={(e) => setEditing({ ...editing, is_main: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                />
+                <label htmlFor="is_main_branch" className="text-xs font-bold text-secondary cursor-pointer">
+                  Marcar como Casa Central / Sede Principal
+                </label>
+              </div>
+            </div>
+
+            {/* Botones de acción */}
+            <div className="mt-6 flex items-center justify-end gap-3 border-t pt-4">
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className="rounded-full border px-5 py-2 text-xs font-bold uppercase text-muted-foreground hover:bg-neutral-100 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={saveMut.isPending || uploading}
+                onClick={() => handleSaveBranch(editing)}
+                className="rounded-full bg-primary px-6 py-2 text-xs font-bold uppercase text-primary-foreground hover:brightness-110 transition disabled:opacity-60 cursor-pointer"
+              >
+                {saveMut.isPending ? "Guardando..." : "Guardar Sucursal"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

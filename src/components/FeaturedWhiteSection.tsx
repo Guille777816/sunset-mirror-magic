@@ -146,6 +146,9 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                       <p className="text-2xl font-black text-neutral-900 transition-colors group-hover:text-white">
                         {format(Number(p.price_ars))}
                       </p>
+                      <p className="mt-0.5 text-xs font-bold text-emerald-600 transition-colors group-hover:text-emerald-300">
+                        3 cuotas sin interés de {format(Math.round(Number(p.price_ars) / 3))}
+                      </p>
                     </div>
                   </div>
 

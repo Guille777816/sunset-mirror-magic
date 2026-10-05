@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, Plus, Instagram, Facebook, Star, ChevronDown, Camera } from "lucide-react";
+import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, Plus, Instagram, Facebook, Star, ChevronDown, Camera, CreditCard } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import heroTire from "@/assets/hero-tire.jpg";
@@ -12,7 +12,7 @@ import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { listPublicProducts } from "@/lib/products.functions";
-import { getSettings } from "@/lib/settings.functions";
+import { getSettings, parseBranches } from "@/lib/settings.functions";
 import { listPublicBanners } from "@/lib/banners.functions";
 import { listApprovedTestimonials, submitTestimonial } from "@/lib/testimonials.functions";
 import { useCart } from "@/lib/cart";
@@ -306,6 +306,24 @@ function Index() {
           <div className="hidden gap-4 md:flex items-center">
             <span>{businessHours}</span>
           </div>
+        </div>
+      </div>
+
+      {/* Banner de Promoción 3 Cuotas sin Interés */}
+      <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 px-4 py-2 text-center text-xs font-bold text-white shadow-inner">
+        <div className="container mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <span className="flex items-center gap-1.5 uppercase tracking-wide">
+            <CreditCard className="h-3.5 w-3.5 text-emerald-300" />
+            <strong>3 CUOTAS SIN INTERÉS</strong> con Visa, Naranja X, SuCrédito, Cabal y Amex
+          </span>
+          <span className="hidden sm:inline text-emerald-300">·</span>
+          <span className="text-[11px] font-medium text-emerald-100">
+            Aceptamos Débito, Prepagas, PIX 🇧🇷 y Tarjetas Internacionales 🌐
+          </span>
+          <span className="hidden md:inline text-emerald-300">·</span>
+          <span className="hidden md:inline text-[11px] font-semibold text-emerald-200">
+            🚚 Envíos a todo el país
+          </span>
         </div>
       </div>
 
@@ -607,9 +625,11 @@ function Index() {
       {/* Sucursales estilo Sunset */}
       {!searchActive && !activeCategory && !viewAllSizes && (
         <BranchLocationSection
+          branches={parseBranches(settings?.category_images)}
           address={settings?.address || "Bartolomé Mitre 480, C1036AAH, Ciudad Autónoma de Buenos Aires, Argentina"}
           hours={businessHours}
           phone={phone}
+          image={settings?.category_images?.sucursal || (settings as any)?.branch_image_url || "/images/sucursal-mitre.jpg"}
         />
       )}
 

@@ -156,7 +156,14 @@ function CartDrawer() {
             </div>
             <footer className="border-t p-5">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-semibold text-muted-foreground">Total</span>
+                <div>
+                  <span className="text-sm font-semibold text-muted-foreground">Total</span>
+                  {total > 0 && (
+                    <p className="text-xs font-bold text-emerald-600">
+                      o 3 cuotas sin interés de {format(Math.round(total / 3))}
+                    </p>
+                  )}
+                </div>
                 <span className="text-xl font-black text-secondary">{format(total)}</span>
               </div>
               <button
@@ -166,9 +173,14 @@ function CartDrawer() {
               >
                 <Lock className="h-4 w-4" /> Finalizar compra
               </button>
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                Los datos de pago se muestran al confirmar el pedido.
-              </p>
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5 text-center">
+                <p className="text-[11px] font-bold text-emerald-900">
+                  💳 3 cuotas sin interés: Visa, Naranja X, SuCrédito, Cabal y Amex
+                </p>
+                <p className="mt-0.5 text-[10px] font-medium text-emerald-800">
+                  Débito · Prepagas (Ualá/MP) · PIX 🇧🇷 · Tarjetas Internacionales 🌐
+                </p>
+              </div>
             </footer>
           </>
         )}

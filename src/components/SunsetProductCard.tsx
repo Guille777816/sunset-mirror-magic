@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingCart, CheckCircle, Package, Download } from "lucide-react";
+import { Heart, ShoppingCart, CheckCircle, Package, Download, CreditCard } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
 import { BrandLogo } from "./BrandLogo";
@@ -160,8 +160,19 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
           <div className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900">
             {format(priceArs)}
           </div>
+          {priceArs > 0 && (
+            <div className="mt-1 flex flex-col items-center md:items-end">
+              <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-200 shadow-xs">
+                <CreditCard className="h-3.5 w-3.5 text-emerald-600" />
+                <span><strong>3</strong> cuotas fijas de <strong>$ {Math.round(priceArs / 3).toLocaleString("es-AR")}</strong></span>
+              </div>
+              <p className="mt-1 text-[10px] font-semibold text-neutral-500">
+                Visa · Naranja X · SuCrédito · Cabal · Amex · Débito · Pix
+              </p>
+            </div>
+          )}
           {currency === "ARS" && (
-            <div className="mt-0.5 text-[11px] font-semibold text-neutral-400">
+            <div className="mt-1 text-[11px] font-semibold text-neutral-400">
               (R$ {priceBrl.toLocaleString("es-AR", { maximumFractionDigits: 2 })} / U$ {priceUsd.toLocaleString("es-AR", { maximumFractionDigits: 2 })})
             </div>
           )}

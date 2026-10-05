@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ArrowLeft, ShoppingCart, Plus, Download } from "lucide-react";
+import { Phone, ArrowLeft, ShoppingCart, Plus, Download, CreditCard } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -479,7 +479,35 @@ function ProductDetail() {
             <p className="mt-6 text-4xl font-black text-secondary">
               $ {Number(p.price_ars).toLocaleString("es-AR")}
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            {Number(p.price_ars) > 0 && (
+              <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-emerald-600 shrink-0" />
+                  <p className="text-base sm:text-lg font-black text-emerald-950">
+                    3 cuotas fijas sin interés de $ {Math.round(Number(p.price_ars) / 3).toLocaleString("es-AR")}
+                  </p>
+                </div>
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-bold text-emerald-900">Tarjetas de crédito:</span>
+                  {["Visa", "Naranja X", "SuCrédito", "Cabal", "Amex", "Mastercard"].map((card) => (
+                    <span
+                      key={card}
+                      className="rounded-md border border-emerald-200 bg-white px-2 py-0.5 text-xs font-bold text-neutral-800 shadow-xs"
+                    >
+                      {card}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-emerald-200/70 pt-2 text-xs text-neutral-700">
+                  <span className="font-bold text-neutral-800">Otros medios:</span>
+                  <span className="rounded bg-white/90 px-2 py-0.5 font-medium border border-neutral-200 shadow-xs">Tarjeta de Débito</span>
+                  <span className="rounded bg-white/90 px-2 py-0.5 font-medium border border-neutral-200 shadow-xs">Prepagas (Ualá, MP)</span>
+                  <span className="rounded bg-emerald-100 px-2 py-0.5 font-bold text-emerald-900 border border-emerald-300 shadow-xs">PIX 🇧🇷</span>
+                  <span className="rounded bg-sky-50 px-2 py-0.5 font-bold text-sky-900 border border-sky-200 shadow-xs">Tarjetas Extranjeras 🌐</span>
+                </div>
+              </div>
+            )}
+            <p className="mt-3 text-sm text-muted-foreground">
               {p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}
             </p>
             {isGenericVendorDescription(p.description) && (

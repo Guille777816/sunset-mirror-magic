@@ -3,10 +3,40 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/lib/supabase-auth-middleware";
 import { supabase } from "@/integrations/supabase/client";
 
+export type Branch = {
+  id: string;
+  name: string;
+  label?: string;
+  address: string;
+  hours: string;
+  phone?: string;
+  image_url: string;
+  maps_url?: string;
+  is_main?: boolean;
+};
+
+export function parseBranches(categoryImages?: Record<string, any> | null): Branch[] {
+  if (!categoryImages) return [];
+  if (categoryImages.branches_data) {
+    try {
+      const parsed = typeof categoryImages.branches_data === "string"
+        ? JSON.parse(categoryImages.branches_data)
+        : categoryImages.branches_data;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {
+      // ignore
+    }
+  }
+  if (Array.isArray(categoryImages.branches) && categoryImages.branches.length > 0) {
+    return categoryImages.branches;
+  }
+  return [];
+}
+
 // Pública: usada por el sitio. Lee de una vista de DB que ya excluye
 // datos bancarios y CUIT a nivel de base de datos (no solo en el código),
 // así que funciona con la key pública, sin necesitar la service role key.
-type PublicSettings = {
+export type PublicSettings = {
   id: string;
   phone: string;
   whatsapp: string;
