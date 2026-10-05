@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { getSettings } from "@/lib/settings.functions";
 
 interface BrandLogoProps {
   brand: string;
@@ -31,11 +32,18 @@ export function BrandLogo({ brand, className = "h-5 w-auto max-w-[120px]", custo
   // Try custom override from settings
   const { data: settings } = useQuery<any>({
     queryKey: ["settings"],
+    queryFn: () => getSettings().catch(() => null),
     staleTime: 60_000,
   });
 
   const customFromSettings = settings?.category_images?.[`brand:${normalized}`];
-  const logoSrc = customLogoUrl || customFromSettings || DEFAULT_BRAND_LOGO_MAP[normalized];
+  const validCustom = (customLogoUrl && customLogoUrl.trim() !== "")
+    ? customLogoUrl
+    : (customFromSettings && customFromSettings.trim() !== "")
+    ? customFromSettings
+    : null;
+
+  const logoSrc = validCustom || DEFAULT_BRAND_LOGO_MAP[normalized];
 
   if (!logoSrc || hasError) {
     return (

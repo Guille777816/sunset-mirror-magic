@@ -14,7 +14,7 @@ import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functio
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
 import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone, Zap } from "lucide-react";
-import { BrandLogo } from "@/components/BrandLogo";
+import { BrandLogo, DEFAULT_BRAND_LOGO_MAP } from "@/components/BrandLogo";
 import { optimizeAndReadImage } from "@/lib/image-utils";
 
 export const Route = createFileRoute("/admin")({
@@ -1371,6 +1371,9 @@ function BrandLogosPanel() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [newBrandName, setNewBrandName] = useState("");
+  const [newBrandFile, setNewBrandFile] = useState<File | null>(null);
+  const [newBrandPreview, setNewBrandPreview] = useState<string | null>(null);
+  const newBrandFileInputRef = useRef<HTMLInputElement>(null);
   const [editingUrlBrand, setEditingUrlBrand] = useState<string | null>(null);
   const [tempUrl, setTempUrl] = useState("");
 
@@ -1387,19 +1390,35 @@ function BrandLogosPanel() {
   ];
   
   // Custom brands stored in category_images with key `brand:...`
-  const customBrandKeys = Object.keys(categoryImages)
-    .filter((k) => k.startsWith("brand:"))
-    .map((k) => k.replace("brand:", ""));
+  const customBrandEntries = Object.keys(categoryImages)
+    .filter((k) => k.startsWith("brand:") && !k.startsWith("brand_name:"))
+    .map((k) => {
+      const norm = k.replace("brand:", "");
+      const storedName = categoryImages[`brand_name:${norm}`];
+      return storedName || (norm.charAt(0).toUpperCase() + norm.slice(1));
+    });
 
-  const allBrandNames = Array.from(
-    new Set([...dbBrands, ...defaultBrands, ...customBrandKeys])
-  ).sort((a, b) => a.localeCompare(b));
+  const brandMap = new Map<string, string>();
+  for (const b of defaultBrands) brandMap.set(b.toLowerCase(), b);
+  for (const b of dbBrands) brandMap.set(b.toLowerCase(), b);
+  for (const b of customBrandEntries) {
+    if (!brandMap.has(b.toLowerCase())) {
+      brandMap.set(b.toLowerCase(), b);
+    }
+  }
+
+  const allBrandNames = Array.from(brandMap.values()).sort((a, b) => a.localeCompare(b));
 
   const countForBrand = (b: string) =>
     products.filter((p) => (p.brand || "").trim().toLowerCase() === b.toLowerCase()).length;
 
   const [searchBrand, setSearchBrand] = useState("");
   const [filterMode, setFilterMode] = useState<"todas" | "catalogo" | "personalizado">("todas");
+
+  const countWithCustomLogo = allBrandNames.filter((b) => {
+    const val = categoryImages[`brand:${b.toLowerCase().trim()}`];
+    return Boolean(val && val.trim().length > 0);
+  }).length;
 
   const displayedBrands = allBrandNames.filter((b) => {
     if (searchBrand && !b.toLowerCase().includes(searchBrand.toLowerCase().trim())) {
@@ -1408,22 +1427,28 @@ function BrandLogosPanel() {
     if (filterMode === "catalogo" && countForBrand(b) === 0) {
       return false;
     }
-    if (filterMode === "personalizado" && !categoryImages[`brand:${b.toLowerCase().trim()}`]) {
-      return false;
+    if (filterMode === "personalizado") {
+      const val = categoryImages[`brand:${b.toLowerCase().trim()}`];
+      if (!val || val.trim().length === 0) return false;
     }
     return true;
   });
 
-  const saveBrandLogo = async (brandName: string, logoValue: string | null) => {
+  const saveBrandLogo = async (brandName: string, logoValue: string | null, displayName?: string) => {
     if (!settings) return;
     setSaving(true);
     try {
       const normalized = brandName.trim().toLowerCase();
       const updatedImages = { ...categoryImages };
-      if (logoValue) {
-        updatedImages[`brand:${normalized}`] = logoValue;
-      } else {
+      if (logoValue === null) {
         delete updatedImages[`brand:${normalized}`];
+        delete updatedImages[`brand_name:${normalized}`];
+      } else {
+        updatedImages[`brand:${normalized}`] = logoValue;
+        const nameToStore = (displayName || brandName).trim();
+        if (nameToStore) {
+          updatedImages[`brand_name:${normalized}`] = nameToStore;
+        }
       }
       const nextSettings = {
         ...settings,
@@ -1432,8 +1457,14 @@ function BrandLogosPanel() {
       await saveS({ data: nextSettings });
       qc.invalidateQueries({ queryKey: ["admin-settings"] });
       qc.invalidateQueries({ queryKey: ["settings"] });
-      setMsg(`Logo de ${brandName} actualizado ✓`);
-      setTimeout(() => setMsg(null), 3000);
+      if (logoValue === null) {
+        setMsg(`Marca / Logo de ${brandName} restablecido o eliminado ✓`);
+      } else if (logoValue) {
+        setMsg(`Logo de ${brandName} guardado con éxito ✓`);
+      } else {
+        setMsg(`Marca ${brandName} agregada ✓ Ahora podés subir su logo.`);
+      }
+      setTimeout(() => setMsg(null), 3500);
     } catch (e: any) {
       setMsg("Error al guardar: " + (e?.message ?? "Error"));
     } finally {
@@ -1450,12 +1481,36 @@ function BrandLogosPanel() {
     }
   };
 
-  const handleAddBrand = (e: React.FormEvent) => {
+  const handleNewBrandFileChange = async (file: File) => {
+    try {
+      setNewBrandFile(file);
+      const preview = await optimizeAndReadImage(file, 320, 0.92);
+      setNewBrandPreview(preview);
+    } catch (err: any) {
+      setMsg("Error al procesar el archivo: " + (err?.message ?? "Error"));
+    }
+  };
+
+  const handleAddBrand = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newBrandName.trim()) return;
-    const name = newBrandName.trim();
-    saveBrandLogo(name, "");
+    const trimmed = newBrandName.trim();
+    if (!trimmed) return;
+
+    let logoDataUrl = "";
+    if (newBrandFile) {
+      try {
+        logoDataUrl = await optimizeAndReadImage(newBrandFile, 320, 0.92);
+      } catch {
+        logoDataUrl = newBrandPreview || "";
+      }
+    }
+
+    await saveBrandLogo(trimmed, logoDataUrl, trimmed);
     setNewBrandName("");
+    setNewBrandFile(null);
+    setNewBrandPreview(null);
+    setSearchBrand(trimmed);
+    setFilterMode("todas");
   };
 
   return (
@@ -1493,24 +1548,67 @@ function BrandLogosPanel() {
       </div>
 
       {/* Agregar Nueva Marca */}
-      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)] flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h3 className="text-sm font-bold text-secondary">¿Querés incorporar una nueva marca?</h3>
-          <p className="text-xs text-muted-foreground">Escribí su nombre (ej: Hankook, Continental, Bridgestone) y agregala a tu lista.</p>
+      <div className="rounded-2xl bg-card p-6 shadow-[var(--shadow-product)] border">
+        <div className="mb-4">
+          <h3 className="text-base font-black text-secondary flex items-center gap-2">
+            <Plus className="h-5 w-5 text-primary" /> Incorporar Nueva Marca o Logo
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Podés agregar cualquier marca escribiendo su nombre y, si ya tenés el logo, seleccionarlo para subirlo todo junto.
+          </p>
         </div>
-        <form onSubmit={handleAddBrand} className="flex w-full sm:w-auto items-center gap-2">
+
+        <form onSubmit={handleAddBrand} className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           <input
-            className={input + " w-full sm:w-64"}
-            placeholder="Nombre de la marca..."
+            className={input + " flex-1 text-sm"}
+            placeholder="Nombre de la marca (ej: Hankook, Westlake, Dunlop)..."
             value={newBrandName}
             onChange={(e) => setNewBrandName(e.target.value)}
           />
+
+          <input
+            ref={newBrandFileInputRef}
+            type="file"
+            accept="image/png,image/webp,image/svg+xml,image/jpeg"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleNewBrandFileChange(f);
+              e.target.value = "";
+            }}
+          />
+
+          {newBrandPreview ? (
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2">
+              <img src={newBrandPreview} alt="Preview" className="h-6 w-auto max-w-[90px] object-contain" />
+              <button
+                type="button"
+                onClick={() => {
+                  setNewBrandFile(null);
+                  setNewBrandPreview(null);
+                }}
+                className="text-muted-foreground hover:text-destructive"
+                title="Quitar logo"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => newBrandFileInputRef.current?.click()}
+              className="flex items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-700 hover:bg-neutral-50 transition whitespace-nowrap shadow-sm"
+            >
+              <Upload className="h-4 w-4 text-primary" /> Elegir logo (opcional)
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={!newBrandName.trim() || saving}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-md transition hover:bg-primary/95 disabled:opacity-50"
           >
-            <Plus className="h-4 w-4" /> Agregar
+            <Plus className="h-4 w-4" /> {newBrandFile ? "Guardar marca y logo" : "Agregar marca"}
           </button>
         </form>
       </div>
@@ -1560,7 +1658,7 @@ function BrandLogosPanel() {
               filterMode === "personalizado" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
-            Con logo subido ({customBrandKeys.length})
+            Con logo subido ({countWithCustomLogo})
           </button>
         </div>
       </div>
@@ -1570,7 +1668,10 @@ function BrandLogosPanel() {
         {displayedBrands.map((brand) => {
           const norm = brand.trim().toLowerCase();
           const customLogo = categoryImages[`brand:${norm}`];
-          const hasCustom = Boolean(customLogo);
+          const hasCustomLogo = Boolean(customLogo && customLogo.trim().length > 0);
+          const isDbBrand = dbBrands.some((b) => b.toLowerCase() === norm);
+          const isDefaultBrand = defaultBrands.some((b) => b.toLowerCase() === norm);
+          const isCustomOnly = !isDbBrand && !isDefaultBrand;
           const count = countForBrand(brand);
 
           return (
@@ -1586,20 +1687,33 @@ function BrandLogosPanel() {
                       {count} neumático{count !== 1 ? "s" : ""} en catálogo
                     </span>
                   </div>
-                  {hasCustom ? (
-                    <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                  {hasCustomLogo ? (
+                    <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
                       Personalizado ✓
                     </span>
-                  ) : (
-                    <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
+                  ) : DEFAULT_BRAND_LOGO_MAP[norm] ? (
+                    <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2.5 py-0.5 text-[10px] font-semibold text-neutral-600">
                       De fábrica
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
+                      Sin logo aún
                     </span>
                   )}
                 </div>
 
                 {/* Previsualización del Logo */}
                 <div className="my-4 flex h-20 w-full items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-neutral-50/60 p-3">
-                  <BrandLogo brand={brand} customLogoUrl={customLogo} className="max-h-12 w-auto max-w-[180px] object-contain drop-shadow-sm" />
+                  {hasCustomLogo || DEFAULT_BRAND_LOGO_MAP[norm] ? (
+                    <BrandLogo brand={brand} customLogoUrl={customLogo} className="max-h-12 w-auto max-w-[180px] object-contain drop-shadow-sm" />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <span className="inline-flex items-center rounded bg-neutral-200/80 px-2.5 py-1 text-xs font-black uppercase tracking-wider text-neutral-800 border border-neutral-300">
+                        {brand}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground mt-1 font-medium">Logo no asignado</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1608,7 +1722,7 @@ function BrandLogosPanel() {
                 <div className="flex items-center gap-2">
                   <label className="flex-1 cursor-pointer">
                     <span className="flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white transition hover:bg-neutral-800 text-center">
-                      <Upload className="h-3.5 w-3.5" /> Subir logo (200×63)
+                      <Upload className="h-3.5 w-3.5" /> {hasCustomLogo ? "Cambiar logo" : "Subir logo (200×63)"}
                     </span>
                     <input
                       type="file"
@@ -1638,14 +1752,31 @@ function BrandLogosPanel() {
                     URL
                   </button>
 
-                  {hasCustom && (
+                  {/* Restablecer logo oficial si es de fábrica o catálogo */}
+                  {hasCustomLogo && (isDefaultBrand || isDbBrand) && (
                     <button
                       type="button"
                       onClick={() => saveBrandLogo(brand, null)}
-                      className="rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
-                      title="Restablecer logo oficial"
+                      className="rounded-xl border border-neutral-200 bg-neutral-50 px-2.5 py-2 text-xs font-bold text-neutral-600 hover:bg-neutral-100"
+                      title="Restablecer logo oficial de fábrica"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+
+                  {/* Eliminar marca si es personalizada exclusiva */}
+                  {isCustomOnly && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(`¿Eliminar la marca "${brand}" de la lista?`)) {
+                          saveBrandLogo(brand, null);
+                        }
+                      }}
+                      className="rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
+                      title="Eliminar marca"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
