@@ -438,12 +438,14 @@ function Index() {
 
           <div className="relative container mx-auto px-4 py-20 md:py-28 z-10">
             <p className="mb-3 text-xs font-black uppercase tracking-[0.3em] text-[#E3151A]">{settings?.hero_eyebrow ?? "Línea Oficial 2026"}</p>
-            <h1 className="max-w-3xl text-3xl font-black uppercase leading-[1.0] text-white sm:text-5xl md:text-6xl tracking-tight">
+            <h1 className="max-w-3xl text-3xl font-black uppercase leading-[1.05] text-white sm:text-5xl md:text-6xl tracking-tight">
               {settings?.hero_title ?? "Buscar el neumático ideal"}
-              <span className="mt-2 block text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-200 to-neutral-400">
-                {settings?.hero_subtitle ?? "Dominio total del terreno"}
-              </span>
             </h1>
+            {(settings?.hero_subtitle ?? "Dominio total del terreno") && (
+              <h2 className="mt-3 max-w-2xl text-xl sm:text-2xl md:text-3xl font-extrabold uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-200 to-neutral-400">
+                {settings?.hero_subtitle ?? "Dominio total del terreno"}
+              </h2>
+            )}
             <p className="mt-4 max-w-xl text-sm text-white/80 md:text-base leading-relaxed">
               {settings?.hero_description ?? "Neumáticos de máxima resistencia, rendimiento y durabilidad en todas las condiciones de suelo y velocidad."}
             </p>
