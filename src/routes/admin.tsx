@@ -73,6 +73,9 @@ function AdminPage() {
   const [tab, setTab] = useState<Tab>("productos");
   const [filterCat, setFilterCat] = useState<string>("todas");
   const [searchProd, setSearchProd] = useState<string>("");
+  const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [batchUpdating, setBatchUpdating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
 
   const fetchAll = useServerFn(listAllProducts);
   const save = useServerFn(upsertProduct);
@@ -162,13 +165,10 @@ function AdminPage() {
   }
 
 
-  const [showPendingOnly, setShowPendingOnly] = useState(false);
-  const [batchUpdating, setBatchUpdating] = useState(false);
-  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
 
-  const pendingProducts = (products as Product[]).filter(
-    (p) => !(p as any).updated_at?.startsWith("2026-10-04")
-  );
+  const pendingProducts = Array.isArray(products)
+    ? (products as Product[]).filter((p) => !(p as any).updated_at?.startsWith("2026-10-04"))
+    : [];
 
   async function handleBatchUpdatePending() {
     if (!pendingProducts.length) {
@@ -221,7 +221,7 @@ function AdminPage() {
     }
   }
 
-  const filteredProducts = (products as Product[]).filter((p) => {
+  const filteredProducts = (Array.isArray(products) ? (products as Product[]) : []).filter((p) => {
     if (showPendingOnly && (p as any).updated_at?.startsWith("2026-10-04")) return false;
     if (filterCat !== "todas" && !catsOf(p).includes(filterCat)) return false;
     if (searchProd.trim()) {
@@ -237,7 +237,7 @@ function AdminPage() {
   });
 
   const countByCategory = (cat: string) =>
-    (products as Product[]).filter((p) => catsOf(p).includes(cat)).length;
+    (Array.isArray(products) ? (products as Product[]) : []).filter((p) => catsOf(p).includes(cat)).length;
 
   return (
     <div className="min-h-screen bg-muted">
