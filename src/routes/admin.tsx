@@ -13,7 +13,7 @@ import { getSettings, getAdminSettings, updateSettings, parseBranches, type Bran
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone } from "lucide-react";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone, Zap } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { optimizeAndReadImage } from "@/lib/image-utils";
 
@@ -162,7 +162,67 @@ function AdminPage() {
   }
 
 
+  const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [batchUpdating, setBatchUpdating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const pendingProducts = (products as Product[]).filter(
+    (p) => !(p as any).updated_at?.startsWith("2026-10-04")
+  );
+
+  async function handleBatchUpdatePending() {
+    if (!pendingProducts.length) {
+      alert("No hay productos pendientes por actualizar.");
+      return;
+    }
+
+    const confirmed = confirm(
+      `¿Deseás actualizar los precios de las ${pendingProducts.length} cubiertas pendientes?\n\n` +
+      `• Autos (66): +$43.000 y +15%\n` +
+      `• Camionetas y SUV (36): +$60.000 y +15%\n` +
+      `• Camiones y Agrícolas (71): +$76.000 y +15%\n\n` +
+      `Los 262 productos modificados ayer permanecerán intactos.`
+    );
+    if (!confirmed) return;
+
+    setBatchUpdating(true);
+    setBatchProgress({ current: 0, total: pendingProducts.length });
+
+    try {
+      let count = 0;
+      for (const p of pendingProducts) {
+        const oldPrice = Number(p.price_ars) || 0;
+        const cat = ((p as any).category || "").toLowerCase();
+        let addAmount = 43000;
+        if (cat === "camionetas" || cat === "suv") addAmount = 60000;
+        else if (cat === "camiones" || cat === "agricolas" || cat === "industriales") addAmount = 76000;
+
+        const newPrice = Math.round(((oldPrice + addAmount) * 1.15) / 100) * 100;
+
+        const { error } = await supabase
+          .from("products")
+          .update({ price_ars: newPrice, updated_at: new Date().toISOString() })
+          .eq("id", p.id!);
+
+        if (error) console.error("Error al actualizar producto:", p.id, error);
+
+        count++;
+        setBatchProgress({ current: count, total: pendingProducts.length });
+      }
+
+      await qc.invalidateQueries({ queryKey: ["admin-products"] });
+      await qc.invalidateQueries({ queryKey: ["public-products"] });
+      alert(`¡Éxito! Se actualizaron correctamente los precios de las ${count} cubiertas pendientes.`);
+    } catch (e: any) {
+      alert("Ocurrió un error: " + (e?.message || String(e)));
+    } finally {
+      setBatchUpdating(false);
+      setBatchProgress(null);
+    }
+  }
+
   const filteredProducts = (products as Product[]).filter((p) => {
+    if (showPendingOnly && (p as any).updated_at?.startsWith("2026-10-04")) return false;
     if (filterCat !== "todas" && !catsOf(p).includes(filterCat)) return false;
     if (searchProd.trim()) {
       const q = searchProd.toLowerCase().trim();
@@ -199,12 +259,28 @@ function AdminPage() {
               Cerrar sesión
             </button>
           </div>
-          <button
-            onClick={() => setEditing({ ...empty })}
-            className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)]"
-          >
-            <Plus className="h-4 w-4" /> Nuevo producto
-          </button>
+          <div className="flex items-center gap-2">
+            {pendingProducts.length > 0 && (
+              <button
+                type="button"
+                onClick={handleBatchUpdatePending}
+                disabled={batchUpdating}
+                className="flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-md transition disabled:opacity-50 cursor-pointer"
+                title="Aplica los aumentos acordados a todas las cubiertas que quedaron pendientes"
+              >
+                <Zap className="h-4 w-4" />
+                {batchUpdating
+                  ? `Actualizando ${batchProgress?.current || 0}/${batchProgress?.total || 0}...`
+                  : `Aumentar pendientes (${pendingProducts.length})`}
+              </button>
+            )}
+            <button
+              onClick={() => setEditing({ ...empty })}
+              className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Nuevo producto
+            </button>
+          </div>
         </div>
         {/* Tabs */}
         <div className="container mx-auto flex gap-1 px-4 pb-0 overflow-x-auto">
@@ -276,20 +352,33 @@ function AdminPage() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPendingOnly(!showPendingOnly)}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition border cursor-pointer ${
+                    showPendingOnly
+                      ? "bg-amber-500 text-white border-amber-600 shadow-sm"
+                      : "bg-card text-secondary border-border hover:bg-muted"
+                  }`}
+                  title="Muestra solo las cubiertas que no fueron actualizadas ayer"
+                >
+                  {showPendingOnly ? "✓ Mostrando sólo pendientes" : `Ver sólo pendientes (${pendingProducts.length})`}
+                </button>
+                <LayoutGrid className="h-4 w-4 text-muted-foreground ml-1" />
                 <span className="text-xs sm:text-sm font-semibold text-secondary">
                   {filterCat === "todas"
                     ? `Mostrando ${filteredProducts.length} de ${(products as any[]).length} cubiertas`
                     : `${CATEGORY_LABELS[filterCat]} (${filteredProducts.length})`}
                 </span>
-                {(filterCat !== "todas" || searchProd) && (
+                {(filterCat !== "todas" || searchProd || showPendingOnly) && (
                   <button
                     onClick={() => {
                       setFilterCat("todas");
                       setSearchProd("");
+                      setShowPendingOnly(false);
                     }}
-                    className="ml-1 rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-destructive"
+                    className="ml-1 rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-destructive cursor-pointer"
                   >
                     × Limpiar filtros
                   </button>
@@ -337,7 +426,14 @@ function AdminPage() {
                           {catsOf(p).map((c) => CATEGORY_LABELS[c] ?? c).join(", ")}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold">$ {Number(p.price_ars).toLocaleString("es-AR")}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="font-semibold text-secondary">$ {Number(p.price_ars).toLocaleString("es-AR")}</div>
+                        {p.updated_at?.startsWith("2026-10-04") ? (
+                          <span className="inline-block text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">✓ Ayer</span>
+                        ) : (
+                          <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">⏳ Pendiente</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-right">{p.stock}</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${p.is_active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
