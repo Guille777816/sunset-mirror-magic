@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Heart, ShoppingCart, CheckCircle, Package, Download, CreditCard } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getSettings } from "@/lib/settings.functions";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
 import { BrandLogo } from "./BrandLogo";
@@ -30,6 +32,12 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
   const { format, currency, rates } = useCurrency();
   const [isFavorite, setIsFavorite] = useState(false);
 
+  const { data: settings } = useQuery<any>({
+    queryKey: ["settings"],
+    queryFn: () => getSettings().catch(() => null),
+    staleTime: 60_000,
+  });
+
   // Fallback placeholder tire if image is missing
   const isPickup = p.category === "camionetas" || p.category === "suv" || p.model?.toLowerCase().includes("brutus");
   const isTruck = p.category === "camiones" || p.category === "pesados" || p.model?.toLowerCase().includes("xcurve");
@@ -39,13 +47,17 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
     ? "/images/featured/xcurve.webp"
     : "/images/featured/fastway.webp";
 
-  const vehicleImg = isPickup
+  const customVehicleImg = settings?.category_images?.[`vehicle:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle:${p.slug}`] : null);
+  const customVehicleLabel = settings?.category_images?.[`vehicle_label:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle_label:${p.slug}`] : null);
+
+  const defaultVehicleImg = isPickup
     ? "/images/featured/brutus-bg.jpg"
     : isTruck
     ? "/images/featured/xcurve-bg.jpg"
     : "/images/featured/fastway-bg.jpg";
 
-  const vehicleLabel = isPickup ? "Camioneta / SUV" : isTruck ? "Camión Pesado" : "Auto / Calle";
+  const vehicleImg = customVehicleImg || defaultVehicleImg;
+  const vehicleLabel = customVehicleLabel || (isPickup ? "Camioneta / SUV" : isTruck ? "Camión Pesado" : "Auto / Calle");
 
   const tireImg = p.image_url || fallbackImg;
 

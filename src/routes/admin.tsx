@@ -13,7 +13,7 @@ import { getSettings, getAdminSettings, updateSettings, parseBranches, type Bran
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone, Zap } from "lucide-react";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone, Zap, Car, Sparkles, ExternalLink } from "lucide-react";
 import { BrandLogo, DEFAULT_BRAND_LOGO_MAP } from "@/components/BrandLogo";
 import { optimizeAndReadImage } from "@/lib/image-utils";
 
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/admin")({
 
 type Product = {
   id?: string;
+  slug?: string | null;
   brand: string;
   model: string;
   size: string;
@@ -74,6 +75,7 @@ function AdminPage() {
   const [filterCat, setFilterCat] = useState<string>("todas");
   const [searchProd, setSearchProd] = useState<string>("");
   const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const [batchUpdating, setBatchUpdating] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
 
@@ -81,6 +83,8 @@ function AdminPage() {
   const save = useServerFn(upsertProduct);
   const remove = useServerFn(deleteProduct);
   const applyCatalog = useServerFn(applyCatalogToModel);
+  const fetchSettingsAdmin = useServerFn(getAdminSettings);
+  const saveSettingsAdmin = useServerFn(updateSettings);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -108,12 +112,38 @@ function AdminPage() {
     enabled: ready && isAdmin,
   });
 
-
+  const { data: settingsData } = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: () => fetchSettingsAdmin(),
+    enabled: ready && isAdmin,
+  });
+  const settings = settingsData as any;
+  const categoryImages: Record<string, string> = settings?.category_images ?? {};
 
   const saveMut = useMutation({
-    mutationFn: async (input: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string }) => {
-      const { applyCatalogToModel: applyAll, catalogKeyword, ...p } = input;
+    mutationFn: async (input: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string; vehicle_image_url?: string | null; vehicle_label?: string | null }) => {
+      const { applyCatalogToModel: applyAll, catalogKeyword, vehicle_image_url, vehicle_label, ...p } = input;
       const res = await save({ data: p });
+      const targetId = res?.id || p.id;
+      if (targetId && settings && (vehicle_image_url !== undefined || vehicle_label !== undefined)) {
+        const upImages = { ...(settings.category_images || {}) };
+        if (vehicle_image_url) {
+          upImages[`vehicle:${targetId}`] = vehicle_image_url;
+        } else if (vehicle_image_url === null) {
+          delete upImages[`vehicle:${targetId}`];
+        }
+        if (vehicle_label) {
+          upImages[`vehicle_label:${targetId}`] = vehicle_label.trim();
+        } else if (vehicle_label === null || vehicle_label === "") {
+          delete upImages[`vehicle_label:${targetId}`];
+        }
+        await saveSettingsAdmin({
+          data: {
+            ...settings,
+            category_images: upImages,
+          },
+        });
+      }
       if (applyAll && p.brand.trim() && p.model.trim()) {
         const resApply = await applyCatalog({
           data: {
@@ -131,6 +161,8 @@ function AdminPage() {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
       qc.invalidateQueries({ queryKey: ["public-products"] });
       qc.invalidateQueries({ queryKey: ["product"] });
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+      qc.invalidateQueries({ queryKey: ["settings"] });
       setEditing(null);
     },
   });
@@ -221,7 +253,10 @@ function AdminPage() {
     }
   }
 
+  const featuredProducts = (Array.isArray(products) ? (products as Product[]) : []).filter((p) => p.is_featured);
+
   const filteredProducts = (Array.isArray(products) ? (products as Product[]) : []).filter((p) => {
+    if (showFeaturedOnly && !p.is_featured) return false;
     if (showPendingOnly && (p as any).updated_at?.startsWith("2026-10-04")) return false;
     if (filterCat !== "todas" && !catsOf(p).includes(filterCat)) return false;
     if (searchProd.trim()) {
@@ -355,7 +390,25 @@ function AdminPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowPendingOnly(!showPendingOnly)}
+                  onClick={() => {
+                    setShowFeaturedOnly(!showFeaturedOnly);
+                    if (!showFeaturedOnly) setShowPendingOnly(false);
+                  }}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition border cursor-pointer ${
+                    showFeaturedOnly
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card text-secondary border-border hover:bg-muted"
+                  }`}
+                  title="Muestra solo las cubiertas marcadas como destacadas en la portada"
+                >
+                  {showFeaturedOnly ? "✓ Mostrando sólo destacados" : `★ Ver sólo destacados (${featuredProducts.length})`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPendingOnly(!showPendingOnly);
+                    if (!showPendingOnly) setShowFeaturedOnly(false);
+                  }}
                   className={`rounded-full px-3 py-1 text-xs font-bold transition border cursor-pointer ${
                     showPendingOnly
                       ? "bg-amber-500 text-white border-amber-600 shadow-sm"
@@ -371,12 +424,13 @@ function AdminPage() {
                     ? `Mostrando ${filteredProducts.length} de ${(products as any[]).length} cubiertas`
                     : `${CATEGORY_LABELS[filterCat]} (${filteredProducts.length})`}
                 </span>
-                {(filterCat !== "todas" || searchProd || showPendingOnly) && (
+                {(filterCat !== "todas" || searchProd || showPendingOnly || showFeaturedOnly) && (
                   <button
                     onClick={() => {
                       setFilterCat("todas");
                       setSearchProd("");
                       setShowPendingOnly(false);
+                      setShowFeaturedOnly(false);
                     }}
                     className="ml-1 rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-destructive cursor-pointer"
                   >
@@ -498,7 +552,15 @@ function AdminPage() {
 
         {/* ── TAB: IMÁGENES ── */}
         {tab === "imagenes" && (
-          <ImageManager products={products as Product[]} onRefresh={() => qc.invalidateQueries({ queryKey: ["admin-products"] })} />
+          <ImageManager
+            products={products as Product[]}
+            settings={settings}
+            onRefresh={() => {
+              qc.invalidateQueries({ queryKey: ["admin-products"] });
+              qc.invalidateQueries({ queryKey: ["admin-settings"] });
+              qc.invalidateQueries({ queryKey: ["settings"] });
+            }}
+          />
         )}
 
         {/* ── TAB: AJUSTES ── */}
@@ -508,6 +570,7 @@ function AdminPage() {
       {editing && (
         <ProductForm
           value={editing}
+          categoryImages={categoryImages}
           onCancel={() => setEditing(null)}
           onSave={(p) => saveMut.mutate(p)}
           saving={saveMut.isPending}
@@ -519,24 +582,43 @@ function AdminPage() {
 }
 
 /* ─────────────────── IMAGE MANAGER ─────────────────── */
-function ImageManager({ products, onRefresh }: { products: Product[]; onRefresh: () => void }) {
+function ImageManager({
+  products,
+  settings,
+  onRefresh,
+}: {
+  products: Product[];
+  settings?: any;
+  onRefresh: () => void;
+}) {
+  const [imageTab, setImageTab] = useState<"vehiculos" | "cubiertas">("vehiculos");
   const [uploading, setUploading] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const vehicleFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const qc = useQueryClient();
-  const save = useServerFn(upsertProduct);
+  const saveProd = useServerFn(upsertProduct);
+  const saveSettingsFn = useServerFn(updateSettings);
 
-  async function handleUpload(product: Product, file: File) {
+  const [onlyFeatured, setOnlyFeatured] = useState(true);
+  const [search, setSearch] = useState("");
+  const [editingUrlId, setEditingUrlId] = useState<string | null>(null);
+  const [tempUrl, setTempUrl] = useState("");
+  const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
+  const [tempLabel, setTempLabel] = useState("");
+
+  const categoryImages: Record<string, string> = settings?.category_images ?? {};
+
+  // Manejo de foto del neumático
+  async function handleUploadTire(product: Product, file: File) {
     if (!product.id) return;
     setUploading(product.id);
     setMsg(null);
     try {
       const dataUrl = await optimizeAndReadImage(file, 600, 0.88);
-      await save({ data: { ...product, price_ars: Number(product.price_ars), image_url: dataUrl } });
-      qc.invalidateQueries({ queryKey: ["admin-products"] });
-      qc.invalidateQueries({ queryKey: ["public-products"] });
+      await saveProd({ data: { ...product, price_ars: Number(product.price_ars), image_url: dataUrl } });
       onRefresh();
-      setMsg({ type: "ok", text: `Imagen de "${product.brand} ${product.model}" actualizada ✓` });
+      setMsg({ type: "ok", text: `Imagen de cubierta "${product.brand} ${product.model}" actualizada ✓` });
     } catch (e: any) {
       setMsg({ type: "err", text: e?.message ?? "Error al procesar la imagen" });
     } finally {
@@ -544,16 +626,14 @@ function ImageManager({ products, onRefresh }: { products: Product[]; onRefresh:
     }
   }
 
-  async function handleRemove(product: Product) {
+  async function handleRemoveTire(product: Product) {
     if (!product.id || !product.image_url) return;
     if (!confirm("¿Quitar la imagen de este producto?")) return;
     setUploading(product.id);
     try {
-      await save({ data: { ...product, price_ars: Number(product.price_ars), image_url: null } });
-      qc.invalidateQueries({ queryKey: ["admin-products"] });
-      qc.invalidateQueries({ queryKey: ["public-products"] });
+      await saveProd({ data: { ...product, price_ars: Number(product.price_ars), image_url: null } });
       onRefresh();
-      setMsg({ type: "ok", text: "Imagen eliminada ✓" });
+      setMsg({ type: "ok", text: "Imagen de cubierta eliminada ✓" });
     } catch (e: any) {
       setMsg({ type: "err", text: e?.message ?? "Error" });
     } finally {
@@ -561,114 +641,502 @@ function ImageManager({ products, onRefresh }: { products: Product[]; onRefresh:
     }
   }
 
+  // Manejo de foto del vehículo (al pasar el mouse)
+  async function handleSaveVehicleImage(product: Product, dataUrl: string | null, customLabel?: string | null) {
+    if (!product.id || !settings) return;
+    setUploading(product.id);
+    setMsg(null);
+    try {
+      const upImages = { ...categoryImages };
+      if (dataUrl) {
+        upImages[`vehicle:${product.id}`] = dataUrl;
+      } else {
+        delete upImages[`vehicle:${product.id}`];
+      }
+      if (customLabel !== undefined) {
+        if (customLabel && customLabel.trim()) {
+          upImages[`vehicle_label:${product.id}`] = customLabel.trim();
+        } else {
+          delete upImages[`vehicle_label:${product.id}`];
+        }
+      }
+      await saveSettingsFn({
+        data: {
+          ...settings,
+          category_images: upImages,
+        },
+      });
+      onRefresh();
+      setMsg({
+        type: "ok",
+        text: dataUrl
+          ? `Foto de vehículo guardada para "${product.brand} ${product.model}" ✓`
+          : `Foto de vehículo restablecida al valor de fábrica ✓`,
+      });
+    } catch (e: any) {
+      setMsg({ type: "err", text: e?.message ?? "Error al guardar" });
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  async function handleVehicleFile(product: Product, file: File) {
+    try {
+      const dataUrl = await optimizeAndReadImage(file, 800, 0.88);
+      await handleSaveVehicleImage(product, dataUrl);
+    } catch (e: any) {
+      setMsg({ type: "err", text: e?.message ?? "Error al procesar la imagen" });
+    }
+  }
+
+  const featuredCount = products.filter((p) => p.is_featured).length;
+
+  const vehicleFilteredProducts = products.filter((p) => {
+    if (onlyFeatured && !p.is_featured) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      const match =
+        (p.brand || "").toLowerCase().includes(q) ||
+        (p.model || "").toLowerCase().includes(q) ||
+        (p.size || "").toLowerCase().includes(q) ||
+        (p.category || "").toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
+
   const grouped = Object.entries(CATEGORY_LABELS).map(([slug, label]) => ({
     slug, label,
     items: products.filter((p) => catsOf(p).includes(slug)),
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-secondary">Gestión de imágenes</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Subí imágenes directamente desde tu computadora. Formatos: JPG, PNG, WebP — máx. 5 MB.
-        </p>
+    <div className="space-y-6">
+      {/* Selector de sub-pestaña */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+        <div>
+          <h2 className="text-xl font-black text-secondary flex items-center gap-2">
+            <ImageIcon className="h-6 w-6 text-primary" /> Galería e Imágenes
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Administrá tanto las fotos de los neumáticos como las fotos de cómo quedan puestos en vehículos.
+          </p>
+        </div>
+        <div className="flex rounded-xl bg-muted p-1 gap-1">
+          <button
+            type="button"
+            onClick={() => setImageTab("vehiculos")}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              imageTab === "vehiculos"
+                ? "bg-white text-secondary shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Car className="h-4 w-4 text-primary" /> Fotos en Vehículo (Destacados y Hover)
+          </button>
+          <button
+            type="button"
+            onClick={() => setImageTab("cubiertas")}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              imageTab === "cubiertas"
+                ? "bg-white text-secondary shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Package className="h-4 w-4 text-secondary" /> Fotos de Cubiertas
+          </button>
+        </div>
       </div>
 
       {msg && (
-        <div className={`mb-4 rounded-xl px-4 py-3 text-sm font-semibold ${msg.type === "ok" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+        <div className={`rounded-xl px-4 py-3 text-sm font-semibold animate-in fade-in ${msg.type === "ok" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
           {msg.text}
           <button onClick={() => setMsg(null)} className="ml-3 opacity-60 hover:opacity-100"><X className="inline h-3 w-3" /></button>
         </div>
       )}
 
-      <div className="space-y-8">
-        {grouped.map(({ slug, label, items }) => (
-          <div key={slug}>
-            <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-secondary">
-              <span className="rounded-full bg-primary/15 px-3 py-0.5 text-xs font-bold uppercase text-primary">{label}</span>
-              <span className="text-sm text-muted-foreground font-normal">{items.length} producto(s)</span>
-            </h3>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-5">
-              {items.map((p) => (
-                <div key={p.id} className="rounded-2xl bg-card p-3 shadow-[var(--shadow-product)]">
-                  {/* Preview */}
-                  <div className="relative mb-2 aspect-square overflow-hidden rounded-xl bg-muted">
-                    {p.image_url ? (
-                      <img src={p.image_url} alt={p.model} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
-                        <ImageIcon className="h-8 w-8 opacity-40" />
-                        <span className="text-[10px]">Sin imagen</span>
-                      </div>
-                    )}
-                    {uploading === p.id && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      </div>
-                    )}
-                    {p.image_url && uploading !== p.id && (
-                      <button
-                        onClick={() => handleRemove(p)}
-                        className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-white shadow"
-                        title="Quitar imagen"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[11px] font-bold text-primary uppercase tracking-wider truncate">{p.brand}</p>
-                  <p className="text-xs font-semibold text-secondary truncate">{p.model}</p>
-                  <p className="mb-2 text-[10px] text-muted-foreground font-mono">{p.size}</p>
-                  {/* Upload button */}
-                  <input
-                    ref={(el) => { fileRefs.current[p.id!] = el; }}
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleUpload(p, file);
-                      e.target.value = "";
-                    }}
-                  />
-                  <button
-                    disabled={uploading === p.id}
-                    onClick={() => fileRefs.current[p.id!]?.click()}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-primary/40 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50"
-                  >
-                    <Upload className="h-3 w-3" />
-                    {p.image_url ? "Cambiar" : "Subir imagen"}
-                  </button>
-                </div>
-              ))}
+      {/* ── SUB-TAB: FOTOS EN VEHÍCULO ── */}
+      {imageTab === "vehiculos" && (
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-blue-50 p-5 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-black text-secondary flex items-center gap-2">
+                  <Car className="h-5 w-5 text-sky-600" /> Fotos Puestas en Vehículo (Efecto Hover)
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground max-w-2xl leading-relaxed">
+                  Asigná la foto exacta de cómo queda puesta la cubierta en un vehículo (ej: camioneta, auto o camión). Cuando el usuario pasa el mouse por encima en la portada, se visualiza esta foto correspondiente en lugar de la foto genérica de Brutus.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOnlyFeatured(true)}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-bold transition shadow-sm cursor-pointer ${
+                    onlyFeatured
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-white text-secondary border hover:bg-neutral-50"
+                  }`}
+                >
+                  ★ Sólo Destacados ({featuredCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOnlyFeatured(false)}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-bold transition shadow-sm cursor-pointer ${
+                    !onlyFeatured
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-white text-secondary border hover:bg-neutral-50"
+                  }`}
+                >
+                  Todas las cubiertas ({products.length})
+                </button>
+              </div>
             </div>
           </div>
-        ))}
 
-        {products.length === 0 && (
-          <div className="rounded-2xl bg-card p-10 text-center text-muted-foreground">
-            No hay productos cargados todavía. Creá productos primero desde la pestaña "Productos".
+          {/* Buscador */}
+          <div className="relative max-w-md">
+            <input
+              className={input + " pl-10 text-xs sm:text-sm"}
+              placeholder="Buscar por marca, modelo o medida..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+              >
+                ✕
+              </button>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Grilla de productos con su foto de vehículo */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {vehicleFilteredProducts.map((p) => {
+              const isPickup = p.category === "camionetas" || p.category === "suv" || p.model?.toLowerCase().includes("brutus");
+              const isTruck = p.category === "camiones" || p.category === "pesados" || p.model?.toLowerCase().includes("xcurve");
+              const defaultVehicleImg = isPickup
+                ? "/images/featured/brutus-bg.jpg"
+                : isTruck
+                ? "/images/featured/xcurve-bg.jpg"
+                : "/images/featured/fastway-bg.jpg";
+
+              const customVehicleImg = categoryImages[`vehicle:${p.id}`] || (p.slug ? categoryImages[`vehicle:${p.slug}`] : null);
+              const hasCustom = Boolean(customVehicleImg);
+              const currentVehicleImg = customVehicleImg || defaultVehicleImg;
+
+              const customLabel = categoryImages[`vehicle_label:${p.id}`] || (p.slug ? categoryImages[`vehicle_label:${p.slug}`] : "");
+              const defaultLabel = isPickup ? "Camioneta / SUV" : isTruck ? "Camión Pesado" : "Auto / Calle";
+              const currentLabel = customLabel || defaultLabel;
+
+              return (
+                <div
+                  key={p.id}
+                  className="flex flex-col justify-between rounded-2xl border bg-card p-4 shadow-sm hover:shadow-md transition"
+                >
+                  <div>
+                    {/* Header: Neumático info */}
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-black text-primary uppercase">{p.brand}</span>
+                          {p.is_featured && (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black uppercase text-amber-800">
+                              ★ Destacado
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-bold text-secondary line-clamp-1">{p.model}</h4>
+                        <p className="font-mono text-xs text-muted-foreground">{p.size}</p>
+                      </div>
+                      {hasCustom ? (
+                        <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold text-emerald-800 shrink-0">
+                          Personalizada ✓
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600 shrink-0">
+                          De fábrica
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Visualización comparativa: Cubierta vs Vehículo */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {/* Lado A: Cubierta */}
+                      <div className="relative aspect-square rounded-xl bg-neutral-100 p-2 flex items-center justify-center border overflow-hidden">
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.model} className="h-full w-full object-contain" />
+                        ) : (
+                          <div className="text-center text-[10px] text-muted-foreground">Sin foto cubierta</div>
+                        )}
+                        <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                          Cubierta
+                        </span>
+                      </div>
+
+                      {/* Lado B: Vehículo en hover */}
+                      <div className="relative aspect-square rounded-xl bg-neutral-900 border overflow-hidden group/thumb">
+                        <img src={currentVehicleImg} alt="vehiculo" className="h-full w-full object-cover transition group-hover/thumb:scale-105" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-1.5">
+                          <span className="rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white truncate text-center">
+                            {currentLabel}
+                          </span>
+                        </div>
+                        <span className="absolute top-1 left-1 rounded bg-sky-600/90 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                          En Vehículo
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Editor de Etiqueta del Vehículo */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-secondary mb-1">
+                        <span>Etiqueta del vehículo:</span>
+                        {customLabel && (
+                          <span className="text-[10px] text-emerald-600 font-bold">Personalizada</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          className={input + " h-8 text-xs flex-1 rounded-xl px-2.5"}
+                          placeholder={`Ej: Hilux, Amarok V6, Gol Trend (actual: ${currentLabel})`}
+                          value={editingLabelId === p.id ? tempLabel : (customLabel || "")}
+                          onFocus={() => {
+                            if (editingLabelId !== p.id) {
+                              setEditingLabelId(p.id!);
+                              setTempLabel(customLabel || "");
+                            }
+                          }}
+                          onChange={(e) => {
+                            setEditingLabelId(p.id!);
+                            setTempLabel(e.target.value);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleSaveVehicleImage(p, customVehicleImg || null, tempLabel);
+                              setEditingLabelId(null);
+                            }
+                          }}
+                        />
+                        {editingLabelId === p.id && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSaveVehicleImage(p, customVehicleImg || null, tempLabel);
+                              setEditingLabelId(null);
+                            }}
+                            className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground cursor-pointer"
+                          >
+                            OK
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Acciones de subida */}
+                  <div className="space-y-2 border-t pt-3">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        ref={(el) => { vehicleFileRefs.current[p.id!] = el; }}
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleVehicleFile(p, file);
+                          e.target.value = "";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={uploading === p.id}
+                        onClick={() => vehicleFileRefs.current[p.id!]?.click()}
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-neutral-900 py-2 text-xs font-bold text-white transition hover:bg-neutral-800 disabled:opacity-50 cursor-pointer"
+                      >
+                        <Upload className="h-3.5 w-3.5" /> {hasCustom ? "Cambiar foto" : "Subir foto vehículo"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editingUrlId === p.id) {
+                            setEditingUrlId(null);
+                          } else {
+                            setEditingUrlId(p.id!);
+                            setTempUrl(customVehicleImg || "");
+                          }
+                        }}
+                        className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+                        title="Pegar URL directa"
+                      >
+                        URL
+                      </button>
+
+                      {hasCustom && (
+                        <button
+                          type="button"
+                          onClick={() => handleSaveVehicleImage(p, null, null)}
+                          className="rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-bold text-red-600 hover:bg-red-100 cursor-pointer"
+                          title="Restablecer a foto por defecto"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Input de URL expandible */}
+                    {editingUrlId === p.id && (
+                      <div className="flex items-center gap-2 pt-1 animate-in fade-in">
+                        <input
+                          className={input + " text-xs h-8 flex-1 rounded-lg"}
+                          placeholder="https://ejemplo.com/foto-vehiculo.jpg"
+                          value={tempUrl}
+                          onChange={(e) => setTempUrl(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSaveVehicleImage(p, tempUrl.trim() || null, customLabel || null);
+                            setEditingUrlId(null);
+                          }}
+                          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground cursor-pointer"
+                        >
+                          Guardar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {vehicleFilteredProducts.length === 0 && (
+              <div className="col-span-full rounded-2xl border border-dashed p-10 text-center bg-card">
+                <Car className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+                <p className="text-sm font-bold text-secondary">No se encontraron productos con ese criterio</p>
+                {onlyFeatured && (
+                  <button
+                    type="button"
+                    onClick={() => setOnlyFeatured(false)}
+                    className="mt-3 text-xs text-primary font-bold underline cursor-pointer"
+                  >
+                    Ver todas las cubiertas del catálogo
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── SUB-TAB: FOTOS DE CUBIERTAS (ORIGINAL) ── */}
+      {imageTab === "cubiertas" && (
+        <div className="space-y-8">
+          <div className="rounded-2xl border bg-card p-4 text-xs text-muted-foreground">
+            Aquí gestionás la <strong>foto principal del neumático</strong> aislado (fondo blanco/transparente). Formatos: JPG, PNG, WebP — máx. 5 MB.
+          </div>
+          {grouped.map(({ slug, label, items }) => (
+            <div key={slug}>
+              <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-secondary">
+                <span className="rounded-full bg-primary/15 px-3 py-0.5 text-xs font-bold uppercase text-primary">{label}</span>
+                <span className="text-sm text-muted-foreground font-normal">{items.length} producto(s)</span>
+              </h3>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-5">
+                {items.map((p) => (
+                  <div key={p.id} className="rounded-2xl bg-card p-3 shadow-[var(--shadow-product)]">
+                    <div className="relative mb-2 aspect-square overflow-hidden rounded-xl bg-muted">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.model} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
+                          <ImageIcon className="h-8 w-8 opacity-40" />
+                          <span className="text-[10px]">Sin imagen</span>
+                        </div>
+                      )}
+                      {uploading === p.id && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        </div>
+                      )}
+                      {p.image_url && uploading !== p.id && (
+                        <button
+                          onClick={() => handleRemoveTire(p)}
+                          className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-white shadow"
+                          title="Quitar imagen"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] font-bold text-primary uppercase tracking-wider truncate">{p.brand}</p>
+                    <p className="text-xs font-semibold text-secondary truncate">{p.model}</p>
+                    <p className="mb-2 text-[10px] text-muted-foreground font-mono">{p.size}</p>
+                    <input
+                      ref={(el) => { fileRefs.current[p.id!] = el; }}
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadTire(p, file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <button
+                      disabled={uploading === p.id}
+                      onClick={() => fileRefs.current[p.id!]?.click()}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-primary/40 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50 cursor-pointer"
+                    >
+                      <Upload className="h-3 w-3" />
+                      {p.image_url ? "Cambiar" : "Subir imagen"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 /* ─────────────────── PRODUCT FORM ─────────────────── */
 function ProductForm({
-  value, onCancel, onSave, saving, error,
+  value, onCancel, onSave, saving, error, categoryImages,
 }: {
   value: Product;
   onCancel: () => void;
-  onSave: (p: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string }) => void;
+  onSave: (p: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string; vehicle_image_url?: string | null; vehicle_label?: string | null }) => void;
   saving: boolean;
   error: any;
+  categoryImages?: Record<string, string>;
 }) {
-   const [p, setP] = useState<Product>(value);
+  const [p, setP] = useState<Product>(value);
   const [uploading, setUploading] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [applyCatalogAll, setApplyCatalogAll] = useState(false);
+
+  const [vehicleImg, setVehicleImg] = useState<string | null>(() => (value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null));
+  const [vehicleLabel, setVehicleLabel] = useState<string>(() => (value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : ""));
+  const [uploadingVehicle, setUploadingVehicle] = useState(false);
+
+  async function handleVehicleUpload(file: File) {
+    setUploadingVehicle(true);
+    try {
+      const dataUrl = await optimizeAndReadImage(file, 800, 0.88);
+      setVehicleImg(dataUrl);
+    } catch (e: any) {
+      alert(e?.message ?? "Error al procesar la foto del vehículo");
+    } finally {
+      setUploadingVehicle(false);
+    }
+  }
+
   const cleanFamily = (m: string) =>
     m.replace(/\b(?:LT|LTR|SUV|AT|A\/T|MT|M\/T)?\s*\d{2,3}(?:\/\d{2,3})?[A-Z]\b/gi, "")
      .replace(/\b\d{1,2}PR\b/gi, "")
@@ -878,6 +1346,70 @@ function ProductForm({
               Formatos admitidos: archivos PDF (máx. 20 MB).
             </p>
           </div>
+          {/* Foto del vehículo en uso / puesta (al pasar el mouse) */}
+          <div className="col-span-2 rounded-2xl border border-sky-400/40 bg-sky-50/60 p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-secondary">
+                <Car className="h-4 w-4 text-sky-600" /> Foto del Vehículo (Efecto Hover en Portada)
+              </span>
+              {vehicleImg && (
+                <button
+                  type="button"
+                  onClick={() => setVehicleImg(null)}
+                  className="text-xs font-semibold text-destructive hover:underline cursor-pointer"
+                >
+                  Quitar foto personalizada
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Esta foto se muestra cuando el usuario pasa el mouse por encima del neumático en la tienda y en la sección Destacados. Si no subís ninguna, usa la de fábrica según el tipo de vehículo.
+            </p>
+            {vehicleImg && (
+              <div className="relative h-28 w-full max-w-xs overflow-hidden rounded-xl border bg-neutral-900 shadow-sm">
+                <img src={vehicleImg} alt="vehiculo" className="h-full w-full object-cover" />
+                {vehicleLabel && (
+                  <span className="absolute bottom-2 left-2 rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                    {vehicleLabel}
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-xs font-bold uppercase text-white hover:bg-sky-700 shadow-sm transition">
+                <Upload className="h-4 w-4" />
+                {uploadingVehicle ? "Subiendo..." : vehicleImg ? "Cambiar foto de vehículo" : "Subir foto de vehículo desde tu PC"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  className="hidden"
+                  disabled={uploadingVehicle}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleVehicleUpload(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <span className="text-xs text-muted-foreground">o pegá URL:</span>
+            </div>
+            <input
+              className={input}
+              placeholder="https://ejemplo.com/foto-camioneta.jpg"
+              value={vehicleImg ?? ""}
+              onChange={(e) => setVehicleImg(e.target.value.trim() || null)}
+            />
+            <div>
+              <label className="text-xs font-bold text-secondary">Etiqueta del vehículo (opcional):</label>
+              <input
+                className={input + " mt-1"}
+                placeholder="Ej: Toyota Hilux, VW Amarok V6, Fiat Cronos, Scania R450..."
+                value={vehicleLabel}
+                onChange={(e) => setVehicleLabel(e.target.value)}
+              />
+            </div>
+          </div>
+
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={p.is_active} onChange={(e) => set("is_active", e.target.checked)} /> Activo (visible en el sitio)
           </label>
@@ -890,13 +1422,23 @@ function ProductForm({
         </div>
         {p.id && (
           <p className="mt-3 rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
-            💡 También podés subir la foto desde tu computadora en la pestaña <strong>Imágenes</strong>.
+            💡 También podés gestionar y subir las fotos en la pestaña <strong>Imágenes</strong> &gt; <strong>Fotos en Vehículo</strong>.
           </p>
         )}
         {error && <p className="mt-3 text-sm text-destructive">{String(error?.message ?? error)}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onCancel} className="rounded-full border px-5 py-2 text-sm font-semibold">Cancelar</button>
-          <button disabled={saving || uploadingPdf} onClick={() => onSave({ ...p, applyCatalogToModel: applyCatalogAll, catalogKeyword: catalogKeyword.trim() || undefined })} className="rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60">
+          <button
+            disabled={saving || uploadingPdf || uploadingVehicle}
+            onClick={() => onSave({
+              ...p,
+              applyCatalogToModel: applyCatalogAll,
+              catalogKeyword: catalogKeyword.trim() || undefined,
+              vehicle_image_url: vehicleImg,
+              vehicle_label: vehicleLabel,
+            })}
+            className="rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground disabled:opacity-60"
+          >
             {saving ? "Guardando..." : "Guardar"}
           </button>
         </div>

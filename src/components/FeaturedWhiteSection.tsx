@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ShoppingCart, Truck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getSettings } from "@/lib/settings.functions";
 import { useCurrency } from "@/lib/currency";
 import { useCart } from "@/lib/cart";
 import { BrandLogo } from "./BrandLogo";
@@ -27,6 +29,12 @@ interface FeaturedWhiteSectionProps {
 export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
   const { format } = useCurrency();
   const cart = useCart();
+
+  const { data: settings } = useQuery<any>({
+    queryKey: ["settings"],
+    queryFn: () => getSettings().catch(() => null),
+    staleTime: 60_000,
+  });
 
   // Highlight featured items or top active products
   const featuredList = (products || []).filter((p) => p.is_featured);
@@ -60,13 +68,16 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
               ? "/images/featured/xcurve.webp" 
               : "/images/featured/fastway.webp");
 
-            const vehicleBg = isPickup
+            const customVehicleBg = settings?.category_images?.[`vehicle:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle:${p.slug}`] : null);
+            const customVehicleLabel = settings?.category_images?.[`vehicle_label:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle_label:${p.slug}`] : null);
+
+            const vehicleBg = customVehicleBg || (isPickup
               ? "/images/featured/brutus-bg.jpg"
               : isTruck
               ? "/images/featured/xcurve-bg.jpg"
-              : "/images/featured/fastway-bg.jpg";
+              : "/images/featured/fastway-bg.jpg");
 
-            const vehicleLabel = isPickup ? "Camionetas" : isTruck ? "Camión" : "Auto";
+            const vehicleLabel = customVehicleLabel || (isPickup ? "Camionetas" : isTruck ? "Camión" : "Auto");
 
             const mainCategory = Array.isArray(p.categories) && p.categories.length > 0 
               ? p.categories[0] 
