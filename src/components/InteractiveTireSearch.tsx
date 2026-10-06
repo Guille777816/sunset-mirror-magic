@@ -20,7 +20,26 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown if clicking outside
+  // Estado del "relojito" automático que rota entre Ancho (175) -> Alto (70) -> Aro (14)
+  const [activeGuideIndex, setActiveGuideIndex] = useState<number>(1); // 0: Ancho, 1: Alto, 2: Aro
+  const isInteracting = openStep !== null;
+
+  useEffect(() => {
+    if (isInteracting) return;
+    const interval = setInterval(() => {
+      setActiveGuideIndex((prev) => (prev + 1) % 3);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [isInteracting]);
+
+  // Si el usuario abre un paso manualmente, sincronizamos el dibujo
+  useEffect(() => {
+    if (openStep === "width") setActiveGuideIndex(0);
+    else if (openStep === "aspect") setActiveGuideIndex(1);
+    else if (openStep === "rim") setActiveGuideIndex(2);
+  }, [openStep]);
+
+  // Cerrar al clickear afuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -31,14 +50,13 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Parse all product sizes
+  // Parsear medidas de productos
   const parsedTires = useMemo(() => {
     const list: Array<{ w: string; h: string; r: string; isCommercial: boolean }> = [];
     products.forEach((p) => {
       const s = (p.size || "").trim();
       if (!s) return;
 
-      // 1. Standard: 215/65R16, 215/65 R16, 215/65-16, 295/80R22.5
       const m1 = s.match(/([0-9]{3})\s*(?:\/|-)\s*([0-9]{2}(?:\.[0-9])?)\s*(?:R|Z?R|-)?\s*([0-9]{2}(?:\.[0-9])?)/i);
       if (m1) {
         const wNum = parseInt(m1[1]);
@@ -48,14 +66,12 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
         return;
       }
 
-      // 2. Flotation: 31X10.50R15
       const m2 = s.match(/([0-9]{2}(?:\.[0-9]{2})?)\s*(?:X|\/)\s*([0-9]{1,2}\.[0-9]{2})\s*(?:R|-)?\s*([0-9]{2})/i);
       if (m2) {
         list.push({ w: m2[1], h: m2[2], r: m2[3], isCommercial: false });
         return;
       }
 
-      // 3. Direct truck/agro: 11R22.5, 7.50R16
       const m3 = s.match(/([0-9]{1,2}(?:\.[0-9]{2})?)\s*R\s*([0-9]{2}(?:\.[0-9])?)/i);
       if (m3) {
         list.push({ w: m3[1], h: "STD", r: m3[2], isCommercial: true });
@@ -65,32 +81,22 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
     return list;
   }, [products]);
 
-  // Widths available
+  // Anchos disponibles
   const { passengerWidths, commercialWidths } = useMemo(() => {
     const pass = new Set<string>();
     const comm = new Set<string>();
-
     parsedTires.forEach((t) => {
-      if (t.isCommercial) {
-        comm.add(t.w);
-      } else {
-        pass.add(t.w);
-      }
+      if (t.isCommercial) comm.add(t.w);
+      else pass.add(t.w);
     });
-
-    const sortFn = (a: string, b: string) => {
-      const numA = parseFloat(a);
-      const numB = parseFloat(b);
-      return numA - numB;
-    };
-
+    const sortFn = (a: string, b: string) => parseFloat(a) - parseFloat(b);
     return {
       passengerWidths: Array.from(pass).sort(sortFn),
       commercialWidths: Array.from(comm).sort(sortFn),
     };
   }, [parsedTires]);
 
-  // Aspects available (filtered by selectedWidth if any)
+  // Perfiles disponibles
   const availableAspects = useMemo(() => {
     const aspects = new Set<string>();
     parsedTires.forEach((t) => {
@@ -101,51 +107,41 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
     return Array.from(aspects).sort((a, b) => parseFloat(a) - parseFloat(b));
   }, [parsedTires, selectedWidth]);
 
-  // Rims available (filtered by selectedWidth and selectedAspect)
+  // Aros disponibles
   const availableRims = useMemo(() => {
     const rims = new Set<string>();
     parsedTires.forEach((t) => {
       const matchW = !selectedWidth || t.w === selectedWidth;
       const matchH = !selectedAspect || t.h === selectedAspect;
-      if (matchW && matchH) {
-        rims.add(t.r);
-      }
+      if (matchW && matchH) rims.add(t.r);
     });
     return Array.from(rims).sort((a, b) => parseFloat(a) - parseFloat(b));
   }, [parsedTires, selectedWidth, selectedAspect]);
 
-  // Handle select width
+  // Manejo de selección secuencial automática
   const handleSelectWidth = (w: string) => {
     setSelectedWidth(w);
     setSelectedAspect("");
     setSelectedRim("");
     setTrayFilterQuery("");
-
-    // Auto-advance to aspect
     setTimeout(() => {
       setOpenStep("aspect");
     }, 120);
   };
 
-  // Handle select aspect
   const handleSelectAspect = (h: string) => {
     setSelectedAspect(h);
     setSelectedRim("");
     setTrayFilterQuery("");
-
-    // Auto-advance to rim
     setTimeout(() => {
       setOpenStep("rim");
     }, 120);
   };
 
-  // Handle select rim -> Trigger auto-search!
   const handleSelectRim = (r: string) => {
     setSelectedRim(r);
     setOpenStep(null);
     setTrayFilterQuery("");
-
-    // Automatically execute search and take user to catalog
     onSearch({
       width: selectedWidth || undefined,
       aspect: selectedAspect || undefined,
@@ -153,7 +149,6 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
     });
   };
 
-  // Clear single steps
   const clearWidth = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedWidth("");
@@ -175,7 +170,6 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
     setOpenStep("rim");
   };
 
-  // Manual search trigger
   const handleManualSearch = () => {
     setOpenStep(null);
     onSearch({
@@ -185,16 +179,46 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
     });
   };
 
+  // Configuración de los 3 pasos de la infografía dinámica estilo reloj de XBRI
+  const guideSteps = [
+    {
+      key: "width",
+      val: selectedWidth || "175",
+      label: "ANCHO",
+      lineY: 62,
+      targetX: 200,
+      targetY: 62,
+    },
+    {
+      key: "aspect",
+      val: selectedAspect || "70",
+      label: "ALTO",
+      lineY: 82,
+      targetX: 236,
+      targetY: 82,
+    },
+    {
+      key: "rim",
+      val: selectedRim || "14",
+      label: "ARO",
+      lineY: 104,
+      targetX: 270,
+      targetY: 104,
+    },
+  ];
+
+  const currentGuide = guideSteps[activeGuideIndex];
+
   return (
     <div ref={containerRef} className={`relative w-full max-w-5xl mx-auto z-30 px-2 sm:px-4 ${className}`}>
-      {/* Marco principal Glassmorphism estilo XBRI (Ultra translúcido, más amplio y bordes limpios) */}
-      <div className="relative overflow-hidden rounded-[32px] sm:rounded-[36px] border border-white/20 bg-black/15 backdrop-blur-[6px] p-6 sm:p-10 md:p-12 shadow-[0_30px_70px_rgba(0,0,0,0.35)] transition-all">
+      {/* Marco principal Glassmorphism idéntico a XBRI */}
+      <div className="relative overflow-hidden rounded-[32px] sm:rounded-[38px] border border-white/20 bg-black/15 backdrop-blur-[6px] p-6 sm:p-10 md:p-12 shadow-[0_30px_70px_rgba(0,0,0,0.35)] transition-all">
         {/* Título idéntico a XBRI */}
         <h2 className="mb-8 text-center text-2xl sm:text-3xl md:text-[38px] font-black uppercase tracking-[0.06em] text-white drop-shadow-md">
           BUSCAR EL NEUMÁTICO IDEAL
         </h2>
 
-        {/* Fila de Selectores estilo Pastilla Flotante de XBRI */}
+        {/* Fila de Selectores */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_1fr_1fr_180px] gap-3.5 items-end">
           {/* 1. ANCHO */}
           <div className="relative">
@@ -311,93 +335,128 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
           </div>
         </div>
 
-        {/* ────────────────── INFOGRAFÍA TÉCNICA IDÉNTICA A XBRI ────────────────── */}
-        <div className="mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-white/10">
-          {/* Ilustración de Flanco de Cubierta con marcadores en SVG puro */}
-          <div className="flex items-center gap-5 w-full md:w-auto">
-            <svg viewBox="0 0 260 130" className="w-56 sm:w-64 h-auto shrink-0 select-none" fill="none">
-              {/* Corona externa del neumático */}
+        {/* ────────────────── INFOGRAFÍA DINÁMICA IDÉNTICA A XBRI CON RELOJ AUTOMÁTICO ────────────────── */}
+        <div className="mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-white/10 relative">
+          {/* Ilustración de neumático idéntica a XBRI */}
+          <div className="flex items-center gap-4 w-full md:w-auto relative">
+            <svg viewBox="0 0 340 180" className="w-72 sm:w-84 md:w-96 h-auto shrink-0 select-none overflow-visible" fill="none">
+              <defs>
+                {/* Arco exacto que recorre el flanco del neumático */}
+                <path id="tireTextArc" d="M 50 170 A 135 135 0 0 1 290 170" fill="none" />
+              </defs>
+
+              {/* Banda de rodamiento externa con ranuras */}
               <path
-                d="M 15 125 A 115 115 0 0 1 245 125"
+                d="M 15 170 A 170 170 0 0 1 325 170"
                 stroke="white"
                 strokeWidth="2.5"
                 strokeLinecap="round"
-                opacity="0.85"
+                opacity="0.9"
               />
-              {/* Dibujo de banda de rodadura / ranuras estilizadas */}
               <path
-                d="M 25 125 A 105 105 0 0 1 235 125"
+                d="M 28 170 A 155 155 0 0 1 312 170"
                 stroke="white"
-                strokeWidth="1.5"
+                strokeWidth="2"
                 strokeDasharray="4 6"
                 opacity="0.5"
               />
-              {/* Flanco con la medida inscripta */}
+              {/* Flanco exterior donde va escrita la medida */}
               <path
-                d="M 40 125 A 90 90 0 0 1 220 125"
+                d="M 42 170 A 142 142 0 0 1 298 170"
                 stroke="white"
                 strokeWidth="2"
-                opacity="0.9"
+                opacity="0.85"
               />
-              {/* Texto curvado siguiendo el flanco */}
-              <path id="tireCurve" d="M 52 125 A 78 78 0 0 1 208 125" fill="none" />
-              <text fontSize="10" fontWeight="900" fill="white" letterSpacing="2.5">
-                <textPath href="#tireCurve" startOffset="50%" textAnchor="middle">
-                  175/70R14 84T
+
+              {/* Texto en el flanco con el resaltado dinámico en ROJO */}
+              <text fontSize="14" fontWeight="900" letterSpacing="2">
+                <textPath href="#tireTextArc" startOffset="18%">
+                  <tspan
+                    fill={activeGuideIndex === 0 ? "#E3151A" : "white"}
+                    className="transition-colors duration-500 font-black"
+                  >
+                    175
+                  </tspan>
+                  <tspan fill="white">/</tspan>
+                  <tspan
+                    fill={activeGuideIndex === 1 ? "#E3151A" : "white"}
+                    className="transition-colors duration-500 font-black"
+                  >
+                    70
+                  </tspan>
+                  <tspan fill="white">R</tspan>
+                  <tspan
+                    fill={activeGuideIndex === 2 ? "#E3151A" : "white"}
+                    className="transition-colors duration-500 font-black"
+                  >
+                    14
+                  </tspan>
+                  <tspan fill="white" opacity="0.8" fontSize="12" letterSpacing="1">
+                    {" "}84T FASTWAY
+                  </tspan>
                 </textPath>
               </text>
-              {/* Aro interno de llanta */}
+
+              {/* Borde inferior del flanco */}
               <path
-                d="M 62 125 A 68 68 0 0 1 198 125"
+                d="M 62 170 A 120 120 0 0 1 278 170"
                 stroke="white"
                 strokeWidth="1.5"
-                opacity="0.4"
+                opacity="0.75"
               />
-              {/* Línea horizontal guía que conecta con el número */}
-              <line x1="160" y1="42" x2="255" y2="42" stroke="white" strokeWidth="1.5" opacity="0.6" />
-            </svg>
+              {/* Aro de la llanta */}
+              <path
+                d="M 75 170 A 108 108 0 0 1 265 170"
+                stroke="white"
+                strokeWidth="2.5"
+                opacity="0.95"
+              />
 
-            <div className="hidden sm:block text-left">
-              <span className="text-[11px] font-bold uppercase tracking-[1px] text-white/70 block">
-                CÓMO CONOCER LA MEDIDA DE SUS CUBIERTAS
-              </span>
-            </div>
+              {/* Línea horizontal continua blanca que va desde la cubierta hacia el número (idéntica a XBRI) */}
+              <line
+                x1={currentGuide.targetX}
+                y1={currentGuide.lineY}
+                x2="380"
+                y2={currentGuide.lineY}
+                stroke="white"
+                strokeWidth="2"
+                className="transition-all duration-700 ease-in-out"
+              />
+            </svg>
           </div>
 
-          {/* Bloque interactivo de medidas (175 / 70 / 14) */}
-          <div className="flex items-center gap-6 sm:gap-10">
-            {/* ANCHO */}
-            <div className="text-center group cursor-pointer" onClick={() => setOpenStep("width")}>
-              <div className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none">
-                {selectedWidth || "175"}
+          {/* Bloque dinámico de la derecha: Título + Número Gigante único (relojito) */}
+          <div className="flex flex-col items-center sm:items-end justify-center w-full md:w-auto text-center sm:text-right pr-2 sm:pr-8">
+            <span className="text-[11px] font-bold uppercase tracking-[1.4px] text-white/70 block mb-2">
+              COMO CONOCER LA MEDIDA DE SUS CUBIERTAS
+            </span>
+
+            {/* Número que va cambiando automáticamente con animación */}
+            <div
+              key={activeGuideIndex}
+              className="animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col items-center sm:items-end"
+            >
+              <div className="text-6xl sm:text-7xl md:text-8xl font-black text-white tracking-tight leading-none">
+                {currentGuide.val}
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-[1px] text-white/70 mt-1.5">
-                ANCHO
+              <div className="text-xs sm:text-sm font-black uppercase tracking-[2px] text-white/80 mt-2">
+                {currentGuide.label}
               </div>
             </div>
 
-            <div className="text-3xl font-light text-white/30 mb-4">/</div>
-
-            {/* ALTO */}
-            <div className="text-center group cursor-pointer" onClick={() => setOpenStep("aspect")}>
-              <div className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none">
-                {selectedAspect || "70"}
-              </div>
-              <div className="text-[10px] font-bold uppercase tracking-[1px] text-white/70 mt-1.5">
-                ALTO
-              </div>
-            </div>
-
-            <div className="text-2xl font-light text-white/30 mb-4">R</div>
-
-            {/* ARO */}
-            <div className="text-center group cursor-pointer" onClick={() => setOpenStep("rim")}>
-              <div className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none">
-                {selectedRim || "14"}
-              </div>
-              <div className="text-[10px] font-bold uppercase tracking-[1px] text-white/70 mt-1.5">
-                ARO
-              </div>
+            {/* Indicadores de bolitas/steps debajo del número */}
+            <div className="flex items-center gap-2 mt-4">
+              {[0, 1, 2].map((idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveGuideIndex(idx)}
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    activeGuideIndex === idx ? "w-8 bg-[#E3151A]" : "w-2 bg-white/30 hover:bg-white/60"
+                  }`}
+                  aria-label={`Paso ${idx + 1}`}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -427,7 +486,6 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
             {/* OPCIONES DE ANCHO */}
             {openStep === "width" && (
               <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
-                {/* Pasajero / SUV / Pickup */}
                 <div>
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2">
                     PASAJERO / SUV / PICKUP
@@ -452,7 +510,6 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
                   </div>
                 </div>
 
-                {/* Camiones / Agrícolas */}
                 {commercialWidths.length > 0 && (
                   <div className="pt-2 border-t border-neutral-100">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2">
