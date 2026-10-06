@@ -23,8 +23,8 @@ export function optimizeAndReadImage(file: File, maxDim = 600, quality = 0.88): 
           return;
         }
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const isPng = file.type === "image/png";
-        const dataUrl = canvas.toDataURL(isPng ? "image/png" : "image/webp", quality);
+        // Usar webp para comprimir fotos a ~40-70KB preservando excelente calidad
+        const dataUrl = canvas.toDataURL("image/webp", quality);
         resolve(dataUrl);
       };
       img.src = src;

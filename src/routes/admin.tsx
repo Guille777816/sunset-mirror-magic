@@ -1507,8 +1507,12 @@ function SettingsPanel() {
     mutationFn: (v: Settings) => saveS({ data: v }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
-      setMsg("Guardado ✓");
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+      setMsg("Ajustes guardados ✓");
       setTimeout(() => setMsg(null), 2500);
+    },
+    onError: (e: any) => {
+      setMsg("Error al guardar: " + (e?.message ?? "Error desconocido"));
     },
   });
 
@@ -1516,30 +1520,53 @@ function SettingsPanel() {
     if (!s) return;
     setUploadingAsset(kind);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${kind}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
-      const url = urlData.publicUrl + "?t=" + Date.now();
-      let next = { ...s };
-      if (kind === "logo") next.logo_url = url;
-      else if (kind === "hero") next.hero_image_url = url;
-      else if (kind === "branch") {
-        next.category_images = { ...(s.category_images || {}), sucursal: url };
+      let url = "";
+      try {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `${kind}-${Date.now()}.${ext}`;
+        const { data: upData, error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+        if (!upErr && upData) {
+          const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+          url = urlData.publicUrl + "?t=" + Date.now();
+        }
+      } catch {
+        // Fallback to optimized base64
       }
+
+      if (!url) {
+        const maxDim = kind === "logo" ? 360 : 960;
+        url = await optimizeAndReadImage(file, maxDim, 0.82);
+      }
+
+      let next = { ...s };
+      if (kind === "logo") {
+        next.logo_url = url;
+      } else if (kind === "hero") {
+        next.hero_image_url = url;
+      } else if (kind === "branch") {
+        const catImgs: Record<string, any> = { ...(s.category_images || {}), sucursal: url };
+        if (catImgs.branches_data) {
+          try {
+            const list = JSON.parse(catImgs.branches_data);
+            if (Array.isArray(list) && list.length > 0) {
+              const mainIdx = list.findIndex((b: any) => b.is_main);
+              const idx = mainIdx >= 0 ? mainIdx : 0;
+              list[idx].image_url = url;
+              catImgs.branches_data = JSON.stringify(list);
+            }
+          } catch {}
+        }
+        next.category_images = catImgs;
+      }
+
       setS(next);
       await saveS({ data: next });
       qc.invalidateQueries({ queryKey: ["settings"] });
-      setMsg(`${kind === "logo" ? "Logo" : kind === "hero" ? "Portada" : "Foto de sucursal"} actualizado ✓`);
-      setTimeout(() => setMsg(null), 2500);
+      qc.invalidateQueries({ queryKey: ["admin-settings"] });
+      setMsg(`${kind === "logo" ? "Logo" : kind === "hero" ? "Foto de portada" : "Foto del local / sucursal"} guardada con éxito ✓`);
+      setTimeout(() => setMsg(null), 3000);
     } catch (e: any) {
-      const isRls = (e?.message || "").includes("row-level security");
-      if (isRls) {
-        setMsg("Aviso: El almacenamiento de Supabase no tiene el bucket 'site-assets'. Se recomienda usar el logo oficial (/images/logo-leradial.png) o una URL directa.");
-      } else {
-        setMsg("Error: " + (e?.message ?? "no se pudo subir"));
-      }
+      setMsg("Error al guardar imagen: " + (e?.message ?? "no se pudo procesar"));
     } finally {
       setUploadingAsset(null);
     }
@@ -1579,7 +1606,19 @@ function SettingsPanel() {
             uploading={uploadingAsset === "branch"}
             onFile={(f) => handleAssetUpload("branch", f)}
             onUrlChange={(v) => {
-              set("category_images", { ...(s.category_images || {}), sucursal: v });
+              const catImgs: Record<string, any> = { ...(s.category_images || {}), sucursal: v };
+              if (catImgs.branches_data) {
+                try {
+                  const list = JSON.parse(catImgs.branches_data);
+                  if (Array.isArray(list) && list.length > 0) {
+                    const mainIdx = list.findIndex((b: any) => b.is_main);
+                    const idx = mainIdx >= 0 ? mainIdx : 0;
+                    list[idx].image_url = v;
+                    catImgs.branches_data = JSON.stringify(list);
+                  }
+                } catch {}
+              }
+              set("category_images", catImgs);
             }}
             previewClass="h-32 object-cover"
           />
@@ -1802,18 +1841,27 @@ function CategoryImagesPanel({
     setUploading(slug);
     setMsg(null);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `category-${slug}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("site-assets")
-        .upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
-      const url = urlData.publicUrl + "?t=" + Date.now();
-      onChange({ ...value, [slug]: url });
-      setMsg(`Imagen de ${slug} actualizada — recordá Guardar cambios ↓`);
+      let finalUrl = "";
+      try {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `category-${slug}-${Date.now()}.${ext}`;
+        const { data: upData, error: upErr } = await supabase.storage
+          .from("site-assets")
+          .upload(path, file, { upsert: true });
+        if (!upErr && upData) {
+          const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+          finalUrl = urlData.publicUrl + "?t=" + Date.now();
+        }
+      } catch {
+        // Fallback
+      }
+      if (!finalUrl) {
+        finalUrl = await optimizeAndReadImage(file, 900, 0.82);
+      }
+      onChange({ ...value, [slug]: finalUrl });
+      setMsg(`Imagen de ${slug} lista — recordá Guardar ajustes abajo ↓`);
     } catch (e: any) {
-      setMsg("Error: " + (e?.message ?? "no se pudo subir"));
+      setMsg("Error: " + (e?.message ?? "no se pudo procesar"));
     } finally {
       setUploading(null);
     }
@@ -2569,23 +2617,24 @@ function BranchesAdminPanel() {
     setUploading(true);
     setError(null);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `branch-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
-      if (!upErr) {
-        const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
-        setEditing({ ...editing, image_url: urlData.publicUrl + "?t=" + Date.now() });
-      } else {
-        const dataUrl = await optimizeAndReadImage(file, 1200, 0.85);
-        setEditing({ ...editing, image_url: dataUrl });
-      }
-    } catch {
+      let finalUrl = "";
       try {
-        const dataUrl = await optimizeAndReadImage(file, 1200, 0.85);
-        setEditing({ ...editing, image_url: dataUrl });
-      } catch (err: any) {
-        setError(err?.message ?? "Error al procesar la imagen");
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `branch-${Date.now()}.${ext}`;
+        const { data: upData, error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+        if (!upErr && upData) {
+          const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+          finalUrl = urlData.publicUrl + "?t=" + Date.now();
+        }
+      } catch {
+        // Fallback
       }
+      if (!finalUrl) {
+        finalUrl = await optimizeAndReadImage(file, 960, 0.82);
+      }
+      setEditing({ ...editing, image_url: finalUrl });
+    } catch (err: any) {
+      setError(err?.message ?? "Error al procesar la imagen");
     } finally {
       setUploading(false);
     }
@@ -2668,13 +2717,22 @@ function BranchesAdminPanel() {
           >
             <div>
               {/* Foto de la sucursal */}
-              <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-neutral-900 border border-border">
+              <div
+                onClick={() => { setEditing({ ...b }); setError(null); }}
+                className="group relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-neutral-900 border border-border cursor-pointer"
+                title="Hacé clic para cambiar la foto de esta sucursal"
+              >
                 <img
                   src={b.image_url || "/images/sucursal-mitre.jpg"}
                   alt={b.name}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
                   onError={(e) => { e.currentTarget.src = "/images/sucursal-mitre.jpg"; }}
                 />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                  <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black shadow-lg">
+                    <Upload className="h-3.5 w-3.5" /> Cambiar foto
+                  </span>
+                </div>
                 <div className="absolute top-2.5 left-2.5">
                   <span
                     className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase text-white ${
@@ -2977,14 +3035,24 @@ function BannersPanel() {
     if (!editing) return;
     setUploading(true); setError(null);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `banner-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
-      setEditing({ ...editing, image_url: urlData.publicUrl + "?t=" + Date.now() });
+      let finalUrl = "";
+      try {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `banner-${Date.now()}.${ext}`;
+        const { data: upData, error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+        if (!upErr && upData) {
+          const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+          finalUrl = urlData.publicUrl + "?t=" + Date.now();
+        }
+      } catch {
+        // Fallback
+      }
+      if (!finalUrl) {
+        finalUrl = await optimizeAndReadImage(file, 1200, 0.82);
+      }
+      setEditing({ ...editing, image_url: finalUrl });
     } catch (e: any) {
-      setError(e?.message ?? "Error al subir imagen");
+      setError(e?.message ?? "Error al procesar la imagen");
     } finally {
       setUploading(false);
     }

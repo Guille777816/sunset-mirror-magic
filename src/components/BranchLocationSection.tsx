@@ -30,7 +30,13 @@ export function BranchLocationSection({
     },
   ];
 
-  const list = branches && branches.length > 0 ? branches : fallbackBranches;
+  const rawList = branches && branches.length > 0 ? branches : fallbackBranches;
+  const list = rawList.map((b) => {
+    if (b.is_main && image && image !== "/images/sucursal-mitre.jpg" && (!b.image_url || b.image_url === "/images/sucursal-mitre.jpg")) {
+      return { ...b, image_url: image };
+    }
+    return b;
+  });
   const [selectedId, setSelectedId] = useState<string>(list[0]?.id || "casa-central");
   const [activeTab, setActiveTab] = useState<"foto" | "mapa">("foto");
 
