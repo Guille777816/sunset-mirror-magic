@@ -26,6 +26,7 @@ import { BranchLocationSection } from "@/components/BranchLocationSection";
 import { SunsetStoreView } from "@/components/SunsetStoreView";
 import { AllSizesBrowser } from "@/components/AllSizesBrowser";
 import { BrandLogo } from "@/components/BrandLogo";
+import { InteractiveTireSearch } from "@/components/InteractiveTireSearch";
 
 const HEADER_LOGO_URL = "/images/logo-leradial.png";
 const CIRCLE_LOGO_URL = "/images/logo-leradial.png";
@@ -422,85 +423,39 @@ function Index() {
       </header>
 
       <main id="main-content">
-        {/* Hero con Video Loop estilo Sunset / XBRI */}
-        <section className="relative overflow-hidden min-h-[500px] md:min-h-[580px] flex items-center bg-[#0b0d10]">
+        {/* Hero estilo XBRI / Sunset con Video nítido y Buscador Flotante Glassmorphism */}
+        <section className="relative overflow-hidden min-h-[580px] md:min-h-[660px] flex items-center justify-center bg-[#0b0d10] py-12 md:py-20">
           <video
             autoPlay
             loop
             muted
             playsInline
-            className="absolute inset-0 h-full w-full object-cover opacity-50"
+            className="absolute inset-0 h-full w-full object-cover opacity-85"
             poster={optimizeImg(settings?.hero_image_url, 800, 60) || heroTire}
           >
             <source src="/videos/hero-loop.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0d10] via-black/40 to-black/80 pointer-events-none" />
+          {/* Capa de contraste suave para resaltar el video y el marco glassmorphism */}
+          <div className="absolute inset-0 bg-black/25 pointer-events-none" />
 
-          <div className="relative container mx-auto px-4 py-20 md:py-28 z-10">
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.3em] text-[#E3151A]">{settings?.hero_eyebrow ?? "Línea Oficial 2026"}</p>
-            <h1 className="max-w-3xl text-3xl font-black uppercase leading-[1.05] text-white sm:text-5xl md:text-6xl tracking-tight">
-              {settings?.hero_title ?? "Buscar el neumático ideal"}
-            </h1>
-            {(settings?.hero_subtitle ?? "Dominio total del terreno") && (
-              <h2 className="mt-3 max-w-2xl text-xl sm:text-2xl md:text-3xl font-extrabold uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-200 to-neutral-400">
-                {settings?.hero_subtitle ?? "Dominio total del terreno"}
-              </h2>
-            )}
-            <p className="mt-4 max-w-xl text-sm text-white/80 md:text-base leading-relaxed">
-              {settings?.hero_description ?? "Neumáticos de máxima resistencia, rendimiento y durabilidad en todas las condiciones de suelo y velocidad."}
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#buscador" className="rounded-full bg-[#E3151A] px-7 py-3 text-xs font-black uppercase tracking-wider text-white shadow-xl hover:bg-[#c31116] transition-all hover:scale-105">
-                Buscar por medida
-              </a>
-              <a href="#productos-destacados" className="rounded-full border border-white/40 px-7 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-white/10 transition">
-                Ver destacados
-              </a>
-            </div>
+          <div className="relative container mx-auto px-4 z-10 flex flex-col items-center">
+            {/* Buscador Interactivo Glassmorphism estilo XBRI / Sunset */}
+            <InteractiveTireSearch
+              products={products as any[]}
+              onSearch={({ width, aspect, rim }) => {
+                setW(width || "Todos");
+                setH(aspect || "Todos");
+                setR(rim || "Todos");
+                setSearchActive(true);
+                setActiveCategory(null);
+                setViewAllSizes(false);
+                setTimeout(() => {
+                  document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
+                }, 50);
+              }}
+            />
           </div>
         </section>
-
-      {/* Buscador */}
-      <section id="buscador" className="bg-muted py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="mb-2 text-center text-2xl font-bold text-secondary md:text-3xl">
-            Buscar cubiertas por medida
-          </h2>
-          <p className="mb-6 text-center text-sm text-muted-foreground">
-            Fijate en el flanco de tu cubierta: <strong>ancho / alto R aro</strong> (ej. 175/70R14).
-          </p>
-
-
-          <div className="mx-auto grid max-w-5xl gap-4 rounded-2xl bg-card p-6 shadow-[var(--shadow-product)] md:grid-cols-[1fr_1fr_1fr_auto]">
-            <Select label="Ancho" value={w} onChange={setW} options={widths} />
-            <Select label="Alto" value={h} onChange={setH} options={heights} />
-            <Select label="Aro" value={r} onChange={setR} options={rims} />
-            <div className="flex items-end gap-2">
-              <button
-                onClick={() => {
-                  setSearchActive(true);
-                  setActiveCategory(null);
-                  setViewAllSizes(false);
-                  setTimeout(() => {
-                    document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
-                  }, 50);
-                }}
-                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-8 font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] transition hover:scale-[1.02]"
-              >
-                <Search className="h-4 w-4" /> Buscar
-              </button>
-              {searchActive && (
-                <button
-                  onClick={() => { setSearchActive(false); setW("Todos"); setH("Todos"); setR("Todos"); }}
-                  className="h-12 rounded-full border px-4 text-xs font-bold uppercase text-secondary"
-                >
-                  Limpiar
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
 
 
 
