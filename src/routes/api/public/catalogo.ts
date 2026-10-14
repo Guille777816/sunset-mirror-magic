@@ -20,11 +20,12 @@ export const Route = createFileRoute('/api/public/catalogo')({
         const limitRaw = Number(url.searchParams.get('limit') ?? '200');
         const limit = Math.min(Math.max(Number.isFinite(limitRaw) ? limitRaw : 200, 1), 1000);
 
-        const SUPABASE_URL = process.env['SUPABASE_URL'] ?? process.env['VITE_SUPABASE_URL'];
+        const SUPABASE_URL = process.env['SUPABASE_URL'] ?? process.env['VITE_SUPABASE_URL'] ?? "https://zentoxxhovjnqytrngrr.supabase.co";
         const KEY =
           process.env['SUPABASE_PUBLISHABLE_KEY'] ??
           process.env['SUPABASE_ANON_KEY'] ??
-          process.env['VITE_SUPABASE_PUBLISHABLE_KEY'];
+          process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] ??
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplbnRveHhob3ZqbnF5dHJuZ3JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMTU0NTksImV4cCI6MjEwNjU5MTQ1OX0.cVLFCOGmtv1Ra6V8mdZ84eLM3VvlHqneMpmtdBqgcP8";
 
         if (!SUPABASE_URL || !KEY) {
           return Response.json({ error: 'Backend no configurado' }, { status: 500, headers: CORS });
