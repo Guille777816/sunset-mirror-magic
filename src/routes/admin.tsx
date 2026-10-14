@@ -54,6 +54,15 @@ function catsOf(p: { categories?: string[] | null; category?: string | null }): 
   return list.length ? list : (p?.category ? [p.category] : []);
 }
 
+function isProductUpdated(p: any): boolean {
+  const d = p?.updated_at;
+  if (!d) return false;
+  // Consideramos actualizada si fue modificada a partir de la tanda de octubre (>= 2026-10-04) o en los ultimos 30 dias
+  if (d >= "2026-10-04") return true;
+  const t = new Date(d).getTime();
+  return !isNaN(t) && (Date.now() - t) < 30 * 24 * 60 * 60 * 1000;
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   autos: "Autos",
   camionetas: "Camionetas",
@@ -203,7 +212,7 @@ function AdminPage() {
 
 
   const pendingProducts = Array.isArray(products)
-    ? (products as Product[]).filter((p) => !(p as any).updated_at?.startsWith("2026-10-04"))
+    ? (products as Product[]).filter((p) => !isProductUpdated(p))
     : [];
 
   const dirtySizeProducts = Array.isArray(products)
@@ -272,7 +281,7 @@ function AdminPage() {
       `• Autos (66): +$43.000 y +15%\n` +
       `• Camionetas y SUV (36): +$60.000 y +15%\n` +
       `• Camiones y Agrícolas (71): +$76.000 y +15%\n\n` +
-      `Los 262 productos modificados ayer permanecerán intactos.`
+      `Los productos ya actualizados permanecerán intactos.`
     );
     if (!confirmed) return;
 
@@ -316,7 +325,7 @@ function AdminPage() {
 
   const filteredProducts = (Array.isArray(products) ? (products as Product[]) : []).filter((p) => {
     if (showFeaturedOnly && !p.is_featured) return false;
-    if (showPendingOnly && (p as any).updated_at?.startsWith("2026-10-04")) return false;
+    if (showPendingOnly && isProductUpdated(p)) return false;
     if (filterCat !== "todas" && !catsOf(p).includes(filterCat)) return false;
     if (searchProd.trim()) {
       const q = searchProd.toLowerCase().trim();
@@ -487,7 +496,7 @@ function AdminPage() {
                       ? "bg-amber-500 text-white border-amber-600 shadow-sm"
                       : "bg-card text-secondary border-border hover:bg-muted"
                   }`}
-                  title="Muestra solo las cubiertas que no fueron actualizadas ayer"
+                  title="Muestra solo las cubiertas que aún no fueron actualizadas"
                 >
                   {showPendingOnly ? "✓ Mostrando sólo pendientes" : `Ver sólo pendientes (${pendingProducts.length})`}
                 </button>
@@ -555,8 +564,8 @@ function AdminPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="font-semibold text-secondary">$ {Number(p.price_ars).toLocaleString("es-AR")}</div>
-                        {p.updated_at?.startsWith("2026-10-04") ? (
-                          <span className="inline-block text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">✓ Ayer</span>
+                        {isProductUpdated(p) ? (
+                          <span className="inline-block text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">✓ Al día</span>
                         ) : (
                           <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">⏳ Pendiente</span>
                         )}
