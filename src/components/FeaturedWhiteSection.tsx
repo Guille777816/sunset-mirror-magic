@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings.functions";
 import { useCurrency } from "@/lib/currency";
 import { useCart } from "@/lib/cart";
 import { BrandLogo } from "./BrandLogo";
+import { cleanTireSize } from "@/lib/utils";
 
 interface Product {
   id: string;
@@ -141,7 +142,7 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                   {/* Rodado / Medida */}
                   <Link to="/producto/$slug" params={{ slug: p.slug }} className="block">
                     <h3 className="text-2xl font-black uppercase tracking-tight text-neutral-900 transition-colors group-hover:text-white md:text-3xl">
-                      {p.size || p.model}
+                      {cleanTireSize(p.size) || p.model}
                     </h3>
                     <p className="mt-1 line-clamp-1 text-sm font-semibold text-neutral-600 transition-colors group-hover:text-neutral-300">
                       {p.brand} {p.model}

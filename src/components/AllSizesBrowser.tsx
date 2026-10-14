@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { cleanTireSize } from "@/lib/utils";
 
 interface AllSizesBrowserProps {
   products: Array<{ size?: string | null }>;
@@ -54,7 +55,7 @@ export function AllSizesBrowser({ products, onSelectSize, selectedSize }: AllSiz
 
     // 2. Add any size present in products
     (products || []).forEach((p) => {
-      const s = (p.size || "").trim();
+      const s = cleanTireSize(p.size);
       if (!s) return;
       // Extract rim like R16, R17.5, R22.5
       const rimMatch = s.match(/R\s*([0-9]+(?:\.[0-9]+)?)/i);

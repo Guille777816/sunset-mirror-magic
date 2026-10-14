@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Search, ChevronDown, ChevronUp, X } from "lucide-react";
+import { cleanTireSize } from "@/lib/utils";
 
 interface InteractiveTireSearchProps {
   products: Array<{ size?: string | null; category?: string | null; categories?: string[] | null }>;
@@ -54,7 +55,7 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
   const parsedTires = useMemo(() => {
     const list: Array<{ w: string; h: string; r: string; isCommercial: boolean }> = [];
     products.forEach((p) => {
-      const s = (p.size || "").trim();
+      const s = cleanTireSize(p.size);
       if (!s) return;
 
       const m1 = s.match(/([0-9]{3})\s*(?:\/|-)\s*([0-9]{2}(?:\.[0-9])?)\s*(?:R|Z?R|-)?\s*([0-9]{2}(?:\.[0-9])?)/i);

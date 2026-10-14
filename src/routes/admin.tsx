@@ -16,6 +16,7 @@ import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "
 import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone, Zap, Car, Sparkles, ExternalLink } from "lucide-react";
 import { BrandLogo, DEFAULT_BRAND_LOGO_MAP } from "@/components/BrandLogo";
 import { optimizeAndReadImage } from "@/lib/image-utils";
+import { cleanTireSize } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -78,6 +79,8 @@ function AdminPage() {
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const [batchUpdating, setBatchUpdating] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+  const [cleaningSizes, setCleaningSizes] = useState(false);
+  const [cleaningProgress, setCleaningProgress] = useState<{ current: number; total: number } | null>(null);
 
   const fetchAll = useServerFn(listAllProducts);
   const save = useServerFn(upsertProduct);
@@ -123,6 +126,7 @@ function AdminPage() {
   const saveMut = useMutation({
     mutationFn: async (input: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string; vehicle_image_url?: string | null; vehicle_label?: string | null }) => {
       const { applyCatalogToModel: applyAll, catalogKeyword, vehicle_image_url, vehicle_label, ...p } = input;
+      p.size = cleanTireSize(p.size);
       const res = await save({ data: p });
       const targetId = res?.id || p.id;
       if (targetId && settings && (vehicle_image_url !== undefined || vehicle_label !== undefined)) {
@@ -201,6 +205,61 @@ function AdminPage() {
   const pendingProducts = Array.isArray(products)
     ? (products as Product[]).filter((p) => !(p as any).updated_at?.startsWith("2026-10-04"))
     : [];
+
+  const dirtySizeProducts = Array.isArray(products)
+    ? (products as Product[]).filter((p) => {
+        const s = p.size || "";
+        return cleanTireSize(s) !== s;
+      })
+    : [];
+
+  async function handleCleanSizes() {
+    if (!dirtySizeProducts.length) {
+      alert("¡Excelente! No hay productos con medidas para limpiar.");
+      return;
+    }
+
+    const preview = dirtySizeProducts
+      .slice(0, 5)
+      .map((p) => `• ${p.size} ➡️ ${cleanTireSize(p.size)} (${p.brand} ${p.model})`)
+      .join("\n");
+
+    const confirmed = confirm(
+      `¿Deseás limpiar las medidas de ${dirtySizeProducts.length} productos?\n\n` +
+      `Se eliminarán '10P' y sufijos no estándar para que queden únicamente las medidas limpias (los 3 números, ej: 265/70R18).\n\n` +
+      `Ejemplos:\n${preview}\n\n` +
+      `Esta acción modificará las medidas directamente en la base de datos.`
+    );
+    if (!confirmed) return;
+
+    setCleaningSizes(true);
+    setCleaningProgress({ current: 0, total: dirtySizeProducts.length });
+
+    try {
+      let count = 0;
+      for (const p of dirtySizeProducts) {
+        const clean = cleanTireSize(p.size);
+        const { error } = await supabase
+          .from("products")
+          .update({ size: clean, updated_at: new Date().toISOString() })
+          .eq("id", p.id!);
+
+        if (error) console.error("Error al limpiar medida:", p.id, error);
+        count++;
+        setCleaningProgress({ current: count, total: dirtySizeProducts.length });
+      }
+
+      await qc.invalidateQueries({ queryKey: ["admin-products"] });
+      await qc.invalidateQueries({ queryKey: ["public-products"] });
+      await qc.invalidateQueries({ queryKey: ["product"] });
+      alert(`¡Éxito! Se limpiaron correctamente las medidas de las ${count} cubiertas. Ahora sólo muestran los 3 números.`);
+    } catch (e: any) {
+      alert("Ocurrió un error al limpiar medidas: " + (e?.message || String(e)));
+    } finally {
+      setCleaningSizes(false);
+      setCleaningProgress(null);
+    }
+  }
 
   async function handleBatchUpdatePending() {
     if (!pendingProducts.length) {
@@ -295,6 +354,20 @@ function AdminPage() {
             </button>
           </div>
           <div className="flex items-center gap-2">
+            {dirtySizeProducts.length > 0 && (
+              <button
+                type="button"
+                onClick={handleCleanSizes}
+                disabled={cleaningSizes}
+                className="flex items-center gap-2 rounded-full bg-blue-600 hover:bg-blue-700 px-4 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-md transition disabled:opacity-50 cursor-pointer"
+                title="Elimina '10P' y deja sólo la medida limpia (3 números) en todos los productos afectados"
+              >
+                <Sparkles className="h-4 w-4" />
+                {cleaningSizes
+                  ? `Limpiando ${cleaningProgress?.current || 0}/${cleaningProgress?.total || 0}...`
+                  : `Limpiar 10P (${dirtySizeProducts.length})`}
+              </button>
+            )}
             {pendingProducts.length > 0 && (
               <button
                 type="button"
@@ -474,7 +547,7 @@ function AdminPage() {
                         </div>
                         <div className="text-xs text-muted-foreground">{p.model}</div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs">{p.size}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{cleanTireSize(p.size)}</td>
                       <td className="px-4 py-3">
                         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold capitalize">
                           {catsOf(p).map((c) => CATEGORY_LABELS[c] ?? c).join(", ")}
@@ -851,7 +924,7 @@ function ImageManager({
                           )}
                         </div>
                         <h4 className="text-sm font-bold text-secondary line-clamp-1">{p.model}</h4>
-                        <p className="font-mono text-xs text-muted-foreground">{p.size}</p>
+                        <p className="font-mono text-xs text-muted-foreground">{cleanTireSize(p.size)}</p>
                       </div>
                       {hasCustom ? (
                         <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold text-emerald-800 shrink-0">
@@ -1075,7 +1148,7 @@ function ImageManager({
                     </div>
                     <p className="text-[11px] font-bold text-primary uppercase tracking-wider truncate">{p.brand}</p>
                     <p className="text-xs font-semibold text-secondary truncate">{p.model}</p>
-                    <p className="mb-2 text-[10px] text-muted-foreground font-mono">{p.size}</p>
+                    <p className="mb-2 text-[10px] text-muted-foreground font-mono">{cleanTireSize(p.size)}</p>
                     <input
                       ref={(el) => { fileRefs.current[p.id!] = el; }}
                       type="file"

@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings.functions";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
 import { BrandLogo } from "./BrandLogo";
+import { cleanTireSize } from "@/lib/utils";
 
 interface Product {
   id: string;
@@ -149,7 +150,7 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
 
         {/* Medida completa */}
         <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-neutral-500">
-          {p.size ? `${p.size} ${p.model}` : `${p.brand} ${p.model}`}
+          {p.size ? `${cleanTireSize(p.size)} ${p.model}` : `${p.brand} ${p.model}`}
         </p>
 
         {/* Badge de stock */}

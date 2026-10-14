@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Search, RotateCcw, Trash2, Filter, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { SunsetProductCard } from "./SunsetProductCard";
 import { useCurrency } from "@/lib/currency";
+import { cleanTireSize } from "@/lib/utils";
 
 interface Product {
   id: string;
@@ -81,7 +82,7 @@ export function SunsetStoreView({
 
       if (p.brand) brands.add(p.brand.trim());
 
-      const s = (p.size || "").trim();
+      const s = cleanTireSize(p.size);
       // Match 185/70R13, 265/70 R16, 295/80R22.5
       const m = s.match(/([0-9]{3})\s*(?:\/|\s*-\s*)([0-9]{2})\s*R\s*([0-9]{2}(?:\.[0-9])?)/i);
       if (m) {
@@ -124,7 +125,7 @@ export function SunsetStoreView({
       }
 
       // 2. Measure filters
-      const sizeStr = (p.size || "").toLowerCase();
+      const sizeStr = cleanTireSize(p.size).toLowerCase();
       if (filterWidth && !sizeStr.includes(filterWidth.toLowerCase())) return false;
       if (filterAspect && !sizeStr.includes(filterAspect.toLowerCase())) return false;
       if (filterRim) {

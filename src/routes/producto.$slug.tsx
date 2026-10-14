@@ -12,6 +12,7 @@ import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
 import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
+import { cleanTireSize } from "@/lib/utils";
 export const getProductBySlug = createServerFn({ method: "GET" })
   .inputValidator((i: unknown) => z.object({ slug: z.string().min(1) }).parse(i))
   .handler(async ({ data }) => {
@@ -48,7 +49,7 @@ function formatDescription(desc: string | null | undefined): string {
 }
 
 function cleanText(str?: string | null): string {
-  return (str || "").replace(/\s+/g, " ").trim();
+  return cleanTireSize(str);
 }
 
 function getCleanFullName(

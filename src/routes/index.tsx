@@ -23,6 +23,7 @@ import { FeaturedWhiteSection } from "@/components/FeaturedWhiteSection";
 import { FloatingSearchButton } from "@/components/FloatingSearchButton";
 import { SocialCollageSection } from "@/components/SocialCollageSection";
 import { BranchLocationSection } from "@/components/BranchLocationSection";
+import { cleanTireSize } from "@/lib/utils";
 import { SunsetStoreView } from "@/components/SunsetStoreView";
 import { AllSizesBrowser } from "@/components/AllSizesBrowser";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -760,7 +761,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
             <BrandLogo brand={p.brand} className="h-5 w-auto max-w-[110px]" />
           </div>
           <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary hover:text-primary">{p.model}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">{p.size}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{cleanTireSize(p.size)}</p>
         </Link>
         <div className="mt-auto pt-4">
           <p className="text-lg font-black text-secondary">{format(Number(p.price_ars))}</p>
@@ -768,7 +769,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
             <Link
               to="/producto/$slug"
               params={{ slug: p.slug }}
-              aria-label={`Ver ${p.brand} ${p.model}${p.size ? ` ${p.size}` : ""}`}
+              aria-label={`Ver ${p.brand} ${p.model}${p.size ? ` ${cleanTireSize(p.size)}` : ""}`}
               className="flex-1 rounded-full border border-secondary/20 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-secondary hover:bg-secondary hover:text-secondary-foreground transition"
             >
               Ver
