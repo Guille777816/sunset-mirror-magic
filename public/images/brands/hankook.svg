@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 63">
-  <g transform="translate(10, 16)">
-    <path d="M0 4 L14 16 L28 4 L22 0 L14 8 L6 0 Z" fill="#FF6B00"/>
-    <path d="M6 14 L14 22 L22 14 L18 10 L14 14 L10 10 Z" fill="#E3151A"/>
-    <text x="34" y="25" font-family="Impact, Arial Black, sans-serif" font-style="italic" font-size="22" fill="#1A1A1A" letter-spacing="1">HANKOOK</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 44">
+  <g transform="translate(4, 4)">
+    <path d="M0 6 L14 18 L28 6 L22 2 L14 10 L6 2 Z" fill="#FF6B00"/>
+    <path d="M6 16 L14 24 L22 16 L18 12 L14 16 L10 12 Z" fill="#E3151A"/>
+    <text x="36" y="27" font-family="Impact, Arial Black, sans-serif" font-style="italic" font-size="25" fill="#1A1A1A" letter-spacing="1">HANKOOK</text>
   </g>
 </svg>

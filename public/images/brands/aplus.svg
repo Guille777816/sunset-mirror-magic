@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 44">
+  <g transform="translate(4, 5)">
+    <path d="M0 32 L13 4 L26 32 L19 32 L13 17 L7 32 Z" fill="#E3151A"/>
+    <polygon points="23,12 28,12 28,7 32,7 32,12 37,12 37,16 32,16 32,21 28,21 28,16 23,16" fill="#E3151A"/>
+    <text x="38" y="26" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="25" fill="#111111" letter-spacing="1.5">APLUS</text>
+  </g>
+</svg>

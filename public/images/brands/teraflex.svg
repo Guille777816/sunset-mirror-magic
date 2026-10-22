@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 44">
+  <g transform="translate(4, 5)">
+    <path d="M0 2 L32 2 L28 10 L19 10 L15 34 L7 34 L11 10 L0 10 Z" fill="#E3151A"/>
+    <polygon points="18,2 28,2 22,10 12,10" fill="#111111"/>
+    <text x="36" y="26" font-family="Impact, Arial Black, sans-serif" font-weight="900" font-style="italic" font-size="26" fill="#111111" letter-spacing="1">TERAFLEX</text>
+  </g>
+</svg>

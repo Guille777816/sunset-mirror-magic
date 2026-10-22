@@ -10,22 +10,31 @@ interface BrandLogoProps {
 
 export const DEFAULT_BRAND_LOGO_MAP: Record<string, string> = {
   xbri: "/images/brands/xbri.webp",
-  linglong: "/images/brands/linglong.webp",
-  "ling long": "/images/brands/linglong.webp",
-  firemax: "/images/brands/firemax.webp",
-  sunset: "/images/brands/sunset.webp",
-  "sunset tires": "/images/brands/sunset.webp",
-  hankook: "/images/brands/hankook.svg",
+  teraflex: "/images/brands/teraflex.svg",
   continental: "/images/brands/continental.svg",
+  massimo: "/images/brands/massimo.svg",
+  zelda: "/images/brands/zelda.svg",
+  linglong: "/images/brands/linglong.svg",
+  "ling long": "/images/brands/linglong.svg",
+  firemax: "/images/brands/firemax.svg",
+  sunset: "/images/brands/sunset.svg",
+  "sunset tires": "/images/brands/sunset.svg",
+  hankook: "/images/brands/hankook.svg",
   bridgestone: "/images/brands/bridgestone.svg",
   dunlop: "/images/brands/dunlop.svg",
   yokohama: "/images/brands/yokohama.svg",
   pirelli: "/images/brands/pirelli.svg",
   michelin: "/images/brands/michelin.svg",
   goodyear: "/images/brands/goodyear.svg",
+  kumho: "/images/brands/kumho.svg",
+  agate: "/images/brands/agate.svg",
+  aplus: "/images/brands/aplus.svg",
+  delinte: "/images/brands/delinte.svg",
+  roadmarch: "/images/brands/roadmarch.svg",
+  firestone: "/images/brands/firestone.svg",
 };
 
-export function BrandLogo({ brand, className = "h-5 w-auto max-w-[120px]", customLogoUrl }: BrandLogoProps) {
+export function BrandLogo({ brand, className = "h-6 w-auto max-w-[125px]", customLogoUrl }: BrandLogoProps) {
   const [hasError, setHasError] = useState(false);
   const normalized = (brand || "").trim().toLowerCase();
 
@@ -47,19 +56,23 @@ export function BrandLogo({ brand, className = "h-5 w-auto max-w-[120px]", custo
 
   if (!logoSrc || hasError) {
     return (
-      <span className="inline-flex items-center rounded bg-neutral-100 px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-neutral-800 border border-neutral-200">
-        {brand || "LE RADIAL"}
-      </span>
+      <div className="h-6 inline-flex items-center">
+        <span className="inline-flex items-center text-sm font-black uppercase tracking-wider text-neutral-900 border-l-2 border-[#E3151A] pl-1.5 leading-none">
+          {brand || "LE RADIAL"}
+        </span>
+      </div>
     );
   }
 
   return (
-    <img
-      src={logoSrc}
-      alt={brand}
-      onError={() => setHasError(true)}
-      className={`${className} object-contain transition-opacity duration-200`}
-      loading="lazy"
-    />
+    <div className="h-6 inline-flex items-center">
+      <img
+        src={logoSrc}
+        alt={brand}
+        onError={() => setHasError(true)}
+        className={`${className} max-h-6 w-auto max-w-[125px] object-contain transition-opacity duration-200`}
+        loading="lazy"
+      />
+    </div>
   );
 }

@@ -758,7 +758,7 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
       <div className="flex flex-1 flex-col p-4">
         <Link to="/producto/$slug" params={{ slug: p.slug }} className="block">
           <div className="mb-1 flex items-center">
-            <BrandLogo brand={p.brand} className="h-5 w-auto max-w-[110px]" />
+            <BrandLogo brand={p.brand} className="h-6 w-auto max-w-[125px]" />
           </div>
           <h3 className="mt-1 line-clamp-2 text-sm font-bold text-secondary hover:text-primary">{p.model}</h3>
           <p className="mt-1 text-xs text-muted-foreground">{cleanTireSize(p.size)}</p>

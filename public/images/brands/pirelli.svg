@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 63">
-  <g transform="translate(10, 16)">
-    <path d="M0 0 L120 0 L120 6 L22 6 L22 14 L36 14 C44 14 48 18 48 24 C48 30 43 34 36 34 L0 34 Z M8 8 L8 26 L34 26 C38 26 40 24 40 20 C40 16 38 14 34 14 L8 14 Z" fill="#E3151A"/>
-    <text x="46" y="26" font-family="Arial Black, sans-serif" font-weight="900" font-size="19" fill="#E3151A" letter-spacing="1.5">IRELLI</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 44">
+  <g transform="translate(4, 4)">
+    <path d="M0 2 L130 2 L130 8 L24 8 L24 15 L38 15 C46 15 50 19 50 25 C50 31 45 35 38 35 L0 35 Z M9 10 L9 27 L36 27 C40 27 42 25 42 21 C42 17 40 15 36 15 L9 15 Z" fill="#E3151A"/>
+    <text x="48" y="27" font-family="Arial Black, sans-serif" font-weight="900" font-size="21" fill="#E3151A" letter-spacing="1.5">IRELLI</text>
   </g>
 </svg>

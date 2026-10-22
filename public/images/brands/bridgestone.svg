@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 63">
-  <g transform="translate(10, 16)">
-    <path d="M0 0 L16 0 C22 0 26 3 26 8 C26 12 23 15 19 16 C24 17 28 21 28 26 C28 32 23 35 16 35 L0 35 Z M6 6 L6 14 L15 14 C17 14 19 13 19 10 C19 7 17 6 15 6 Z M6 20 L6 29 L16 29 C19 29 21 28 21 24.5 C21 21 19 20 16 20 Z" fill="#E3151A"/>
-    <polygon points="12,0 20,0 14,14 6,14" fill="#000000"/>
-    <text x="34" y="26" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="20" fill="#111111" letter-spacing="0.5">BRIDGESTONE</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 44">
+  <g transform="translate(4, 4)">
+    <path d="M2 2 L18 2 C24 2 28 5 28 10 C28 14 25 17 21 18 C26 19 30 23 30 28 C30 34 25 37 18 37 L2 37 Z M8 8 L8 16 L17 16 C19 16 21 15 21 12 C21 9 19 8 17 8 Z M8 22 L8 31 L18 31 C21 31 23 30 23 26.5 C23 23 21 22 18 22 Z" fill="#E3151A"/>
+    <polygon points="14,2 22,2 16,16 8,16" fill="#000000"/>
+    <text x="36" y="27" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="22" fill="#111111" letter-spacing="0.5">BRIDGESTONE</text>
   </g>
 </svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 44">
+  <g transform="translate(4, 5)">
+    <polygon points="4,32 12,4 20,4 12,32" fill="#E3151A"/>
+    <polygon points="16,32 24,4 32,4 24,32" fill="#111111"/>
+    <text x="38" y="26" font-family="Impact, Arial Black, sans-serif" font-weight="900" font-style="italic" font-size="24" fill="#111111" letter-spacing="1">ROADMARCH</text>
+  </g>
+</svg>

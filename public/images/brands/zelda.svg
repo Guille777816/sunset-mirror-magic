@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 44">
+  <g transform="translate(4, 5)">
+    <path d="M2 4 L28 4 L10 24 L30 24 L28 32 L0 32 L18 12 L2 12 Z" fill="#E3151A"/>
+    <polygon points="12,4 28,4 22,11 6,11" fill="#111111"/>
+    <text x="36" y="26" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-style="italic" font-size="25" fill="#111111" letter-spacing="2">ZELDA</text>
+  </g>
+</svg>

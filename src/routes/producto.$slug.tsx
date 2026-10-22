@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Phone, ArrowLeft, ShoppingCart, Plus, Download, CreditCard } from "lucide-react";
@@ -278,16 +278,30 @@ const categoryImg: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/producto/$slug")({
+  beforeLoad: ({ params }) => {
+    const rawSlug = (params.slug || "").trim().toLowerCase();
+    if (!rawSlug || rawSlug === "producto" || rawSlug === "undefined" || rawSlug === "null") {
+      throw redirect({ to: "/", statusCode: 301 });
+    }
+  },
   loader: async ({ params }) => {
     const product = await getProductBySlug({ data: { slug: params.slug } }).catch(() => null);
     return { product };
   },
   head: ({ loaderData }) => {
     const p = loaderData?.product as any;
+    if (!p) {
+      return {
+        meta: [
+          { title: "Producto no encontrado — Le Radial" },
+          { name: "robots", content: "noindex, nofollow" },
+        ],
+      };
+    }
     const fullName = getCleanFullName(p);
-    const title = p ? `${fullName} — Le Radial` : "Producto — Le Radial";
+    const title = `${fullName} — Le Radial`;
     const description = buildProductMetaDescription(p);
-    const productUrl = p ? `${SITE_URL}/producto/${p.slug}` : SITE_URL;
+    const productUrl = `${SITE_URL}/producto/${p.slug}`;
     const imageUrl = p?.image_url || DEFAULT_OG_IMAGE;
 
     const scripts: Array<{ type: string; children: string }> = [];
@@ -395,12 +409,15 @@ function ProductDetail() {
   if (!p)
     return (
       <div className="container mx-auto max-w-xl p-16 text-center">
-        <h1 className="text-2xl font-bold text-secondary">Producto no encontrado</h1>
+        <h1 className="text-2xl font-bold text-secondary">Producto no disponible</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          El neumático solicitado ya no se encuentra en el catálogo o el enlace cambió.
+        </p>
         <Link
           to="/"
-          className="mt-6 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground"
+          className="mt-6 inline-block rounded-full bg-primary px-6 py-2.5 text-sm font-bold uppercase text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
         >
-          Volver
+          Ver catálogo de neumáticos
         </Link>
       </div>
     );

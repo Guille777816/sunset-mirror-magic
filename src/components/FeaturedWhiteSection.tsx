@@ -132,7 +132,7 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                 <div className="relative z-10 transition-transform duration-300">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <div className="rounded-lg bg-neutral-200/90 px-2 py-0.5 group-hover:bg-white/90 transition-colors">
-                      <BrandLogo brand={p.brand} className="h-4.5 w-auto max-w-[90px]" />
+                      <BrandLogo brand={p.brand} className="h-6 w-auto max-w-[125px]" />
                     </div>
                     <span className="rounded-full bg-neutral-200/80 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-neutral-800 transition-colors group-hover:bg-white/20 group-hover:text-white">
                       {vehicleLabel}

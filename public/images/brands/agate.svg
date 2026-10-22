@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 44">
+  <g transform="translate(4, 5)">
+    <path d="M0 32 L14 4 L28 32 L20 32 L14 17 L8 32 Z" fill="#FF6B00"/>
+    <polygon points="9,23 19,23 18,27 10,27" fill="#111111"/>
+    <text x="34" y="26" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="25" fill="#111111" letter-spacing="2">AGATE</text>
+  </g>
+</svg>
