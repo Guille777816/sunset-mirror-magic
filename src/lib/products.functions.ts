@@ -79,6 +79,61 @@ const applyCatalogSchema = z.object({
   catalog_url: z.string().max(2000).nullable(),
 });
 
+export const applyModelBatchAssetsSchema = z.object({
+  brand: z.string().trim().min(1).max(80),
+  model: z.string().trim().min(1).max(120),
+  keyword: z.string().trim().max(100).optional(),
+  catalog_url: z.string().max(2000).nullable().optional(),
+  apply_catalog: z.boolean().optional(),
+  image_url: z.string().nullable().optional(),
+  apply_image: z.boolean().optional(),
+  description: z.string().nullable().optional(),
+  apply_description: z.boolean().optional(),
+});
+
+/** Copia foto, descripción y/o catálogo PDF a todas las medidas del mismo modelo/familia (ej: todos los DS2). */
+export const applyModelBatchAssets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => applyModelBatchAssetsSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase: supabaseAuthed, userId } = context;
+    await assertAdmin(supabaseAuthed, userId);
+    const exact = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+    
+    const rawPattern = data.keyword?.trim() || extractModelFamily(data.model);
+    // Normaliza acrónimos con o sin barra (HT <-> H/T, AT <-> A/T, MT <-> M/T, TA <-> T/A, RT <-> R/T)
+    const normalizedPattern = exact(rawPattern)
+      .replace(/\bH(?:\/|\\\/)?T\b/gi, "H%T")
+      .replace(/\bA(?:\/|\\\/)?T\b/gi, "A%T")
+      .replace(/\bM(?:\/|\\\/)?T\b/gi, "M%T")
+      .replace(/\bT(?:\/|\\\/)?A\b/gi, "T%A")
+      .replace(/\bR(?:\/|\\\/)?T\b/gi, "R%T");
+
+    const updatePayload: Record<string, any> = {};
+    if (data.apply_catalog) updatePayload.catalog_url = data.catalog_url ?? null;
+    if (data.apply_image) updatePayload.image_url = data.image_url ?? null;
+    if (data.apply_description) updatePayload.description = data.description ?? null;
+
+    if (Object.keys(updatePayload).length === 0) {
+      return { count: 0, matchedPattern: rawPattern };
+    }
+
+    let query = supabaseAuthed
+      .from("products")
+      .update(updatePayload as never)
+      .ilike("brand", exact(data.brand));
+
+    if (normalizedPattern.length >= 2) {
+      query = query.ilike("model", `%${normalizedPattern}%`);
+    } else {
+      query = query.ilike("model", exact(data.model));
+    }
+
+    const { data: updated, error } = await query.select("id");
+    if (error) throw new Error(error.message);
+    return { count: updated?.length ?? 0, matchedPattern: rawPattern };
+  });
+
 /** Copia el mismo catálogo PDF a todas las medidas de una marca + modelo/familia (ej: FORZA HT y FORZA H/T). */
 export const applyCatalogToModel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -89,7 +144,6 @@ export const applyCatalogToModel = createServerFn({ method: "POST" })
     const exact = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
     
     const rawPattern = data.keyword?.trim() || extractModelFamily(data.model);
-    // Normaliza acrónimos con o sin barra (HT <-> H/T, AT <-> A/T, MT <-> M/T, TA <-> T/A, RT <-> R/T)
     const normalizedPattern = exact(rawPattern)
       .replace(/\bH(?:\/|\\\/)?T\b/gi, "H%T")
       .replace(/\bA(?:\/|\\\/)?T\b/gi, "A%T")
@@ -112,6 +166,7 @@ export const applyCatalogToModel = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { count: updated?.length ?? 0, matchedPattern: rawPattern };
   });
+
 
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

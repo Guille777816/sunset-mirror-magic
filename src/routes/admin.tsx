@@ -8,6 +8,7 @@ import {
   upsertProduct,
   deleteProduct,
   applyCatalogToModel,
+  applyModelBatchAssets,
 } from "@/lib/products.functions";
 import { getSettings, getAdminSettings, updateSettings, parseBranches, type Branch } from "@/lib/settings.functions";
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
@@ -95,6 +96,7 @@ function AdminPage() {
   const save = useServerFn(upsertProduct);
   const remove = useServerFn(deleteProduct);
   const applyCatalog = useServerFn(applyCatalogToModel);
+  const applyBatchAssets = useServerFn(applyModelBatchAssets);
   const fetchSettingsAdmin = useServerFn(getAdminSettings);
   const saveSettingsAdmin = useServerFn(updateSettings);
 
@@ -133,8 +135,23 @@ function AdminPage() {
   const categoryImages: Record<string, string> = settings?.category_images ?? {};
 
   const saveMut = useMutation({
-    mutationFn: async (input: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string; vehicle_image_url?: string | null; vehicle_label?: string | null }) => {
-      const { applyCatalogToModel: applyAll, catalogKeyword, vehicle_image_url, vehicle_label, ...p } = input;
+    mutationFn: async (input: Product & {
+      applyCatalogToModel?: boolean;
+      applyImageToModel?: boolean;
+      applyDescriptionToModel?: boolean;
+      catalogKeyword?: string;
+      vehicle_image_url?: string | null;
+      vehicle_label?: string | null;
+    }) => {
+      const {
+        applyCatalogToModel: applyCatalogAll,
+        applyImageToModel: applyImageAll,
+        applyDescriptionToModel: applyDescAll,
+        catalogKeyword,
+        vehicle_image_url,
+        vehicle_label,
+        ...p
+      } = input;
       p.size = cleanTireSize(p.size);
       const res = await save({ data: p });
       const targetId = res?.id || p.id;
@@ -157,16 +174,25 @@ function AdminPage() {
           },
         });
       }
-      if (applyAll && p.brand.trim() && p.model.trim()) {
-        const resApply = await applyCatalog({
+      if ((applyCatalogAll || applyImageAll || applyDescAll) && p.brand.trim() && p.model.trim()) {
+        const resApply = await applyBatchAssets({
           data: {
             brand: p.brand.trim(),
             model: p.model.trim(),
             keyword: catalogKeyword || undefined,
             catalog_url: p.catalog_url ?? null,
+            apply_catalog: !!applyCatalogAll,
+            image_url: p.image_url ?? null,
+            apply_image: !!applyImageAll,
+            description: p.description ?? null,
+            apply_description: !!applyDescAll,
           },
         });
-        alert(`¡Listo! Catálogo aplicado a ${resApply.count} producto(s) de ${p.brand} que coinciden con "${resApply.matchedPattern}".`);
+        const appliedItems: string[] = [];
+        if (applyImageAll) appliedItems.push("Foto");
+        if (applyDescAll) appliedItems.push("Descripción");
+        if (applyCatalogAll) appliedItems.push("Catálogo PDF");
+        alert(`¡Listo! Se aplicó (${appliedItems.join(" + ")}) a ${resApply.count} producto(s) de ${p.brand} que coinciden con "${resApply.matchedPattern}".`);
       }
       return res;
     },
@@ -1193,7 +1219,14 @@ function ProductForm({
 }: {
   value: Product;
   onCancel: () => void;
-  onSave: (p: Product & { applyCatalogToModel?: boolean; catalogKeyword?: string; vehicle_image_url?: string | null; vehicle_label?: string | null }) => void;
+  onSave: (p: Product & {
+    applyCatalogToModel?: boolean;
+    applyImageToModel?: boolean;
+    applyDescriptionToModel?: boolean;
+    catalogKeyword?: string;
+    vehicle_image_url?: string | null;
+    vehicle_label?: string | null;
+  }) => void;
   saving: boolean;
   error: any;
   categoryImages?: Record<string, string>;
@@ -1202,6 +1235,8 @@ function ProductForm({
   const [uploading, setUploading] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [applyCatalogAll, setApplyCatalogAll] = useState(false);
+  const [applyImageAll, setApplyImageAll] = useState(false);
+  const [applyDescriptionAll, setApplyDescriptionAll] = useState(false);
 
   const [vehicleImg, setVehicleImg] = useState<string | null>(() => (value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null));
   const [vehicleLabel, setVehicleLabel] = useState<string>(() => (value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : ""));
@@ -1337,8 +1372,27 @@ function ProductForm({
           <Field label="Stock"><input type="number" min={0} className={input} value={p.stock} onChange={(e) => set("stock", Number(e.target.value))} /></Field>
           <Field label="Descripción" col2>
             <textarea className={input + " min-h-[70px] rounded-2xl py-2"} value={p.description ?? ""} onChange={(e) => set("description", e.target.value || null)} />
+            <div className="mt-2 rounded-xl border border-sky-300/80 bg-sky-50/80 p-2.5 shadow-sm">
+              <label className="flex items-start gap-2 text-xs font-semibold text-secondary cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 text-sky-600 rounded"
+                  checked={applyDescriptionAll}
+                  disabled={!p.brand.trim() || !p.model.trim()}
+                  onChange={(e) => setApplyDescriptionAll(e.target.checked)}
+                />
+                <div className="flex-1">
+                  <span className="font-bold text-sky-950">
+                    📝 Aplicar esta descripción a todas las medidas de <strong>{p.brand.trim() || "esta marca"} {catalogKeyword || p.model.trim() || "este modelo"}</strong>
+                  </span>
+                  <p className="mt-0.5 text-[11px] font-normal text-sky-800">
+                    Copia esta misma ficha y detalles técnicos a todos los neumáticos del mismo modelo (ej: todos los <strong>{catalogKeyword || "DS2"}</strong>).
+                  </p>
+                </div>
+              </label>
+            </div>
           </Field>
-                  <Field label="Imagen del producto" col2>
+          <Field label="Imagen del producto" col2>
             {p.image_url && (
               <div className="mb-2 h-24 w-24 overflow-hidden rounded-xl bg-muted">
                 <img src={p.image_url} alt="preview" className="h-full w-full object-cover" />
@@ -1364,6 +1418,25 @@ function ProductForm({
               value={p.image_url ?? ""}
               onChange={(e) => set("image_url", e.target.value || null)}
             />
+            <div className="mt-2 rounded-xl border border-indigo-300/80 bg-indigo-50/80 p-2.5 shadow-sm">
+              <label className="flex items-start gap-2 text-xs font-semibold text-secondary cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 text-indigo-600 rounded"
+                  checked={applyImageAll}
+                  disabled={!p.brand.trim() || !p.model.trim()}
+                  onChange={(e) => setApplyImageAll(e.target.checked)}
+                />
+                <div className="flex-1">
+                  <span className="font-bold text-indigo-950">
+                    📸 Aplicar esta foto a todas las medidas de <strong>{p.brand.trim() || "esta marca"} {catalogKeyword || p.model.trim() || "este modelo"}</strong>
+                  </span>
+                  <p className="mt-0.5 text-[11px] font-normal text-indigo-800">
+                    Asigna esta misma imagen a todos los neumáticos del mismo modelo (ej: todos los <strong>{catalogKeyword || "DS2"}</strong>) en un solo clic.
+                  </p>
+                </div>
+              </label>
+            </div>
           </Field>
           <div className="col-span-2 rounded-2xl border border-emerald-500/30 bg-emerald-50/60 p-3">
             <span className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-secondary">
@@ -1515,6 +1588,8 @@ function ProductForm({
             onClick={() => onSave({
               ...p,
               applyCatalogToModel: applyCatalogAll,
+              applyImageToModel: applyImageAll,
+              applyDescriptionToModel: applyDescriptionAll,
               catalogKeyword: catalogKeyword.trim() || undefined,
               vehicle_image_url: vehicleImg,
               vehicle_label: vehicleLabel,
