@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -183,6 +183,7 @@ const rims = [
 ];
 
 function Index() {
+  const navigate = useNavigate();
   const [w, setW] = useState("Todos");
   const [h, setH] = useState("Todos");
   const [r, setR] = useState("Todos");
@@ -278,12 +279,7 @@ function Index() {
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
-    setSearchActive(false);
-    setViewAllSizes(false);
-    setActiveCategory(slug);
-    setTimeout(() => {
-      document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
+    navigate({ to: "/categoria/$category", params: { category: slug } });
   }
 
   return (

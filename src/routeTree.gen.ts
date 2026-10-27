@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PoliticaDevolucionesRouteImport } from './routes/politica-devoluciones'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProductoSlugRouteImport } from './routes/producto.$slug'
+import { Route as CategoriaCategoryRouteImport } from './routes/categoria.$category'
 import { Route as ApiPublicCatalogoRouteImport } from './routes/api/public/catalogo'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 
@@ -48,6 +49,11 @@ const ProductoSlugRoute = ProductoSlugRouteImport.update({
   path: '/producto/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CategoriaCategoryRoute = CategoriaCategoryRouteImport.update({
+  id: '/categoria/$category',
+  path: '/categoria/$category',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCatalogoRoute = ApiPublicCatalogoRouteImport.update({
   id: '/api/public/catalogo',
   path: '/api/public/catalogo',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/politica-devoluciones': typeof PoliticaDevolucionesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/producto/$slug': typeof ProductoSlugRoute
+  '/categoria/$category': typeof CategoriaCategoryRoute
   '/api/public/catalogo': typeof ApiPublicCatalogoRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/politica-devoluciones': typeof PoliticaDevolucionesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/producto/$slug': typeof ProductoSlugRoute
+  '/categoria/$category': typeof CategoriaCategoryRoute
   '/api/public/catalogo': typeof ApiPublicCatalogoRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/politica-devoluciones': typeof PoliticaDevolucionesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/producto/$slug': typeof ProductoSlugRoute
+  '/categoria/$category': typeof CategoriaCategoryRoute
   '/api/public/catalogo': typeof ApiPublicCatalogoRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/politica-devoluciones'
     | '/sitemap.xml'
     | '/producto/$slug'
+    | '/categoria/$category'
     | '/api/public/catalogo'
     | '/api/public/mp-webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/politica-devoluciones'
     | '/sitemap.xml'
     | '/producto/$slug'
+    | '/categoria/$category'
     | '/api/public/catalogo'
     | '/api/public/mp-webhook'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/politica-devoluciones'
     | '/sitemap.xml'
     | '/producto/$slug'
+    | '/categoria/$category'
     | '/api/public/catalogo'
     | '/api/public/mp-webhook'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   PoliticaDevolucionesRoute: typeof PoliticaDevolucionesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ProductoSlugRoute: typeof ProductoSlugRoute
+  CategoriaCategoryRoute: typeof CategoriaCategoryRoute
   ApiPublicCatalogoRoute: typeof ApiPublicCatalogoRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductoSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/categoria/$category': {
+      id: '/categoria/$category'
+      path: '/categoria/$category'
+      fullPath: '/categoria/$category'
+      preLoaderRoute: typeof CategoriaCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/catalogo': {
       id: '/api/public/catalogo'
       path: '/api/public/catalogo'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   PoliticaDevolucionesRoute: PoliticaDevolucionesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ProductoSlugRoute: ProductoSlugRoute,
+  CategoriaCategoryRoute: CategoriaCategoryRoute,
   ApiPublicCatalogoRoute: ApiPublicCatalogoRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
 }
