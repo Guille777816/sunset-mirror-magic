@@ -361,20 +361,20 @@ function Index() {
         </div>
       </div>
 
-      {/* Banner de Promoción 3 Cuotas sin Interés */}
-      <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 px-4 py-2 text-center text-xs font-bold text-white shadow-inner">
+      {/* Banner de Promoción Buenos Aires Envíos en el Día & Mayoristas */}
+      <div className="bg-gradient-to-r from-violet-900 via-indigo-900 to-slate-900 px-4 py-2 text-center text-xs font-bold text-white shadow-inner border-b border-violet-500/30">
         <div className="container mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          <span className="flex items-center gap-1.5 uppercase tracking-wide">
-            <CreditCard className="h-3.5 w-3.5 text-emerald-300" />
-            <strong>3 CUOTAS SIN INTERÉS</strong> con Visa, Naranja X, SuCrédito, Cabal y Amex
+          <span className="flex items-center gap-1.5 uppercase tracking-wide font-black text-yellow-300">
+            <span className="inline-block animate-pulse">⚡</span>
+            <span>¡AHORA EN BUENOS AIRES: ENVÍOS EN EL DÍA!</span>
           </span>
-          <span className="hidden sm:inline text-emerald-300">·</span>
-          <span className="text-[11px] font-medium text-emerald-100">
-            Aceptamos Débito, Prepagas, PIX 🇧🇷 y Tarjetas Internacionales 🌐
+          <span className="hidden sm:inline text-violet-400">·</span>
+          <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-300">
+            <span>🤝 COMPRAS MAYORISTAS: PAGO CONTRA ENTREGA</span>
           </span>
-          <span className="hidden md:inline text-emerald-300">·</span>
-          <span className="hidden md:inline text-[11px] font-semibold text-emerald-200">
-            🚚 Envíos a todo el país
+          <span className="hidden md:inline text-violet-400">·</span>
+          <span className="hidden md:inline text-[11px] font-medium text-slate-200">
+            💳 3 Cuotas sin Interés · Retiro inmediato en depósito CABA
           </span>
         </div>
       </div>

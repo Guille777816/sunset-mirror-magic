@@ -10,6 +10,7 @@ import {
 import { CartProvider } from "@/lib/cart";
 import { CurrencyProvider } from "@/lib/currency";
 import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
+import { BuenosAiresFloatingBadge } from "@/components/BuenosAiresFloatingBadge";
 
 import appCss from "../styles.css?url";
 
@@ -123,6 +124,7 @@ function RootComponent() {
         <CartProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
+          <BuenosAiresFloatingBadge />
         </CartProvider>
       </CurrencyProvider>
     </QueryClientProvider>
