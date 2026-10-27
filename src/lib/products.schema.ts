@@ -7,6 +7,9 @@ export const CATEGORY_VALUES = [
   "camiones",
   "agricolas",
   "industriales",
+  "baterias",
+  "lonas",
+  "aceites",
 ] as const;
 
 export const categoryEnum = z.enum(CATEGORY_VALUES);

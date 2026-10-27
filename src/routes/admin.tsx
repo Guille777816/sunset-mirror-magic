@@ -33,7 +33,7 @@ type Product = {
   model: string;
   size: string;
   category?: string;
-  categories: ("autos" | "camionetas" | "suv" | "camiones" | "agricolas" | "industriales")[];
+  categories: ("autos" | "camionetas" | "suv" | "camiones" | "agricolas" | "industriales" | "baterias" | "lonas" | "aceites")[];
   price_ars: number;
   stock: number;
   image_url: string | null;
@@ -50,9 +50,42 @@ const empty: Product = {
   is_active: true, is_featured: false, free_shipping: false,
 };
 
-function catsOf(p: { categories?: string[] | null; category?: string | null }): any[] {
+const NORMALIZE_CAT: Record<string, string> = {
+  auto: "autos",
+  autos: "autos",
+  pasajero: "autos",
+  camioneta: "camionetas",
+  camionetas: "camionetas",
+  "camioneta-comercial": "camionetas",
+  suv: "suv",
+  camion: "camiones",
+  camiones: "camiones",
+  transporte: "camiones",
+  agricola: "agricolas",
+  agricolas: "agricolas",
+  industrial: "industriales",
+  industriales: "industriales",
+  vial: "industriales",
+  construccion: "industriales",
+  mineria: "industriales",
+  motos: "motos",
+  bateria: "baterias",
+  baterias: "baterias",
+  lona: "lonas",
+  lonas: "lonas",
+  aceite: "aceites",
+  aceites: "aceites",
+  lubricante: "aceites",
+  lubricantes: "aceites",
+};
+
+function catsOf(p: { categories?: string[] | null; category?: string | null }): string[] {
   const list = Array.isArray(p?.categories) ? p.categories.filter(Boolean) : [];
-  return list.length ? list : (p?.category ? [p.category] : []);
+  const raw = list.length ? list : (p?.category ? [p.category] : []);
+  return raw.map((c) => {
+    const s = String(c).toLowerCase().trim();
+    return NORMALIZE_CAT[s] || s;
+  });
 }
 
 function isProductUpdated(p: any): boolean {
@@ -64,13 +97,24 @@ function isProductUpdated(p: any): boolean {
   return !isNaN(t) && (Date.now() - t) < 30 * 24 * 60 * 60 * 1000;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
+export const TIRE_CATEGORIES: Record<string, string> = {
   autos: "Autos",
   camionetas: "Camionetas",
   suv: "SUV",
   camiones: "Camiones",
   agricolas: "Agrícolas",
   industriales: "Industriales",
+};
+
+export const OTHER_CATEGORIES: Record<string, string> = {
+  baterias: "Baterías",
+  lonas: "Lonas",
+  aceites: "Aceites",
+};
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  ...TIRE_CATEGORIES,
+  ...OTHER_CATEGORIES,
 };
 
 type Tab = "productos" | "marcas" | "pedidos" | "sucursales" | "banners" | "testimonios" | "imagenes" | "ajustes";
@@ -352,7 +396,14 @@ function AdminPage() {
   const filteredProducts = (Array.isArray(products) ? (products as Product[]) : []).filter((p) => {
     if (showFeaturedOnly && !p.is_featured) return false;
     if (showPendingOnly && isProductUpdated(p)) return false;
-    if (filterCat !== "todas" && !catsOf(p).includes(filterCat)) return false;
+    if (filterCat !== "todas") {
+      const cats = catsOf(p);
+      if (filterCat === "otros") {
+        if (!cats.some((c) => c in OTHER_CATEGORIES)) return false;
+      } else {
+        if (!cats.includes(filterCat)) return false;
+      }
+    }
     if (searchProd.trim()) {
       const q = searchProd.toLowerCase().trim();
       const match =
@@ -367,6 +418,11 @@ function AdminPage() {
 
   const countByCategory = (cat: string) =>
     (Array.isArray(products) ? (products as Product[]) : []).filter((p) => catsOf(p).includes(cat)).length;
+
+  const countOthers = () =>
+    (Array.isArray(products) ? (products as Product[]) : []).filter((p) =>
+      catsOf(p).some((c) => c in OTHER_CATEGORIES)
+    ).length;
 
   return (
     <div className="min-h-screen bg-muted">
@@ -458,22 +514,136 @@ function AdminPage() {
         {tab === "productos" && (
           <div>
             {/* Stats por categoría */}
-            <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5">
-              {Object.entries(CATEGORY_LABELS).map(([slug, label]) => (
+            <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              {/* Botón Todas */}
+              <button
+                type="button"
+                onClick={() => setFilterCat("todas")}
+                className={`relative rounded-2xl p-4 text-left transition-all border cursor-pointer ${
+                  filterCat === "todas"
+                    ? "border-primary bg-primary text-white shadow-md ring-2 ring-primary/30"
+                    : "border-border/60 bg-card hover:border-primary/40 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className={`text-2xl font-black ${filterCat === "todas" ? "text-white" : "text-secondary"}`}>
+                    {(products as any[]).length}
+                  </p>
+                  {filterCat === "todas" && (
+                    <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                      Activo
+                    </span>
+                  )}
+                </div>
+                <p className={`mt-0.5 text-xs font-bold uppercase tracking-wider ${filterCat === "todas" ? "text-white/90" : "text-muted-foreground"}`}>
+                  Todas
+                </p>
+              </button>
+
+              {/* Botones por Categoría de Neumáticos */}
+              {Object.entries(TIRE_CATEGORIES).map(([slug, label]) => {
+                const isSelected = filterCat === slug;
+                const count = countByCategory(slug);
+                return (
+                  <button
+                    key={slug}
+                    type="button"
+                    onClick={() => setFilterCat(isSelected ? "todas" : slug)}
+                    className={`relative rounded-2xl p-4 text-left transition-all border cursor-pointer ${
+                      isSelected
+                        ? "border-primary bg-primary text-white shadow-md ring-2 ring-primary/30"
+                        : "border-border/60 bg-card hover:border-primary/40 hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className={`text-2xl font-black ${isSelected ? "text-white" : "text-secondary"}`}>
+                        {count}
+                      </p>
+                      {isSelected && (
+                        <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                          Activo
+                        </span>
+                      )}
+                    </div>
+                    <p className={`mt-0.5 text-xs font-bold uppercase tracking-wider ${isSelected ? "text-white/90" : "text-muted-foreground"}`}>
+                      {label}
+                    </p>
+                  </button>
+                );
+              })}
+
+              {/* Botón Otros (Baterías, Lonas, Aceites) */}
+              {(() => {
+                const isOtrosActive = filterCat === "otros" || filterCat in OTHER_CATEGORIES;
+                const count = countOthers();
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setFilterCat(isOtrosActive ? "todas" : "otros")}
+                    className={`relative rounded-2xl p-4 text-left transition-all border cursor-pointer ${
+                      isOtrosActive
+                        ? "border-primary bg-primary text-white shadow-md ring-2 ring-primary/30"
+                        : "border-border/60 bg-card hover:border-primary/40 hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className={`text-2xl font-black ${isOtrosActive ? "text-white" : "text-secondary"}`}>
+                        {count}
+                      </p>
+                      {isOtrosActive && (
+                        <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                          Activo
+                        </span>
+                      )}
+                    </div>
+                    <p className={`mt-0.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${isOtrosActive ? "text-white/90" : "text-muted-foreground"}`}>
+                      <Package className="h-3.5 w-3.5" /> Otros
+                    </p>
+                  </button>
+                );
+              })()}
+            </div>
+
+            {/* Subcategorías de Otros (visible al seleccionar Otros o alguna de sus subcategorías) */}
+            {(filterCat === "otros" || filterCat in OTHER_CATEGORIES) && (
+              <div className="mb-6 flex items-center gap-2 bg-card p-3 rounded-2xl border border-primary/20 shadow-xs flex-wrap animate-fadeIn">
+                <span className="text-xs font-bold text-muted-foreground mr-1 flex items-center gap-1.5 pl-2">
+                  <Package className="h-4 w-4 text-primary" /> Subcategorías de Otros:
+                </span>
                 <button
-                  key={slug}
-                  onClick={() => setFilterCat(slug === filterCat ? "todas" : slug)}
-                  className={`rounded-2xl p-4 text-left transition border ${
-                    filterCat === slug
-                      ? "border-primary bg-primary/10"
-                      : "border-transparent bg-card hover:border-primary/30"
+                  type="button"
+                  onClick={() => setFilterCat("otros")}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    filterCat === "otros"
+                      ? "bg-primary text-white shadow-xs"
+                      : "bg-muted text-secondary hover:bg-muted/80"
                   }`}
                 >
-                  <p className="text-2xl font-black text-secondary">{countByCategory(slug)}</p>
-                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+                  Todas en Otros ({countOthers()})
                 </button>
-              ))}
-            </div>
+                {Object.entries(OTHER_CATEGORIES).map(([slug, label]) => {
+                  const isSubSelected = filterCat === slug;
+                  const count = countByCategory(slug);
+                  return (
+                    <button
+                      key={slug}
+                      type="button"
+                      onClick={() => setFilterCat(slug)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                        isSubSelected
+                          ? "bg-primary text-white shadow-xs"
+                          : "bg-muted text-secondary hover:bg-muted/80"
+                      }`}
+                    >
+                      {slug === "baterias" && "⚡"}
+                      {slug === "lonas" && "🛡️"}
+                      {slug === "aceites" && "🛢️"}
+                      {label} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Buscador y filtro activo */}
             <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -529,8 +699,10 @@ function AdminPage() {
                 <LayoutGrid className="h-4 w-4 text-muted-foreground ml-1" />
                 <span className="text-xs sm:text-sm font-semibold text-secondary">
                   {filterCat === "todas"
-                    ? `Mostrando ${filteredProducts.length} de ${(products as any[]).length} cubiertas`
-                    : `${CATEGORY_LABELS[filterCat]} (${filteredProducts.length})`}
+                    ? `Mostrando ${filteredProducts.length} de ${(products as any[]).length} artículos`
+                    : filterCat === "otros"
+                    ? `Otros Productos (${filteredProducts.length})`
+                    : `${CATEGORY_LABELS[filterCat] ?? filterCat} (${filteredProducts.length})`}
                 </span>
                 {(filterCat !== "todas" || searchProd || showPendingOnly || showFeaturedOnly) && (
                   <button
@@ -1345,27 +1517,64 @@ function ProductForm({
           <Field label="Modelo"><input className={input} value={p.model} onChange={(e) => set("model", e.target.value)} /></Field>
           <Field label="Medida"><input className={input} placeholder="ej: 185/65R15" value={p.size} onChange={(e) => set("size", e.target.value)} /></Field>
           <Field label="Categorías (podés elegir varias)" col2>
-            <div className="flex flex-wrap gap-3 rounded-2xl border px-3 py-2">
-              {(Object.keys(CATEGORY_LABELS) as Product["categories"]).map((c) => {
-                const checked = catsOf(p).includes(c);
-                return (
-                  <label key={c} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4"
-                      checked={checked}
-                      onChange={(e) => {
-                        const current = catsOf(p);
-                        const next = e.target.checked
-                          ? [...current, c]
-                          : current.filter((x) => x !== c);
-                        set("categories", next as Product["categories"]);
-                      }}
-                    />
-                    {CATEGORY_LABELS[c]}
-                  </label>
-                );
-              })}
+            <div className="space-y-3 rounded-2xl border p-3.5 bg-neutral-50/50">
+              <div>
+                <span className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  Neumáticos
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(TIRE_CATEGORIES) as Product["categories"]).map((c) => {
+                    const checked = catsOf(p).includes(c);
+                    return (
+                      <label key={c} className="flex items-center gap-1.5 text-xs bg-white hover:bg-muted/50 px-2.5 py-1.5 rounded-xl border border-border/70 cursor-pointer shadow-xs transition">
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 text-primary rounded"
+                          checked={checked}
+                          onChange={(e) => {
+                            const current = catsOf(p);
+                            const next = e.target.checked
+                              ? [...current, c]
+                              : current.filter((x) => x !== c);
+                            set("categories", next as Product["categories"]);
+                          }}
+                        />
+                        {CATEGORY_LABELS[c]}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="border-t pt-2.5">
+                <span className="block text-[11px] font-bold text-primary uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" /> Otros Productos y Accesorios
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(OTHER_CATEGORIES) as Product["categories"]).map((c) => {
+                    const checked = catsOf(p).includes(c);
+                    return (
+                      <label key={c} className="flex items-center gap-1.5 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20 px-2.5 py-1.5 rounded-xl border cursor-pointer font-medium shadow-xs transition">
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 text-primary rounded"
+                          checked={checked}
+                          onChange={(e) => {
+                            const current = catsOf(p);
+                            const next = e.target.checked
+                              ? [...current, c]
+                              : current.filter((x) => x !== c);
+                            set("categories", next as Product["categories"]);
+                          }}
+                        />
+                        {c === "baterias" && "⚡ "}
+                        {c === "lonas" && "🛡️ "}
+                        {c === "aceites" && "🛢️ "}
+                        {CATEGORY_LABELS[c]}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </Field>
           <Field label="Precio ARS"><input type="number" min={0} className={input} value={p.price_ars} onChange={(e) => set("price_ars", Number(e.target.value))} /></Field>

@@ -134,6 +134,9 @@ export const Route = createFileRoute("/")({
     };
   },
 
+  validateSearch: (search: Record<string, unknown>) => ({
+    categoria: (search?.categoria as string) || (search?.cat as string) || undefined,
+  }),
   staleTime: 60_000,
   errorComponent: ({ error }: { error: unknown }) => (
     <div role="alert" className="p-8 text-center">{(error as Error)?.message ?? "Error"}</div>
@@ -155,10 +158,43 @@ const categoryImg: Record<string, string> = {
   autos: tireCar, camionetas: tireSuv, suv: tireSuv, camiones: tireTruck, agricolas: tireAgro, industriales: tireTruck,
 };
 
+const NORMALIZE_CAT: Record<string, string> = {
+  auto: "autos",
+  autos: "autos",
+  pasajero: "autos",
+  camioneta: "camionetas",
+  camionetas: "camionetas",
+  "camioneta-comercial": "camionetas",
+  suv: "suv",
+  camion: "camiones",
+  camiones: "camiones",
+  transporte: "camiones",
+  agricola: "agricolas",
+  agricolas: "agricolas",
+  industrial: "industriales",
+  industriales: "industriales",
+  vial: "industriales",
+  construccion: "industriales",
+  mineria: "industriales",
+  motos: "motos",
+  bateria: "baterias",
+  baterias: "baterias",
+  lona: "lonas",
+  lonas: "lonas",
+  aceite: "aceites",
+  aceites: "aceites",
+  lubricante: "aceites",
+  lubricantes: "aceites",
+};
+
 // Un producto puede pertenecer a varias categorías (columna `categories`).
 export function productCategories(p: any): string[] {
   const list = Array.isArray(p?.categories) ? p.categories.filter(Boolean) : [];
-  return list.length ? list : (p?.category ? [p.category] : []);
+  const raw = list.length ? list : (p?.category ? [p.category] : []);
+  return raw.map((c: any) => {
+    const s = String(c).toLowerCase().trim();
+    return NORMALIZE_CAT[s] || s;
+  });
 }
 function inCategory(p: any, slug: string): boolean {
   return productCategories(p).includes(slug);
@@ -183,13 +219,15 @@ const rims = [
 ];
 
 function Index() {
-  const navigate = useNavigate();
+  const searchParams = Route.useSearch();
   const [w, setW] = useState("Todos");
   const [h, setH] = useState("Todos");
   const [r, setR] = useState("Todos");
   const [searchActive, setSearchActive] = useState(false);
   const [authed, setAuthed] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(
+    (searchParams?.categoria as string) || null
+  );
   const [viewAllSizes, setViewAllSizes] = useState(false);
   const cart = useCart();
   const { currency, setCurrency, setRates } = useCurrency();
@@ -199,6 +237,17 @@ function Index() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setAuthed(!!s));
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (searchParams?.categoria) {
+      setSearchActive(false);
+      setViewAllSizes(false);
+      setActiveCategory(searchParams.categoria);
+      setTimeout(() => {
+        document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  }, [searchParams?.categoria]);
 
   const initial = Route.useLoaderData();
   const fetchProducts = useServerFn(listPublicProducts);
@@ -279,7 +328,12 @@ function Index() {
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
-    navigate({ to: "/categoria/$category", params: { category: slug } });
+    setSearchActive(false);
+    setViewAllSizes(false);
+    setActiveCategory(slug);
+    setTimeout(() => {
+      document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   }
 
   return (
