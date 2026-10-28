@@ -13,17 +13,68 @@ import tireSuv from "@/assets/tire-suv.jpg";
 import tireTruck from "@/assets/tire-truck.jpg";
 import tireAgro from "@/assets/tire-agro.jpg";
 import { cleanTireSize } from "@/lib/utils";
+
+function cleanSlugCandidate(raw: string): string {
+  let s = (raw || "").toLowerCase().trim();
+  s = s.replace(/^gys-/, "");
+  s = s.replace(/^([a-z0-9]+)-\1-/, "$1-");
+  s = s.replace(/-neumatico-/g, "-");
+  s = s.replace(/-cubierta-/g, "-");
+  s = s.replace(/michelin-michelin-/g, "michelin-");
+  s = s.replace(/pirelli-pirelli-/g, "pirelli-");
+  s = s.replace(/goodyear-goodyear-/g, "goodyear-");
+  s = s.replace(/continental-continental-/g, "continental-");
+  s = s.replace(/-pirelli$/, "");
+  s = s.replace(/-bkt$/, "");
+  s = s.replace(/-continental$/, "");
+  s = s.replace(/-michelin$/, "");
+  s = s.replace(/continental-ccatr-crosscontact-atr/g, "continental-crosscontact-atr");
+  s = s.replace(/continental-pc6-premiumcontact-6/g, "continental-premiumcontact-6");
+  s = s.replace(/continental-sc7-sportcontact-7/g, "continental-sportcontact-7");
+  s = s.replace(/-+/g, "-");
+  return s.replace(/^-|-$/g, "");
+}
+
 export const getProductBySlug = createServerFn({ method: "GET" })
   .inputValidator((i: unknown) => z.object({ slug: z.string().min(1) }).parse(i))
   .handler(async ({ data }) => {
+    const raw = (data.slug || "").trim().toLowerCase();
+
+    // 1. Exact match
     const { data: p, error } = await supabase
       .from("products")
       .select("*")
-      .eq("slug", data.slug)
+      .eq("slug", raw)
       .eq("is_active", true)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return p;
+    if (p) return p;
+
+    // 2. Normalized match (recovering from old urls or cleaned urls)
+    const cleaned = cleanSlugCandidate(raw);
+    if (cleaned && cleaned !== raw) {
+      const { data: pClean } = await supabase
+        .from("products")
+        .select("*")
+        .eq("slug", cleaned)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (pClean) return pClean;
+    }
+
+    // 3. Partial / ilike match
+    if (cleaned.length >= 4) {
+      const { data: pLike } = await supabase
+        .from("products")
+        .select("*")
+        .ilike("slug", `%${cleaned}%`)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+      if (pLike) return pLike;
+    }
+
+    return null;
   });
 
 function optimizeImg(url: string | undefined | null, width = 900, quality = 80): string {
@@ -405,22 +456,36 @@ function ProductDetail() {
   const { data: s } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
   const cart = useCart();
 
-  if (isLoading) return <div className="p-16 text-center text-muted-foreground">Cargando...</div>;
-  if (!p)
+  if (!p) {
+    const wa = (s?.whatsapp || "5491178292980").replace(/[^0-9]/g, "");
+    const waMsg = encodeURIComponent(`Hola Le Radial! Estoy buscando el neumático de la página "${slug}", ¿tendrán opciones y precios disponibles?`);
+    const waHref = `https://wa.me/${wa}?text=${waMsg}`;
+
     return (
-      <div className="container mx-auto max-w-xl p-16 text-center">
-        <h1 className="text-2xl font-bold text-secondary">Producto no disponible</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          El neumático solicitado ya no se encuentra en el catálogo o el enlace cambió.
+      <div className="container mx-auto max-w-xl p-12 text-center">
+        <h1 className="text-2xl font-bold text-secondary">Neumático no disponible en este enlace</h1>
+        <p className="mt-3 text-sm text-neutral-600">
+          El enlace puede haber cambiado o el producto fue renovado en el catálogo. Consultanos directamente por WhatsApp o buscá en el catálogo completo:
         </p>
-        <Link
-          to="/"
-          className="mt-6 inline-block rounded-full bg-primary px-6 py-2.5 text-sm font-bold uppercase text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
-        >
-          Ver catálogo de neumáticos
-        </Link>
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-bold uppercase text-white hover:bg-emerald-700 transition shadow-sm"
+          >
+            Consultar por WhatsApp
+          </a>
+          <Link
+            to="/"
+            className="w-full sm:w-auto rounded-full bg-primary px-6 py-2.5 text-sm font-bold uppercase text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+          >
+            Ver catálogo completo
+          </Link>
+        </div>
       </div>
     );
+  }
 
   const phone = s?.phone ?? "";
   const wa = s?.whatsapp ?? "";

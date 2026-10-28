@@ -134,7 +134,7 @@ export const Route = createFileRoute("/")({
     };
   },
 
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { categoria?: string } => ({
     categoria: (search?.categoria as string) || (search?.cat as string) || undefined,
   }),
   staleTime: 60_000,

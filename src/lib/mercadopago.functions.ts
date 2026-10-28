@@ -12,10 +12,35 @@ const inputSchema = z.object({
 export const createMpPreference = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => inputSchema.parse(i))
   .handler(async ({ data }) => {
-    const token = process.env.MP_ACCESS_TOKEN;
-    if (!token) throw new Error("Mercado Pago no está configurado.");
+    let token = process.env.MP_ACCESS_TOKEN;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (!token) {
+      try {
+        const { data: st } = await (supabaseAdmin as any)
+          .from("site_settings")
+          .select("mp_access_token")
+          .eq("id", "main")
+          .maybeSingle();
+        if (st?.mp_access_token) {
+          token = st.mp_access_token;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!token) {
+      return {
+        notConfigured: true,
+        init_point: "",
+        sandbox_init_point: "",
+        preference_id: "",
+        message: "Mercado Pago no está configurado actualmente. Podés abonar por Transferencia Bancaria o coordinar por WhatsApp.",
+      };
+    }
+
     const { data: order, error } = await supabaseAdmin
       .from("orders")
       .select("id, customer_name, customer_email, customer_phone, items, total_ars, status")

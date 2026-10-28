@@ -37,6 +37,44 @@ const CATEGORY_NAMES: Record<string, string> = {
   industriales: "Industriales",
 };
 
+const NORMALIZE_CAT: Record<string, string> = {
+  auto: "autos",
+  autos: "autos",
+  pasajero: "autos",
+  camioneta: "camionetas",
+  camionetas: "camionetas",
+  "camioneta-comercial": "camionetas",
+  suv: "suv",
+  camion: "camiones",
+  camiones: "camiones",
+  transporte: "camiones",
+  agricola: "agricolas",
+  agricolas: "agricolas",
+  industrial: "industriales",
+  industriales: "industriales",
+  vial: "industriales",
+  construccion: "industriales",
+  mineria: "industriales",
+  motos: "motos",
+  bateria: "baterias",
+  baterias: "baterias",
+  lona: "lonas",
+  lonas: "lonas",
+  aceite: "aceites",
+  aceites: "aceites",
+  lubricante: "aceites",
+  lubricantes: "aceites",
+};
+
+function getProductCategories(p: any): string[] {
+  const list = Array.isArray(p?.categories) ? p.categories.filter(Boolean) : [];
+  const raw = list.length ? list : (p?.category ? [p.category] : []);
+  return raw.map((c: any) => {
+    const s = String(c).toLowerCase().trim();
+    return NORMALIZE_CAT[s] || s;
+  });
+}
+
 export function SunsetStoreView({
   products,
   selectedCategory,
@@ -106,8 +144,10 @@ export function SunsetStoreView({
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { total: products.length };
     products.forEach((p) => {
-      const cat = (p.category || "").toLowerCase();
-      counts[cat] = (counts[cat] || 0) + 1;
+      const cats = getProductCategories(p);
+      cats.forEach((cat) => {
+        counts[cat] = (counts[cat] || 0) + 1;
+      });
     });
     return counts;
   }, [products]);
@@ -117,9 +157,9 @@ export function SunsetStoreView({
     return products.filter((p) => {
       // 1. Category
       if (selectedCategory && selectedCategory !== "todas") {
-        const cat = (p.category || "").toLowerCase();
-        const cats = Array.isArray(p.categories) ? p.categories.map((c) => c.toLowerCase()) : [];
-        if (cat !== selectedCategory && !cats.includes(selectedCategory)) {
+        const normSelected = NORMALIZE_CAT[selectedCategory.toLowerCase().trim()] || selectedCategory.toLowerCase().trim();
+        const cats = getProductCategories(p);
+        if (!cats.includes(normSelected)) {
           return false;
         }
       }
