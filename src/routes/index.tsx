@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, Plus, Instagram, Facebook, Star, ChevronDown, Camera, CreditCard } from "lucide-react";
+import { Phone, ShoppingCart, User, Users, Search, Truck, AlertTriangle, MapPin, Plus, Instagram, Facebook, Star, ChevronDown, Camera, CreditCard, CheckCircle2 } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import heroTire from "@/assets/hero-tire.jpg";
@@ -1180,26 +1180,41 @@ function TestimonialsSection({ testimonials }: { testimonials: Testi[] }) {
 }
 
 function TestimonialCard({ t }: { t: Testi }) {
+  const initial = (t.name || "C").trim().charAt(0).toUpperCase();
   return (
-    <div className="flex h-full flex-col rounded-2xl bg-card p-6 shadow-[var(--shadow-product)]">
-      <div className="flex items-center gap-3">
-        {t.image_url ? (
-          <img src={t.image_url} alt={t.name} width={56} height={56} className="h-14 w-14 rounded-full object-cover border-2 border-primary/30" loading="lazy" />
-        ) : (
-          <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
-            <User className="h-6 w-6" />
-          </div>
-        )}
-        <div>
-          <p className="font-bold text-secondary">{t.name}</p>
-          <div className="flex text-primary" role="img" aria-label={`${t.rating} de 5 estrellas`}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} className={`h-3.5 w-3.5 ${i < t.rating ? "fill-current" : "opacity-30"}`} />
-            ))}
+    <div className="flex h-full flex-col justify-between rounded-2xl border border-border/60 bg-card p-6 shadow-[var(--shadow-product)] transition hover:shadow-md">
+      <div>
+        <div className="flex items-center gap-3">
+          {t.image_url ? (
+            <img
+              src={t.image_url}
+              alt={t.name}
+              width={56}
+              height={56}
+              className="h-14 w-14 rounded-full object-cover border-2 border-primary/30"
+              loading="lazy"
+            />
+          ) : (
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/15 font-black text-primary text-lg">
+              {initial}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="font-bold text-secondary truncate">{t.name}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex text-primary" role="img" aria-label={`${t.rating} de 5 estrellas`}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={`h-3.5 w-3.5 ${i < t.rating ? "fill-current" : "opacity-30"}`} />
+                ))}
+              </div>
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Verificado
+              </span>
+            </div>
           </div>
         </div>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground italic">"{t.message}"</p>
       </div>
-      <p className="mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">"{t.message}"</p>
     </div>
   );
 }
