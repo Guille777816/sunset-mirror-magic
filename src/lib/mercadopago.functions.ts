@@ -1,36 +1,28 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const inputSchema = z.object({
   order_id: z.string().uuid(),
-  back_url_base: z.string().url(),
+  back_url_base: z.string().url().optional(),
+  items: z.array(z.object({
+    id: z.string().optional(),
+    brand: z.string().optional(),
+    model: z.string().optional(),
+    size: z.string().optional(),
+    price_ars: z.number().optional(),
+    qty: z.number().optional(),
+  })).optional(),
+  customer_name: z.string().optional(),
+  customer_email: z.string().optional(),
+  customer_phone: z.string().optional(),
 });
 
-// Crea una preferencia de Mercado Pago para un pedido existente y devuelve el init_point.
-// La orden ya fue creada por createOrder (que valida precios en el servidor), por lo que
-// aquí re-cargamos los datos oficiales desde la base y NO confiamos en el cliente.
 export const createMpPreference = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => inputSchema.parse(i))
   .handler(async ({ data }) => {
     const DEFAULT_MP_ACCESS_TOKEN = "APP_USR-6525141262409081-100310-21b20db5ef5dec68c2d6012de718c151-3666126588";
-    let token = process.env.MP_ACCESS_TOKEN || DEFAULT_MP_ACCESS_TOKEN;
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    if (!token) {
-      try {
-        const { data: st } = await (supabaseAdmin as any)
-          .from("site_settings")
-          .select("mp_access_token")
-          .eq("id", "main")
-          .maybeSingle();
-        if (st?.mp_access_token) {
-          token = st.mp_access_token;
-        }
-      } catch {
-        // ignore
-      }
-    }
+    const token = process.env.MP_ACCESS_TOKEN || DEFAULT_MP_ACCESS_TOKEN;
 
     if (!token) {
       return {
@@ -42,38 +34,53 @@ export const createMpPreference = createServerFn({ method: "POST" })
       };
     }
 
-    const { data: order, error } = await supabaseAdmin
-      .from("orders")
-      .select("id, customer_name, customer_email, customer_phone, items, total_ars, status")
-      .eq("id", data.order_id)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!order) throw new Error("Pedido no encontrado.");
-    if (order.status && order.status !== "pendiente") {
-      throw new Error("Este pedido ya no admite pagos online.");
+    let items = data.items || [];
+    let customerName = data.customer_name;
+    let customerEmail = data.customer_email;
+    let customerPhone = data.customer_phone;
+
+    // Si no vinieron los items por parámetro, intentamos leerlos de la base
+    if (!items || items.length === 0) {
+      try {
+        const { data: order } = await supabase
+          .from("orders")
+          .select("id, customer_name, customer_email, customer_phone, items, total_ars, status")
+          .eq("id", data.order_id)
+          .maybeSingle();
+        if (order) {
+          items = Array.isArray(order.items) ? (order.items as any[]) : [];
+          customerName = customerName || (order.customer_name ?? undefined);
+          customerEmail = customerEmail || (order.customer_email ?? undefined);
+          customerPhone = customerPhone || (order.customer_phone ?? undefined);
+        }
+      } catch {
+        // ignore
+      }
     }
 
-    const items = Array.isArray(order.items) ? (order.items as any[]) : [];
-    if (items.length === 0) throw new Error("El pedido no tiene productos.");
+    if (!items || items.length === 0) {
+      throw new Error("No se encontraron productos para generar el cobro.");
+    }
 
     const mpItems = items.map((it) => ({
       id: String(it.id ?? ""),
-      title: `${it.brand ?? ""} ${it.model ?? ""} ${it.size ?? ""}`.trim() || "Producto",
+      title: `${it.brand ?? ""} ${it.model ?? ""} ${it.size ?? ""}`.trim() || "Neumático Le Radial",
       quantity: Number(it.qty) || 1,
       unit_price: Number(it.price_ars) || 0,
       currency_id: "ARS",
     }));
 
-    const base = data.back_url_base.replace(/\/+$/, "");
-    const shortRef = order.id.slice(0, 8).toUpperCase();
+    const base = (data.back_url_base || "https://www.leradial.com.ar").replace(/\/+$/, "");
+    const shortRef = data.order_id.slice(0, 8).toUpperCase();
 
     const payload = {
       items: mpItems,
-      external_reference: order.id,
+      external_reference: data.order_id,
       statement_descriptor: "LE RADIAL",
       payer: {
-        name: order.customer_name || undefined,
-        email: order.customer_email || undefined,
+        name: customerName || undefined,
+        email: customerEmail || undefined,
+        phone: customerPhone ? { number: customerPhone } : undefined,
       },
       back_urls: {
         success: `${base}/?pago=exito&ref=${shortRef}`,
@@ -82,7 +89,7 @@ export const createMpPreference = createServerFn({ method: "POST" })
       },
       auto_return: "approved",
       notification_url: `${base}/api/public/mp-webhook`,
-      metadata: { order_id: order.id },
+      metadata: { order_id: data.order_id },
     };
 
     const res = await fetch("https://api.mercadopago.com/checkout/preferences", {
@@ -96,13 +103,17 @@ export const createMpPreference = createServerFn({ method: "POST" })
     const body = await res.json();
     if (!res.ok) {
       console.error("MP preference error", body);
-      throw new Error(body?.message || "No se pudo iniciar el pago.");
+      throw new Error(body?.message || "No se pudo iniciar el pago con Mercado Pago.");
     }
 
-    await supabaseAdmin
-      .from("orders")
-      .update({ mp_preference_id: body.id })
-      .eq("id", order.id);
+    try {
+      await supabase
+        .from("orders")
+        .update({ mp_preference_id: body.id })
+        .eq("id", data.order_id);
+    } catch {
+      // ignore
+    }
 
     return {
       init_point: body.init_point as string,

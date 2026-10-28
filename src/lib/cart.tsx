@@ -84,6 +84,8 @@ function CartDrawer() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderTotal, setOrderTotal] = useState<number>(0);
   const [orderPayment, setOrderPayment] = useState<any>(null);
+  const [orderInitPoint, setOrderInitPoint] = useState<string | null>(null);
+  const [confirmedItems, setConfirmedItems] = useState<CartItem[]>([]);
 
   useEffect(() => { if (isOpen) { setError(null); } }, [isOpen]);
 
@@ -97,13 +99,20 @@ function CartDrawer() {
     }
     setSending(true);
     try {
+      const itemsSnapshot = [...items];
+      setConfirmedItems(itemsSnapshot);
+      const origin = typeof window !== "undefined" ? window.location.origin : "https://www.leradial.com.ar";
       const res = await submit({ data: {
         ...form,
-        items: items.map(i => ({ id: i.id, qty: i.qty })),
+        items: itemsSnapshot.map(i => ({ id: i.id, qty: i.qty })),
+        back_url_base: origin,
       }});
       setOrderId(res.id);
       setOrderTotal(res.total ?? total);
       setOrderPayment(res.payment ?? null);
+      if (res.init_point) {
+        setOrderInitPoint(res.init_point);
+      }
       setStep("done");
       clear();
     } catch (err: any) {
@@ -233,6 +242,13 @@ function CartDrawer() {
                 orderId={orderId}
                 total={orderTotal}
                 payment={orderPayment}
+                initialInitPoint={orderInitPoint}
+                items={confirmedItems}
+                customer={{
+                  name: form.customer_name,
+                  email: form.customer_email,
+                  phone: form.customer_phone,
+                }}
               />
             )}
 
@@ -263,15 +279,21 @@ function MercadoPagoBlock({
   orderId,
   total,
   payment,
+  initialInitPoint,
+  items,
+  customer,
 }: {
   orderId: string;
   total: number;
   payment?: any;
+  initialInitPoint?: string | null;
+  items?: CartItem[];
+  customer?: { name?: string; email?: string; phone?: string };
 }) {
   const createPref = useServerFn(createMpPreference);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [initPoint, setInitPoint] = useState<string | null>(null);
+  const [initPoint, setInitPoint] = useState<string | null>(initialInitPoint || null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const shortRef = orderId.slice(0, 8).toUpperCase();
@@ -282,9 +304,10 @@ function MercadoPagoBlock({
   );
   const waHref = `https://wa.me/${cleanWa}?text=${waMsg}`;
 
-  const bankAlias = (payment?.bank_alias && payment.bank_alias.trim() && payment.bank_alias.trim() !== "LERADIAL.SRL") ? payment.bank_alias : "LERADIAL";
+  // Alias oficial confirmado por Guillermo: estrictamente LERADIAL
+  const bankAlias = "LERADIAL";
   const bankCbu = payment?.bank_cbu || "";
-  const bankHolder = payment?.bank_holder || "Le Radial SRL";
+  const bankHolder = payment?.bank_holder || "Le Radial";
   const bankName = payment?.bank_name || "Banco";
 
   function copyToClipboard(text: string, key: string) {
@@ -295,14 +318,32 @@ function MercadoPagoBlock({
   }
 
   async function tryPay() {
+    if (initPoint) {
+      window.location.href = initPoint;
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const res = await createPref({
-        data: { order_id: orderId, back_url_base: window.location.origin },
+        data: {
+          order_id: orderId,
+          back_url_base: window.location.origin,
+          items: items?.map((i) => ({
+            id: i.id,
+            brand: i.brand,
+            model: i.model,
+            size: i.size,
+            price_ars: i.price_ars,
+            qty: i.qty,
+          })),
+          customer_name: customer?.name,
+          customer_email: customer?.email,
+          customer_phone: customer?.phone,
+        },
       });
       if (res?.notConfigured) {
-        setError("Mercado Pago está en mantenimiento técnico. Podés abonar por Transferencia Bancaria o coordinar por WhatsApp.");
+        setError("Mercado Pago está en mantenimiento técnico. Podés abonar por Transferencia Bancaria al Alias LERADIAL o coordinar por WhatsApp.");
         setLoading(false);
         return;
       }
@@ -313,7 +354,7 @@ function MercadoPagoBlock({
     } catch (e: any) {
       setError(
         e?.message?.includes("configurado")
-          ? "Mercado Pago en mantenimiento. Utilizá la opción de Transferencia Bancaria directa a continuación."
+          ? "Mercado Pago en mantenimiento. Utilizá la opción de Transferencia Bancaria directa al Alias LERADIAL."
           : (e?.message || "No se pudo conectar con Mercado Pago. Podés abonar por transferencia.")
       );
       setLoading(false);

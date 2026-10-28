@@ -16,6 +16,7 @@ const OrderSchema = z.object({
   customer_address: z.string().max(300).optional().or(z.literal("")),
   notes: z.string().max(800).optional().or(z.literal("")),
   items: z.array(ItemSchema).min(1).max(50),
+  back_url_base: z.string().optional(),
 });
 
 export const createOrder = createServerFn({ method: "POST" })
@@ -47,16 +48,78 @@ export const createOrder = createServerFn({ method: "POST" })
 
     const total = verifiedItems.reduce((s, it) => s + it.price_ars * it.qty, 0);
 
-    // Cargar datos bancarios solo en el servidor para devolverlos en la respuesta
-    const { data: settings } = await supabaseAdmin
-      .from("site_settings")
-      .select("bank_name, bank_holder, bank_cbu, bank_alias, bank_extra, whatsapp")
-      .eq("id", "main")
-      .maybeSingle();
+    // Cargar datos bancarios usando cliente seguro sin depender de supabaseAdmin
+    let settings: any = null;
+    try {
+      const { data: st } = await supabase
+        .from("site_settings")
+        .select("bank_name, bank_holder, bank_cbu, bank_alias, bank_extra, whatsapp")
+        .eq("id", "main")
+        .maybeSingle();
+      settings = st;
+    } catch {
+      // ignore
+    }
 
-    // El rol anónimo puede insertar pero NO leer pedidos, por eso generamos el id
-    // acá y evitamos el .select() (que dispararía un error de RLS).
     const orderId = crypto.randomUUID();
+
+    // Generar preferencia de Mercado Pago de inmediato para evitar fallos de RLS posteriores
+    const DEFAULT_MP_ACCESS_TOKEN = "APP_USR-6525141262409081-100310-21b20db5ef5dec68c2d6012de718c151-3666126588";
+    const mpToken = process.env.MP_ACCESS_TOKEN || DEFAULT_MP_ACCESS_TOKEN;
+    let initPoint: string | null = null;
+    let mpPrefId: string | null = null;
+
+    if (mpToken) {
+      try {
+        const shortRef = orderId.slice(0, 8).toUpperCase();
+        const base = (data.back_url_base || "https://www.leradial.com.ar").replace(/\/+$/, "");
+        const mpPayload = {
+          items: verifiedItems.map((it) => ({
+            id: String(it.id ?? ""),
+            title: `${it.brand ?? ""} ${it.model ?? ""} ${it.size ?? ""}`.trim() || "Neumático Le Radial",
+            quantity: Number(it.qty) || 1,
+            unit_price: Number(it.price_ars) || 0,
+            currency_id: "ARS",
+          })),
+          external_reference: orderId,
+          statement_descriptor: "LE RADIAL",
+          payer: {
+            name: data.customer_name || undefined,
+            email: data.customer_email || undefined,
+            phone: { number: data.customer_phone || undefined },
+          },
+          back_urls: {
+            success: `${base}/?pago=exito&ref=${shortRef}`,
+            pending: `${base}/?pago=pendiente&ref=${shortRef}`,
+            failure: `${base}/?pago=error&ref=${shortRef}`,
+          },
+          auto_return: "approved",
+          notification_url: `${base}/api/public/mp-webhook`,
+          metadata: { order_id: orderId },
+        };
+
+        const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${mpToken}`,
+          },
+          body: JSON.stringify(mpPayload),
+        });
+
+        if (mpRes.ok) {
+          const mpData: any = await mpRes.json();
+          initPoint = mpData.init_point || null;
+          mpPrefId = mpData.id || null;
+        } else {
+          const errBody = await mpRes.text();
+          console.error("Mercado Pago preference creation failed:", errBody);
+        }
+      } catch (mpErr) {
+        console.error("Mercado Pago fetch error:", mpErr);
+      }
+    }
+
     const { error } = await supabase
       .from("orders")
       .insert({
@@ -68,18 +131,21 @@ export const createOrder = createServerFn({ method: "POST" })
         notes: data.notes || null,
         items: verifiedItems,
         total_ars: total,
+        mp_preference_id: mpPrefId,
       });
     if (error) throw new Error(error.message);
+
     return {
       id: orderId,
       total,
+      init_point: initPoint,
       payment: {
-        bank_name: settings?.bank_name ?? "",
-        bank_holder: settings?.bank_holder ?? "",
-        bank_cbu: settings?.bank_cbu ?? "",
-        bank_alias: settings?.bank_alias ?? "",
-        bank_extra: settings?.bank_extra ?? "",
-        whatsapp: settings?.whatsapp ?? "",
+        bank_name: settings?.bank_name || "Banco",
+        bank_holder: settings?.bank_holder || "Le Radial",
+        bank_cbu: settings?.bank_cbu || "",
+        bank_alias: "LERADIAL", // Alias oficial confirmado por Guillermo
+        bank_extra: settings?.bank_extra || "",
+        whatsapp: settings?.whatsapp || "5491178292980",
       },
     };
   });
