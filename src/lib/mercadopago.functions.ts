@@ -12,7 +12,8 @@ const inputSchema = z.object({
 export const createMpPreference = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => inputSchema.parse(i))
   .handler(async ({ data }) => {
-    let token = process.env.MP_ACCESS_TOKEN;
+    const DEFAULT_MP_ACCESS_TOKEN = "APP_USR-6525141262409081-100310-21b20db5ef5dec68c2d6012de718c151-3666126588";
+    let token = process.env.MP_ACCESS_TOKEN || DEFAULT_MP_ACCESS_TOKEN;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
