@@ -282,7 +282,7 @@ function MercadoPagoBlock({
   );
   const waHref = `https://wa.me/${cleanWa}?text=${waMsg}`;
 
-  const bankAlias = payment?.bank_alias || "LERADIAL.SRL";
+  const bankAlias = (payment?.bank_alias && payment.bank_alias.trim() && payment.bank_alias.trim() !== "LERADIAL.SRL") ? payment.bank_alias : "LERADIAL";
   const bankCbu = payment?.bank_cbu || "";
   const bankHolder = payment?.bank_holder || "Le Radial SRL";
   const bankName = payment?.bank_name || "Banco";
