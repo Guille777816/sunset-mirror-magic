@@ -21,7 +21,7 @@ const inputSchema = z.object({
 export const createMpPreference = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => inputSchema.parse(i))
   .handler(async ({ data }) => {
-    const DEFAULT_MP_ACCESS_TOKEN = "APP_USR-1189686297548167-102812-555475b31106d190a90341e07c3c29cc-3666126588";
+    const DEFAULT_MP_ACCESS_TOKEN = "APP_USR-6019246233127130-102812-247332aec0379521ac48b01770a7b6e4-2418423393";
     const token = process.env.MP_ACCESS_TOKEN || DEFAULT_MP_ACCESS_TOKEN;
 
     if (!token) {
