@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -281,16 +281,20 @@ function AdminPage() {
 
 
 
-  const pendingProducts = Array.isArray(products)
-    ? (products as Product[]).filter((p) => !isProductUpdated(p))
-    : [];
+  const pendingProducts = useMemo(() => {
+    return Array.isArray(products)
+      ? (products as Product[]).filter((p) => !isProductUpdated(p))
+      : [];
+  }, [products]);
 
-  const dirtySizeProducts = Array.isArray(products)
-    ? (products as Product[]).filter((p) => {
-        const s = p.size || "";
-        return cleanTireSize(s) !== s;
-      })
-    : [];
+  const dirtySizeProducts = useMemo(() => {
+    return Array.isArray(products)
+      ? (products as Product[]).filter((p) => {
+          const s = p.size || "";
+          return cleanTireSize(s) !== s;
+        })
+      : [];
+  }, [products]);
 
   async function handleCleanSizes() {
     if (!dirtySizeProducts.length) {
@@ -391,38 +395,70 @@ function AdminPage() {
     }
   }
 
-  const featuredProducts = (Array.isArray(products) ? (products as Product[]) : []).filter((p) => p.is_featured);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
-  const filteredProducts = (Array.isArray(products) ? (products as Product[]) : []).filter((p) => {
-    if (showFeaturedOnly && !p.is_featured) return false;
-    if (showPendingOnly && isProductUpdated(p)) return false;
-    if (filterCat !== "todas") {
-      const cats = catsOf(p);
-      if (filterCat === "otros") {
-        if (!cats.some((c) => c in OTHER_CATEGORIES)) return false;
-      } else {
-        if (!cats.includes(filterCat)) return false;
+  // Volver a la página 1 cuando cambia algún filtro o búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterCat, searchProd, showFeaturedOnly, showPendingOnly]);
+
+  const featuredProducts = useMemo(() => {
+    return (Array.isArray(products) ? (products as Product[]) : []).filter((p) => p.is_featured);
+  }, [products]);
+
+  const { categoryCounts, othersCount } = useMemo(() => {
+    const counts: Record<string, number> = {};
+    let others = 0;
+    if (Array.isArray(products)) {
+      for (const p of products as Product[]) {
+        const cats = catsOf(p);
+        for (const c of cats) {
+          counts[c] = (counts[c] || 0) + 1;
+        }
+        if (cats.some((c) => c in OTHER_CATEGORIES)) {
+          others++;
+        }
       }
     }
-    if (searchProd.trim()) {
-      const q = searchProd.toLowerCase().trim();
-      const match =
-        (p.brand || "").toLowerCase().includes(q) ||
-        (p.model || "").toLowerCase().includes(q) ||
-        (p.size || "").toLowerCase().includes(q) ||
-        (p.category || "").toLowerCase().includes(q);
-      if (!match) return false;
-    }
-    return true;
-  });
+    return { categoryCounts: counts, othersCount: others };
+  }, [products]);
 
-  const countByCategory = (cat: string) =>
-    (Array.isArray(products) ? (products as Product[]) : []).filter((p) => catsOf(p).includes(cat)).length;
+  const countByCategory = (cat: string) => categoryCounts[cat] || 0;
+  const countOthers = () => othersCount;
 
-  const countOthers = () =>
-    (Array.isArray(products) ? (products as Product[]) : []).filter((p) =>
-      catsOf(p).some((c) => c in OTHER_CATEGORIES)
-    ).length;
+  const filteredProducts = useMemo(() => {
+    const list = Array.isArray(products) ? (products as Product[]) : [];
+    if (!list.length) return [];
+    const q = searchProd.toLowerCase().trim();
+    return list.filter((p) => {
+      if (showFeaturedOnly && !p.is_featured) return false;
+      if (showPendingOnly && isProductUpdated(p)) return false;
+      if (filterCat !== "todas") {
+        const cats = catsOf(p);
+        if (filterCat === "otros") {
+          if (!cats.some((c) => c in OTHER_CATEGORIES)) return false;
+        } else {
+          if (!cats.includes(filterCat)) return false;
+        }
+      }
+      if (q) {
+        const match =
+          (p.brand || "").toLowerCase().includes(q) ||
+          (p.model || "").toLowerCase().includes(q) ||
+          (p.size || "").toLowerCase().includes(q) ||
+          (p.category || "").toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [products, showFeaturedOnly, showPendingOnly, filterCat, searchProd]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage, pageSize]);
 
   return (
     <div className="min-h-screen bg-muted">
@@ -736,7 +772,7 @@ function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map((p: any) => (
+                  {paginatedProducts.map((p: any) => (
                     <tr key={p.id} className="border-t hover:bg-muted/40 transition">
                       <td className="px-4 py-3">
                         {p.image_url ? (
@@ -812,6 +848,73 @@ function AdminPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Paginador */}
+            {filteredProducts.length > 0 && (
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-card p-4 border border-border shadow-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                  <span>Mostrar</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="rounded-lg border border-input bg-background px-2.5 py-1 text-xs sm:text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                  </select>
+                  <span>por página</span>
+                  <span className="text-muted-foreground/60">·</span>
+                  <span className="font-semibold text-foreground">
+                    {Math.min((currentPage - 1) * pageSize + 1, filteredProducts.length)} - {Math.min(currentPage * pageSize, filteredProducts.length)} de {filteredProducts.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-bold transition hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    title="Primera página"
+                  >
+                    ««
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-bold transition hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    ‹ Anterior
+                  </button>
+                  <span className="px-3 py-1.5 text-xs font-black text-secondary">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-bold transition hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    Siguiente ›
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage >= totalPages}
+                    className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-bold transition hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    title="Última página"
+                  >
+                    »»
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
