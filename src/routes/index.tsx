@@ -134,8 +134,9 @@ export const Route = createFileRoute("/")({
     };
   },
 
-  validateSearch: (search: Record<string, unknown>): { categoria?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { categoria?: string; medida?: string } => ({
     categoria: (search?.categoria as string) || (search?.cat as string) || undefined,
+    medida: (search?.medida as string) || (search?.size as string) || undefined,
   }),
   staleTime: 60_000,
   errorComponent: ({ error }: { error: unknown }) => (
@@ -239,6 +240,21 @@ function Index() {
   }, []);
 
   useEffect(() => {
+    if (searchParams?.medida) {
+      const m = String(searchParams.medida).match(/([0-9]{3})\s*(?:\/|\s*-\s*|\s+)([0-9]{2})\s*R?\s*([0-9]{2}(?:\.[0-9]+)?)/i);
+      if (m) {
+        setW(m[1]);
+        setH(m[2]);
+        setR(m[3]);
+        setSearchActive(true);
+        setActiveCategory(null);
+        setViewAllSizes(false);
+        setTimeout(() => {
+          document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
+        return;
+      }
+    }
     if (searchParams?.categoria) {
       setSearchActive(false);
       setViewAllSizes(false);
@@ -247,7 +263,7 @@ function Index() {
         document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
     }
-  }, [searchParams?.categoria]);
+  }, [searchParams?.categoria, searchParams?.medida]);
 
   const initial = Route.useLoaderData();
   const fetchProducts = useServerFn(listPublicProducts);
