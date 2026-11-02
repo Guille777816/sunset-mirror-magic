@@ -258,28 +258,6 @@ function AdminPage() {
     },
   });
 
-  if (!ready) return <div className="p-10 text-center text-muted-foreground">Cargando...</div>;
-
-  if (!isAdmin) {
-    return (
-      <div className="container mx-auto max-w-xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-secondary">Acceso restringido</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Tu usuario no tiene rol de administrador. Abrí el backend y agregá una fila en{" "}
-          <code className="rounded bg-muted px-1">user_roles</code> con tu user_id y rol{" "}
-          <code className="rounded bg-muted px-1">admin</code>.
-        </p>
-        {authError && (
-          <p className="mt-3 text-xs text-destructive">Detalle: {authError}</p>
-        )}
-        <Link to="/" className="mt-6 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground">
-          Volver al inicio
-        </Link>
-      </div>
-    );
-  }
-
-
 
   const pendingProducts = useMemo(() => {
     return Array.isArray(products)
@@ -459,6 +437,27 @@ function AdminPage() {
     const start = (currentPage - 1) * pageSize;
     return filteredProducts.slice(start, start + pageSize);
   }, [filteredProducts, currentPage, pageSize]);
+
+  if (!ready) return <div className="p-10 text-center text-muted-foreground">Cargando...</div>;
+
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto max-w-xl px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold text-secondary">Acceso restringido</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Tu usuario no tiene rol de administrador. Abrí el backend y agregá una fila en{" "}
+          <code className="rounded bg-muted px-1">user_roles</code> con tu user_id y rol{" "}
+          <code className="rounded bg-muted px-1">admin</code>.
+        </p>
+        {authError && (
+          <p className="mt-3 text-xs text-destructive">Detalle: {authError}</p>
+        )}
+        <Link to="/" className="mt-6 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold uppercase text-primary-foreground">
+          Volver al inicio
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted">
