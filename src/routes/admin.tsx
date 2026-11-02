@@ -44,6 +44,36 @@ type Product = {
   free_shipping: boolean;
 };
 
+
+/* ── Borradores del formulario de producto (persisten en el navegador hasta guardar) ── */
+const DRAFTS_KEY = "lr_product_drafts_v1";
+const OPEN_KEY = "lr_product_open_v1";
+function draftKeyOf(v: { id?: string | null }) { return v?.id ? `edit:${v.id}` : "new"; }
+function readJSON<T>(k: string, fallback: T): T {
+  try { if (typeof window === "undefined") return fallback; const r = window.localStorage.getItem(k); return r ? JSON.parse(r) : fallback; } catch { return fallback; }
+}
+function writeJSON(k: string, v: unknown): boolean {
+  try { window.localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; }
+}
+function loadDraft(key: string): any | null { return readJSON<Record<string, any>>(DRAFTS_KEY, {})[key] ?? null; }
+function saveDraft(key: string, d: any) {
+  const all = readJSON<Record<string, any>>(DRAFTS_KEY, {});
+  all[key] = d;
+  if (!writeJSON(DRAFTS_KEY, all)) {
+    const light = { ...d, p: { ...d.p, image_url: null }, vehicleImg: null };
+    all[key] = light;
+    writeJSON(DRAFTS_KEY, all);
+  }
+}
+function clearDraft(key: string) {
+  const all = readJSON<Record<string, any>>(DRAFTS_KEY, {});
+  delete all[key];
+  writeJSON(DRAFTS_KEY, all);
+}
+function setOpenForm(v: any | null) {
+  try { if (v) writeJSON(OPEN_KEY, { key: draftKeyOf(v), value: v }); else window.localStorage.removeItem(OPEN_KEY); } catch {}
+}
+
 const empty: Product = {
   brand: "", model: "", size: "", categories: ["autos"],
   price_ars: 0, stock: 0, image_url: null, description: null, catalog_url: null,
@@ -125,7 +155,12 @@ function AdminPage() {
   const [ready, setReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Product | null>(null);
+  const [editing, setEditingRaw] = useState<Product | null>(null);
+  const setEditing = (v: Product | null) => { setOpenForm(v); setEditingRaw(v); };
+  useEffect(() => {
+    const o = readJSON<any>(OPEN_KEY, null);
+    if (o?.value) setEditingRaw(o.value);
+  }, []);
   const [tab, setTab] = useState<Tab>("productos");
   const [filterCat, setFilterCat] = useState<string>("todas");
   const [searchProd, setSearchProd] = useState<string>("");
@@ -246,6 +281,7 @@ function AdminPage() {
       qc.invalidateQueries({ queryKey: ["product"] });
       qc.invalidateQueries({ queryKey: ["admin-settings"] });
       qc.invalidateQueries({ queryKey: ["settings"] });
+      if (editing) clearDraft(draftKeyOf(editing));
       setEditing(null);
     },
   });
@@ -1505,15 +1541,17 @@ function ProductForm({
   error: any;
   categoryImages?: Record<string, string>;
 }) {
-  const [p, setP] = useState<Product>(value);
+  const formKey = draftKeyOf(value);
+  const [initDraft] = useState<any | null>(() => loadDraft(formKey));
+  const [p, setP] = useState<Product>(initDraft?.p ?? value);
   const [uploading, setUploading] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
-  const [applyCatalogAll, setApplyCatalogAll] = useState(false);
-  const [applyImageAll, setApplyImageAll] = useState(false);
-  const [applyDescriptionAll, setApplyDescriptionAll] = useState(false);
+  const [applyCatalogAll, setApplyCatalogAll] = useState<boolean>(initDraft?.applyCatalogAll ?? false);
+  const [applyImageAll, setApplyImageAll] = useState<boolean>(initDraft?.applyImageAll ?? false);
+  const [applyDescriptionAll, setApplyDescriptionAll] = useState<boolean>(initDraft?.applyDescriptionAll ?? false);
 
-  const [vehicleImg, setVehicleImg] = useState<string | null>(() => (value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null));
-  const [vehicleLabel, setVehicleLabel] = useState<string>(() => (value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : ""));
+  const [vehicleImg, setVehicleImg] = useState<string | null>(() => initDraft ? (initDraft.vehicleImg ?? null) : (value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null));
+  const [vehicleLabel, setVehicleLabel] = useState<string>(() => initDraft ? (initDraft.vehicleLabel ?? "") : (value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : ""));
   const [uploadingVehicle, setUploadingVehicle] = useState(false);
 
   async function handleVehicleUpload(file: File) {
@@ -1535,7 +1573,21 @@ function ProductForm({
      .replace(/\b\d{2,3}(?:\.\d{1,2})?\/\d{2,3}(?:\.\d{1,2})?R\d{2}[A-Z]*/gi, "")
      .replace(/\s+/g, " ")
      .trim();
-  const [catalogKeyword, setCatalogKeyword] = useState(() => cleanFamily(value.model || ""));
+  const [catalogKeyword, setCatalogKeyword] = useState(() => initDraft?.catalogKeyword ?? cleanFamily(value.model || ""));
+  useEffect(() => {
+    const t = setTimeout(() => {
+      saveDraft(formKey, { p, vehicleImg, vehicleLabel, catalogKeyword, applyCatalogAll, applyImageAll, applyDescriptionAll, ts: Date.now() });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [formKey, p, vehicleImg, vehicleLabel, catalogKeyword, applyCatalogAll, applyImageAll, applyDescriptionAll]);
+  function discardDraft() {
+    clearDraft(formKey);
+    setP(value);
+    setVehicleImg(value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null);
+    setVehicleLabel(value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : "");
+    setCatalogKeyword(cleanFamily(value.model || ""));
+    setApplyCatalogAll(false); setApplyImageAll(false); setApplyDescriptionAll(false);
+  }
   const set = <K extends keyof Product>(k: K, v: Product[K]) => setP({ ...p, [k]: v });
 
   async function handleFileUpload(file: File) {
@@ -1580,11 +1632,10 @@ function ProductForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={onCancel}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
       <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-secondary">{p.id ? "Editar" : "Nuevo"} producto</h2>
-          <button onClick={onCancel} className="rounded-full p-1 hover:bg-muted"><X className="h-5 w-5" /></button>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Marca" col2>
@@ -1893,7 +1944,10 @@ function ProductForm({
         )}
         {error && <p className="mt-3 text-sm text-destructive">{String(error?.message ?? error)}</p>}
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onCancel} className="rounded-full border px-5 py-2 text-sm font-semibold">Cancelar</button>
+          <button
+            onClick={() => { if (window.confirm("¿Descartar este producto y cerrar? Se pierde lo cargado.")) { discardDraft(); onCancel(); } }}
+            className="rounded-full border px-4 py-2 text-xs font-semibold text-muted-foreground"
+          >Descartar</button>
           <button
             disabled={saving || uploadingPdf || uploadingVehicle}
             onClick={() => onSave({
