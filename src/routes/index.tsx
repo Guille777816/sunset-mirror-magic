@@ -377,23 +377,6 @@ function Index() {
         </div>
       </div>
 
-      {/* Banner de Promoción Buenos Aires Envíos en el Día & Mayoristas */}
-      <div className="bg-gradient-to-r from-violet-900 via-indigo-900 to-slate-900 px-4 py-2 text-center text-xs font-bold text-white shadow-inner border-b border-violet-500/30">
-        <div className="container mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          <span className="flex items-center gap-1.5 uppercase tracking-wide font-black text-yellow-300">
-            <span className="inline-block animate-pulse">⚡</span>
-            <span>¡AHORA EN BUENOS AIRES: ENVÍOS EN EL DÍA!</span>
-          </span>
-          <span className="hidden sm:inline text-violet-400">·</span>
-          <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-300">
-            <span>🤝 COMPRAS MAYORISTAS: PAGO CONTRA ENTREGA</span>
-          </span>
-          <span className="hidden md:inline text-violet-400">·</span>
-          <span className="hidden md:inline text-[11px] font-medium text-slate-200">
-            💳 3 Cuotas sin Interés · Retiro inmediato en depósito CABA
-          </span>
-        </div>
-      </div>
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
