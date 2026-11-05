@@ -1330,7 +1330,7 @@ function FaqSection({ whatsappHref }: { whatsappHref: string }) {
   const items = [
     {
       q: "¿Cómo es el envío?",
-      a: "Realizamos envíos a toda la Argentina a través de transportes de confianza. El costo depende del destino y la cantidad de cubiertas. Coordinamos el envío por WhatsApp una vez confirmada tu compra. También podés retirar en nuestro local de Mitre 480, Piso 12, Buenos Aires.",
+      a: "Realizamos envíos a toda la Argentina a través de transportes de confianza. El costo depende del destino y la cantidad de cubiertas. Coordinamos el envío por WhatsApp una vez confirmada tu compra. La venta es 100% online con despacho directo a domicilio o transporte. No contamos con local de atención al público ni punto de retiro presencial.",
     },
     {
       q: "¿Tienen garantía?",
