@@ -14,7 +14,10 @@ export const listPublicProducts = createServerFn({ method: "GET" }).handler(asyn
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []).map((p) => ({
+    ...p,
+    image_url: p.image_url && p.image_url.startsWith("data:") ? null : p.image_url,
+  }));
 });
 export const listAllProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
