@@ -318,8 +318,8 @@ function Index() {
     if (!searchActive) return [];
     const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const norm = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
-    const widthRe = w === "Todos" ? null : new RegExp(`(^|\\s|LT)${esc(w)}(?=[\\s/\\-])`, "i");
-    const heightRe = h === "Todos" ? null : new RegExp(`/\\s*${esc(h)}(?=\\s*[R\\-\\s])`, "i");
+    const widthRe = w === "Todos" ? null : new RegExp(`(^|\\s|LT)${esc(w)}(?=[\\s/\\-x])`, "i");
+    const heightRe = h === "Todos" ? null : new RegExp(`(?:/|x)\\s*${esc(h)}(?=\\s*[R\\-\\s])`, "i");
     const rimStripped = r.replace(/^0+(?=\d)/, "");
     const rimRe = r === "Todos" ? null : new RegExp(`(R|-|\\s)${esc(rimStripped)}(?![0-9.])`, "i");
     return products.filter((p) => {

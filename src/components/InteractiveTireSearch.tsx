@@ -67,7 +67,7 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
         return;
       }
 
-      const m2 = s.match(/([0-9]{2}(?:\.[0-9]{2})?)\s*(?:X|\/)\s*([0-9]{1,2}\.[0-9]{2})\s*(?:R|-)?\s*([0-9]{2})/i);
+      const m2 = s.match(/([0-9]{2}(?:\.[0-9]{1,2})?)\s*(?:X|\/)\s*([0-9]{1,2}(?:\.[0-9]{1,2})?)\s*(?:R|-|\s)?\s*([0-9]{2}(?:\.[0-9])?)/i);
       if (m2) {
         list.push({ w: m2[1], h: m2[2], r: m2[3], isCommercial: false });
         return;
