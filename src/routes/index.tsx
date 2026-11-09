@@ -597,9 +597,9 @@ function Index() {
       )}
 
       {/* Banners administrables (rotan solos) */}
-      {!searchActive && !activeCategory && !viewAllSizes && banners.length > 0 && (
+      {!searchActive && !activeCategory && !viewAllSizes && (
         <section id="banners" className="container mx-auto px-4 py-10">
-          <BannerCarousel banners={banners as any[]} circleLogoUrl={CIRCLE_LOGO_URL} />
+          <BannerCarousel banners={banners.length > 0 ? (banners as any[]) : DEFAULT_BANNERS} circleLogoUrl={CIRCLE_LOGO_URL} />
         </section>
       )}
 
@@ -1009,6 +1009,13 @@ function AutoCarousel({
 }
 
 type BannerRow = { id: string; title: string; subtitle: string; image_url: string; link_url: string };
+
+const DEFAULT_BANNERS: BannerRow[] = [
+  { id: "xbri-fastway", title: "", subtitle: "", image_url: "/images/banners/es_desktop_fastway.jpg", link_url: "/?medida=175/75R13" },
+  { id: "xbri-cargoplus", title: "", subtitle: "", image_url: "/images/banners/es_desktop_cargoplus.jpg", link_url: "/?medida=205/70R15C" },
+  { id: "xbri-brutus", title: "", subtitle: "", image_url: "/images/banners/es_desktop_brutus.jpg", link_url: "/?medida=285/70R17" },
+  { id: "xbri-linea", title: "", subtitle: "", image_url: "/images/banners/es_desktop_linea_brutus.jpg", link_url: "/?categoria=autos" }
+];
 
 function BannerCarousel({ banners, circleLogoUrl }: { banners: BannerRow[]; circleLogoUrl: string }) {
   const autoplay = useMemo(
