@@ -508,7 +508,17 @@ function ProductDetail() {
           <ArrowLeft className="h-4 w-4" /> Volver
         </Link>
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="overflow-hidden rounded-2xl bg-muted shadow-[var(--shadow-product)]">
+          <div className="relative overflow-hidden rounded-2xl bg-muted shadow-[var(--shadow-product)]">
+            {Number(p.price_ars) > 0 && (
+              <div className="absolute bottom-4 left-4 z-10 rounded-xl bg-black/85 backdrop-blur-md px-3.5 py-2 text-white shadow-lg border border-white/15">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block leading-tight">
+                  15% OFF Transferencia
+                </span>
+                <span className="text-lg font-black tracking-tight text-white block">
+                  $ {Math.round(Number(p.price_ars) * 0.85).toLocaleString("es-AR")}
+                </span>
+              </div>
+            )}
             <img
               src={
                 optimizeImg(p.image_url, 900) ||
@@ -559,9 +569,22 @@ function ProductDetail() {
                 : [p.category]
               ).join(", ")}
             </p>
-            <p className="mt-6 text-4xl font-black text-secondary">
-              $ {Number(p.price_ars).toLocaleString("es-AR")}
-            </p>
+            <div className="mt-6 flex flex-wrap items-baseline gap-4">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">Precio de lista (Tarjetas)</span>
+                <span className="text-2xl font-black text-secondary line-through">
+                  $ {Number(p.price_ars).toLocaleString("es-AR")}
+                </span>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-300 px-4 py-2 shadow-xs">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-800 block">
+                  15% OFF Pagando por Transferencia
+                </span>
+                <span className="text-3xl font-black text-emerald-700">
+                  $ {Math.round(Number(p.price_ars) * 0.85).toLocaleString("es-AR")}
+                </span>
+              </div>
+            </div>
             {Number(p.price_ars) > 0 && (
               <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-xs">
                 <div className="flex items-center gap-2">

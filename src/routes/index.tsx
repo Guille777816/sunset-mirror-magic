@@ -588,19 +588,19 @@ function Index() {
       )}
 
       {/* Banner */}
-      <section className="bg-primary py-6 text-primary-foreground">
+      <section className="bg-primary py-4 text-primary-foreground">
         <div className="container mx-auto grid gap-3 px-4 text-center text-sm md:grid-cols-3 md:text-left">
           <div className="flex items-center justify-center gap-2 md:justify-start">
-            <AlertTriangle className="h-5 w-5 shrink-0" />
-            <span>{settings?.promo_banner ?? "Precios promocionales con descuentos especiales."}</span>
+            <span className="rounded-full bg-emerald-400 px-2 py-0.5 text-xs font-black uppercase text-black">15% OFF</span>
+            <span><strong>15% de descuento</strong> pagando por <strong>Transferencia</strong>.</span>
           </div>
           <div className="flex items-center justify-center gap-2 md:justify-start">
-            <ShoppingCart className="h-5 w-5 shrink-0" />
-            <span>Válidos sólo para compras <strong>online</strong>.</span>
+            <CreditCard className="h-4 w-4 shrink-0" />
+            <span>Hasta <strong>3 cuotas sin interés</strong> con tarjetas de crédito.</span>
           </div>
           <div className="flex items-center justify-center gap-2 md:justify-start">
-            <Truck className="h-5 w-5 shrink-0" />
-            <span>Costo de envío <strong>no incluido</strong>.</span>
+            <Truck className="h-4 w-4 shrink-0" />
+            <span>Envíos a todo el país · <strong>Venta directa online</strong>.</span>
           </div>
         </div>
       </section>
@@ -811,6 +811,16 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
             <Truck className="h-3 w-3" /> Envío gratis
           </span>
         )}
+        {Number(p.price_ars) > 0 && (
+          <div className="absolute bottom-2.5 left-2.5 z-10 rounded-lg bg-black/85 backdrop-blur-md px-2 py-1 text-white shadow-md border border-white/15">
+            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 block leading-tight">
+              15% OFF Transferencia
+            </span>
+            <span className="text-xs font-black tracking-tight text-white block">
+              {format(Math.round(Number(p.price_ars) * 0.85))}
+            </span>
+          </div>
+        )}
         <img
           src={optimizeImg(p.image_url, 400, 70) || categoryImg[primaryCategory(p)] || tireCar}
           alt={`${p.brand} ${p.model}`}
@@ -842,7 +852,17 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
           <p className="mt-1 text-xs text-muted-foreground">{cleanTireSize(p.size)}</p>
         </Link>
         <div className="mt-auto pt-4">
-          <p className="text-lg font-black text-secondary">{format(Number(p.price_ars))}</p>
+          <div className="flex items-baseline justify-between text-xs text-muted-foreground">
+            <span>Lista / Tarjetas</span>
+            <span className="line-through">{format(Number(p.price_ars))}</span>
+          </div>
+          <div className="flex items-baseline gap-1.5 mt-0.5">
+            <span className="text-lg font-black text-emerald-600">{format(Math.round(Number(p.price_ars) * 0.85))}</span>
+            <span className="text-[9px] font-black uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">15% OFF Transf.</span>
+          </div>
+          <p className="mt-1 text-[10px] font-semibold text-muted-foreground">
+            o 3 cuotas fijas de {format(Math.round(Number(p.price_ars) / 3))}
+          </p>
           <div className="mt-3 flex gap-2">
             <Link
               to="/producto/$slug"

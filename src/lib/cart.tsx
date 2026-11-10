@@ -78,7 +78,12 @@ function CartDrawer() {
   const { format } = useCurrency();
   const submit = useServerFn(createOrder);
   const [step, setStep] = useState<"cart" | "form" | "done">("cart");
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "card">("transfer");
   const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
+
+  const isTransfer = paymentMethod === "transfer";
+  const discountAmount = isTransfer ? Math.round(total * 0.15) : 0;
+  const finalTotal = Math.max(0, total - discountAmount);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -102,13 +107,19 @@ function CartDrawer() {
       const itemsSnapshot = [...items];
       setConfirmedItems(itemsSnapshot);
       const origin = typeof window !== "undefined" ? window.location.origin : "https://www.leradial.com.ar";
+      const paymentNote = isTransfer 
+        ? "Forma de pago: Transferencia Bancaria (15% OFF aplicado)" 
+        : "Forma de pago: Tarjeta de Crédito / Mercado Pago";
+      const notesWithPayment = form.notes ? `${form.notes} | ${paymentNote}` : paymentNote;
+
       const res = await submit({ data: {
         ...form,
+        notes: notesWithPayment,
         items: itemsSnapshot.map(i => ({ id: i.id, qty: i.qty })),
         back_url_base: origin,
       }});
       setOrderId(res.id);
-      setOrderTotal(res.total ?? total);
+      setOrderTotal(isTransfer ? finalTotal : (res.total ?? total));
       setOrderPayment(res.payment ?? null);
       if (res.init_point) {
         setOrderInitPoint(res.init_point);
@@ -165,31 +176,93 @@ function CartDrawer() {
                 </ul>
               )}
             </div>
-            <footer className="border-t p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-semibold text-muted-foreground">Total</span>
-                  {total > 0 && (
-                    <p className="text-xs font-bold text-emerald-600">
-                      o 3 cuotas sin interés de {format(Math.round(total / 3))}
-                    </p>
-                  )}
+            <footer className="border-t p-5 bg-card">
+              {/* Selector de Forma de Pago */}
+              {items.length > 0 && (
+                <div className="mb-4 space-y-2">
+                  <p className="text-xs font-black uppercase tracking-wider text-secondary">
+                    Seleccioná tu forma de pago:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("transfer")}
+                      className={`rounded-xl border p-2.5 text-left transition ${
+                        isTransfer
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-950 shadow-sm ring-2 ring-emerald-500/40"
+                          : "border-neutral-200 bg-background text-neutral-600 hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase text-emerald-800">Transferencia</span>
+                        <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] font-black text-white uppercase">15% OFF</span>
+                      </div>
+                      <p className="mt-1 text-sm font-black text-emerald-950">
+                        {format(Math.round(total * 0.85))}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("card")}
+                      className={`rounded-xl border p-2.5 text-left transition ${
+                        !isTransfer
+                          ? "border-primary bg-primary/5 text-secondary shadow-sm ring-2 ring-primary/40"
+                          : "border-neutral-200 bg-background text-neutral-600 hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase text-secondary">Tarjeta</span>
+                        <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[9px] font-bold text-neutral-700">3 cuotas</span>
+                      </div>
+                      <p className="mt-1 text-sm font-black text-secondary">
+                        {format(total)}
+                      </p>
+                    </button>
+                  </div>
                 </div>
-                <span className="text-xl font-black text-secondary">{format(total)}</span>
+              )}
+
+              {/* Desglose de importes */}
+              <div className="mb-4 space-y-1.5 border-t border-neutral-200/80 pt-3 text-sm">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Precio de lista</span>
+                  <span className={isTransfer ? "line-through text-neutral-400" : "font-bold text-secondary"}>
+                    {format(total)}
+                  </span>
+                </div>
+                {isTransfer && (
+                  <div className="flex justify-between text-xs font-bold text-emerald-700">
+                    <span>Descuento Transferencia (15%)</span>
+                    <span>-{format(discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex items-baseline justify-between border-t border-neutral-200/80 pt-2">
+                  <span className="text-sm font-black uppercase tracking-wider text-secondary">Total a abonar</span>
+                  <span className="text-2xl font-black text-emerald-600">
+                    {format(finalTotal)}
+                  </span>
+                </div>
+                {!isTransfer && total > 0 && (
+                  <p className="text-[11px] font-bold text-emerald-600 text-right">
+                    o 3 cuotas fijas sin interés de {format(Math.round(total / 3))}
+                  </p>
+                )}
               </div>
+
               <button
                 disabled={items.length === 0}
                 onClick={() => setStep("form")}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:opacity-95 disabled:opacity-50 transition"
               >
-                <Lock className="h-4 w-4" /> Finalizar compra
+                <Lock className="h-4 w-4" /> Continuar compra ({format(finalTotal)})
               </button>
-              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5 text-center">
-                <p className="text-[11px] font-bold text-emerald-900">
-                  💳 3 cuotas sin interés: Visa, Naranja X, SuCrédito, Cabal y Amex
-                </p>
-                <p className="mt-0.5 text-[10px] font-medium text-emerald-800">
-                  Débito · Prepagas (Ualá/MP) · PIX 🇧🇷 · Tarjetas Internacionales 🌐
+
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 text-center">
+                <p className="text-[11px] font-bold text-emerald-950">
+                  {isTransfer
+                    ? "🏦 Descuento del 15% aplicado para pago inmediato por Transferencia Bancaria (Alias LERADIAL)"
+                    : "💳 3 cuotas fijas sin interés con Visa, Naranja X, SuCrédito, Cabal y Amex"}
                 </p>
               </div>
             </footer>
@@ -210,8 +283,11 @@ function CartDrawer() {
               </label>
               {error && <p className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
               <div className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
-                Total a abonar: <strong className="text-secondary">{format(total)}</strong><br />
-                Al confirmar te llevamos a Mercado Pago para pagar con tarjeta, débito o efectivo.
+                Total a abonar: <strong className="text-secondary text-sm">{format(finalTotal)}</strong>
+                {isTransfer && <span className="ml-2 font-bold text-emerald-700">(15% OFF aplicado)</span>}<br />
+                {isTransfer
+                  ? "Al confirmar recibirás los datos de transferencia (Alias LERADIAL) y enlace a WhatsApp para enviar el comprobante."
+                  : "Al confirmar te llevamos a Mercado Pago para abonar con tarjeta en hasta 3 cuotas fijas sin interés."}
               </div>
             </div>
             <footer className="flex gap-2 border-t p-5">
@@ -244,6 +320,7 @@ function CartDrawer() {
                 payment={orderPayment}
                 initialInitPoint={orderInitPoint}
                 items={confirmedItems}
+                isTransfer={isTransfer}
                 customer={{
                   name: form.customer_name,
                   email: form.customer_email,
@@ -282,6 +359,7 @@ function MercadoPagoBlock({
   initialInitPoint,
   items,
   customer,
+  isTransfer = true,
 }: {
   orderId: string;
   total: number;
@@ -289,6 +367,7 @@ function MercadoPagoBlock({
   initialInitPoint?: string | null;
   items?: CartItem[];
   customer?: { name?: string; email?: string; phone?: string };
+  isTransfer?: boolean;
 }) {
   const createPref = useServerFn(createMpPreference);
   const [loading, setLoading] = useState(false);
@@ -300,7 +379,7 @@ function MercadoPagoBlock({
   const rawWa = payment?.whatsapp || "5491178292980";
   const cleanWa = rawWa.replace(/[^0-9]/g, "");
   const waMsg = encodeURIComponent(
-    `¡Hola Le Radial! Acabo de confirmar el Pedido #${shortRef} por un total de $${total.toLocaleString("es-AR")} en la tienda online y quiero coordinar el pago / enviar el comprobante de transferencia.`
+    `¡Hola Le Radial! Acabo de confirmar el Pedido #${shortRef} por un total de $${total.toLocaleString("es-AR")}${isTransfer ? " (con 15% OFF por transferencia)" : ""} en la tienda online y quiero coordinar el pago / enviar el comprobante.`
   );
   const waHref = `https://wa.me/${cleanWa}?text=${waMsg}`;
 

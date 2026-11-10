@@ -101,6 +101,12 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
         >
           {/* Cara frontal: Neumático */}
           <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-neutral-50/80 p-3 [backface-visibility:hidden] border border-neutral-200/70 shadow-sm">
+            {priceArs > 0 && (
+              <div className="absolute bottom-2 left-2 z-10 rounded-md bg-black/85 backdrop-blur-xs px-2 py-0.5 text-white shadow-sm border border-white/10">
+                <span className="text-[8px] font-black uppercase text-emerald-400 block leading-none">15% OFF Transf.</span>
+                <span className="text-[11px] font-black leading-tight text-white">{format(Math.round(priceArs * 0.85))}</span>
+              </div>
+            )}
             <img
               src={tireImg}
               alt={`${p.brand} ${p.model} ${p.size}`}
@@ -175,8 +181,14 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
       <div className="flex w-full md:w-auto flex-col items-center md:items-end justify-center border-t border-neutral-100 pt-4 md:border-t-0 md:pt-0">
         {/* Precio en ARS */}
         <div className="text-center md:text-right">
-          <div className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900">
-            {format(priceArs)}
+          <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+            Transferencia (15% OFF)
+          </div>
+          <div className="text-2xl sm:text-3xl font-black tracking-tight text-emerald-600">
+            {format(Math.round(priceArs * 0.85))}
+          </div>
+          <div className="mt-0.5 text-xs text-neutral-500 font-medium">
+            Lista: {format(priceArs)}
           </div>
           {priceArs > 0 && (
             <div className="mt-1 flex flex-col items-center md:items-end">
