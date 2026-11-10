@@ -154,12 +154,17 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
         </p>
 
         {/* Badge de stock */}
-        <div className="pt-1 flex items-center justify-center md:justify-start gap-2">
+        <div className="pt-1 flex items-center justify-center md:justify-start gap-2 flex-wrap">
           <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
             <Package className="h-3.5 w-3.5" /> En stock
           </span>
+          {p.is_featured && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-black uppercase text-white shadow-xs">
+              Oferta
+            </span>
+          )}
           {p.free_shipping && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 border border-blue-200">
+            <span className="inline-flex items-center gap-1 rounded-md bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800 border border-green-300">
               Envío gratis
             </span>
           )}

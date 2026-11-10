@@ -848,10 +848,17 @@ function AdminPage() {
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => saveMut.mutate({ ...p, price_ars: Number(p.price_ars), is_featured: !p.is_featured })}
-                          title={p.is_featured ? "Quitar de promo" : "Marcar como promo"}
-                          className={`mr-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold ${p.is_featured ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-primary/20"}`}
+                          title={p.is_featured ? "Quitar de oferta" : "Marcar como oferta"}
+                          className={`mr-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition ${p.is_featured ? "bg-emerald-600 text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-emerald-600/20"}`}
                         >
-                          ★ {p.is_featured ? "Promo" : "Promo"}
+                          ★ {p.is_featured ? "Oferta" : "Oferta"}
+                        </button>
+                        <button
+                          onClick={() => saveMut.mutate({ ...p, price_ars: Number(p.price_ars), free_shipping: !p.free_shipping })}
+                          title={p.free_shipping ? "Quitar envío gratis" : "Marcar envío gratis"}
+                          className={`mr-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition ${p.free_shipping ? "bg-green-600 text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-green-600/20"}`}
+                        >
+                          🚚 {p.free_shipping ? "Envío gratis" : "Envío gratis"}
                         </button>
                         <button
                           onClick={() => setEditing({ ...p, price_ars: Number(p.price_ars) })}
@@ -1931,7 +1938,7 @@ function ProductForm({
             <input type="checkbox" checked={p.is_active} onChange={(e) => set("is_active", e.target.checked)} /> Activo (visible en el sitio)
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={p.is_featured} onChange={(e) => set("is_featured", e.target.checked)} /> ★ Destacado (Promo)
+            <input type="checkbox" checked={p.is_featured} onChange={(e) => set("is_featured", e.target.checked)} /> ★ Oferta (muestra insignia verde en portada y carrusel)
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={p.free_shipping} onChange={(e) => set("free_shipping", e.target.checked)} /> 🚚 Envío gratis (muestra distintivo sobre la foto)

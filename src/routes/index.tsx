@@ -331,9 +331,14 @@ function Index() {
     });
   }, [products, w, h, r, searchActive]);
 
-  // Solo productos destacados (promo) en la portada
+  // Solo productos destacados en la portada
   const featured = useMemo(
     () => products.filter((p) => p.is_featured),
+    [products]
+  );
+  // Productos de Oferta y Envío Gratis para el carrusel en movimiento
+  const ofertasYEnvio = useMemo(
+    () => products.filter((p) => p.is_featured || p.free_shipping),
     [products]
   );
   // Carruseles auto-scroll por categoría
@@ -437,6 +442,20 @@ function Index() {
               }`}
             >
               Inicio
+            </button>
+            <button
+              onClick={() => {
+                setActiveCategory(null);
+                setSearchActive(false);
+                setViewAllSizes(false);
+                setTimeout(() => {
+                  document.getElementById("auto-ofertas")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 50);
+              }}
+              className="whitespace-nowrap px-4 py-3 text-sm font-bold uppercase tracking-wide text-emerald-600 hover:text-emerald-700 transition flex items-center gap-1.5"
+            >
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Ofertas
             </button>
             {CATEGORY_CONFIG.map((c) => (
               <button
@@ -606,6 +625,16 @@ function Index() {
       {/* Carruseles auto-scroll por categoría (estilo página original) */}
       {!searchActive && !activeCategory && !viewAllSizes && (
         <>
+          {ofertasYEnvio.length > 0 && (
+            <AutoCarousel
+              id="auto-ofertas"
+              eyebrow="Oportunidades Destacadas"
+              title="Ofertas y Envío Gratis"
+              items={ofertasYEnvio}
+              bg="bg-background border-y border-neutral-200/80"
+              direction="left"
+            />
+          )}
           {autos.length > 0 && (
             <AutoCarousel id="auto-autos" eyebrow="Autos" title="Cubiertas para autos" items={autos} bg="bg-muted" direction="left" onSeeAll={() => handleCategoryNav("autos")} />
           )}
@@ -773,8 +802,8 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-product)] transition hover:-translate-y-1">
       <Link to="/producto/$slug" params={{ slug: p.slug }} aria-label={`Ver ${p.brand} ${p.model}${p.size ? ` ${p.size}` : ""}`} className="relative block aspect-square overflow-hidden bg-muted">
         {p.is_featured && (
-          <span className="absolute left-3 top-3 z-10 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-            Promo
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-emerald-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
+            Oferta
           </span>
         )}
         {p.free_shipping && (
@@ -969,7 +998,7 @@ function AutoCarousel({
   direction?: "left" | "right";
   onSeeAll?: () => void;
 }) {
-  const displayItems = useMemo(() => items.slice(0, 10), [items]);
+  const displayItems = useMemo(() => items.slice(0, 18), [items]);
   // Duplicamos solo 10 items para conseguir el efecto de scroll infinito fluido y súper liviano
   const loop = [...displayItems, ...displayItems];
   const animClass = direction === "left" ? "animate-marquee-left" : "animate-marquee-right";

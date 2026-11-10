@@ -37,9 +37,13 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
     staleTime: 60_000,
   });
 
-  // Highlight featured items or top active products
-  const featuredList = (products || []).filter((p) => p.is_featured);
-  const displayList = featuredList.length > 0 ? featuredList.slice(0, 6) : (products || []).slice(0, 6);
+  // Destacados exclusivos: Línea XBRI Brutus protegida
+  const brutusList = (products || []).filter(
+    (p) =>
+      p.brand?.toUpperCase().includes("XBRI") &&
+      p.model?.toUpperCase().includes("BRUTUS")
+  );
+  const displayList = brutusList.length > 0 ? brutusList.slice(0, 6) : (products || []).filter((p) => p.is_featured).slice(0, 6);
 
   if (displayList.length === 0) return null;
 
@@ -48,7 +52,7 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="inline-block rounded-full bg-red-100 px-3.5 py-1 text-[11px] font-black uppercase tracking-wider text-[#E3151A]">
-            Promociones y Ofertas
+            Destacados Exclusivos
           </span>
           <h2 className="mt-3 text-3xl font-black uppercase tracking-tight text-neutral-900 md:text-5xl">
             Productos Destacados
