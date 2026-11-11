@@ -14,8 +14,9 @@ import { getSettings, getAdminSettings, updateSettings, parseBranches, type Bran
 import { listOrders, updateOrderStatus, deleteOrder } from "@/lib/orders.functions";
 import { listAllBanners, upsertBanner, deleteBanner } from "@/lib/banners.functions";
 import { listAllTestimonials, setTestimonialApproved, deleteTestimonial } from "@/lib/testimonials.functions";
-import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone, Zap, Car, Sparkles, ExternalLink } from "lucide-react";
+import { Upload, Trash2, Pencil, Plus, X, ImageIcon, LayoutGrid, Settings2, Package, ClipboardList, Image as ImageLucide, MessageSquare, Star, Check, Tag, RotateCcw, FileText, Store, MapPin, Clock, Phone, Zap, Car, Sparkles, ExternalLink, DownloadCloud } from "lucide-react";
 import { BrandLogo, DEFAULT_BRAND_LOGO_MAP } from "@/components/BrandLogo";
+import { SunsetSyncModal } from "@/components/SunsetSyncModal";
 import { optimizeAndReadImage } from "@/lib/image-utils";
 import { cleanTireSize } from "@/lib/utils";
 
@@ -170,6 +171,7 @@ function AdminPage() {
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [cleaningSizes, setCleaningSizes] = useState(false);
   const [cleaningProgress, setCleaningProgress] = useState<{ current: number; total: number } | null>(null);
+  const [sunsetSyncOpen, setSunsetSyncOpen] = useState(false);
 
   const fetchAll = useServerFn(listAllProducts);
   const save = useServerFn(upsertProduct);
@@ -544,6 +546,15 @@ function AdminPage() {
                   : `Aumentar pendientes (${pendingProducts.length})`}
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setSunsetSyncOpen(true)}
+              className="flex items-center gap-2 rounded-full bg-amber-500 hover:bg-amber-600 px-4 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-md transition cursor-pointer"
+              title="Lee los precios XBRI en vivo desde Sunset Paraguay (xbri.com.py) y actualiza la web en 1 clic"
+            >
+              <DownloadCloud className="h-4 w-4" />
+              Sincronizar Sunset PY
+            </button>
             <button
               onClick={() => setEditing({ ...empty })}
               className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] cursor-pointer"
@@ -1002,6 +1013,19 @@ function AdminPage() {
           error={saveMut.error as any}
         />
       )}
+
+      <SunsetSyncModal
+        open={sunsetSyncOpen}
+        onClose={() => setSunsetSyncOpen(false)}
+        products={products as Product[]}
+        onUpdated={async () => {
+          await Promise.all([
+            qc.invalidateQueries({ queryKey: ["admin-products"] }),
+            qc.invalidateQueries({ queryKey: ["public-products"] }),
+            qc.invalidateQueries({ queryKey: ["product"] }),
+          ]);
+        }}
+      />
     </div>
   );
 }
