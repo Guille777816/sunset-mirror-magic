@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ArrowLeft, ShoppingCart, Plus, Download, CreditCard } from "lucide-react";
+import { Phone, ArrowLeft, ShoppingCart, MessageCircle, Download, CreditCard } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -626,7 +626,7 @@ function ProductDetail() {
                 {formatDescription(p.description)}
               </p>
             )}
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 space-y-3">
               <button
                 onClick={() => {
                   cart.add({
@@ -639,35 +639,40 @@ function ProductDetail() {
                   });
                   cart.open();
                 }}
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:scale-105 transition"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-full bg-[#00A859] px-10 py-4 text-base font-black uppercase tracking-wider text-white shadow-lg shadow-emerald-600/30 hover:bg-[#008f4c] hover:scale-[1.02] transition"
               >
-                <Plus className="h-4 w-4" /> Agregar al carrito
+                <ShoppingCart className="h-5 w-5" /> Comprar
               </button>
-              <a
-                href={`https://wa.me/${wa}?text=${msg}`}
-                target="_blank"
-                rel="noopener"
-                className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-7 py-3 text-sm font-bold uppercase tracking-wider text-secondary"
-              >
-                <ShoppingCart className="h-4 w-4" /> Consultar por WhatsApp
-              </a>
-              {phone && (
+
+              <div className="flex flex-wrap gap-2.5">
                 <a
-                  href={`tel:${phone.replace(/\s/g, "")}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-7 py-3 text-sm font-bold uppercase tracking-wider text-secondary"
+                  href={`https://wa.me/${wa}?text=${msg}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
                 >
-                  <Phone className="h-4 w-4" /> {phone}
+                  <MessageCircle className="h-4 w-4" /> Consultar por WhatsApp
                 </a>
-              )}
-              <a
-                href={catalogHref || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                {...(catalogUrl ? { download: "" } : {})}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#22C55E] to-[#059669] px-7 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_24px_-6px_rgba(16,185,129,0.65)] ring-1 ring-emerald-400/40 transition hover:scale-105 hover:from-[#16A34A] hover:to-[#047857] hover:shadow-[0_10px_28px_-6px_rgba(16,185,129,0.8)]"
-              >
-                <Download className="h-4 w-4" /> Descargar catálogo
-              </a>
+                {phone && (
+                  <a
+                    href={`tel:${phone.replace(/\s/g, "")}`}
+                    className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
+                  >
+                    <Phone className="h-4 w-4" /> {phone}
+                  </a>
+                )}
+                {catalogHref && (
+                  <a
+                    href={catalogHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    {...(catalogUrl ? { download: "" } : {})}
+                    className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
+                  >
+                    <Download className="h-4 w-4" /> Descargar catálogo
+                  </a>
+                )}
+              </div>
             </div>
             <div className="mt-8 flex items-center gap-6 border-t border-border/60 pt-6">
               <img src="/inmetro.webp" alt="INMETRO" className="h-14 w-auto object-contain" />

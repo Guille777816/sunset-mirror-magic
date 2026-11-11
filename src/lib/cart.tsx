@@ -253,9 +253,9 @@ function CartDrawer() {
               <button
                 disabled={items.length === 0}
                 onClick={() => setStep("form")}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:opacity-95 disabled:opacity-50 transition"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#00A859] py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-md hover:bg-[#008f4c] disabled:opacity-50 transition"
               >
-                <Lock className="h-4 w-4" /> Continuar compra ({format(finalTotal)})
+                <Lock className="h-4 w-4" /> Finalizar compra ({format(finalTotal)})
               </button>
 
               <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 text-center">

@@ -894,9 +894,9 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
                 cart.add({ id: p.id, brand: p.brand, model: p.model, size: p.size, price_ars: Number(p.price_ars), image_url: p.image_url });
                 cart.open();
               }}
-              className="flex flex-1 items-center justify-center gap-1 rounded-full bg-primary py-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground shadow-[var(--shadow-primary)] hover:scale-[1.02] transition"
+              className="flex flex-1 items-center justify-center gap-1 rounded-full bg-[#00A859] py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm hover:bg-[#008f4c] hover:scale-[1.02] transition"
             >
-              <Plus className="h-3 w-3" /> Carrito
+              <ShoppingCart className="h-3.5 w-3.5" /> Comprar
             </button>
           </div>
         </div>

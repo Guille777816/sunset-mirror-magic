@@ -185,7 +185,7 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                       params={{ slug: p.slug }}
                       className="flex-1 rounded-full border border-neutral-900 py-2.5 text-center text-xs font-black uppercase tracking-wider text-neutral-900 transition duration-300 hover:bg-neutral-900 hover:text-white group-hover:border-white group-hover:text-white group-hover:hover:bg-white group-hover:hover:text-black"
                     >
-                      Saber más →
+                      Ver detalle
                     </Link>
                     <button
                       onClick={() => {
@@ -199,11 +199,12 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                         });
                         cart.open();
                       }}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E3151A] text-white shadow-md transition hover:bg-[#c31116] hover:scale-105"
-                      title="Agregar al carrito"
-                      aria-label="Agregar al carrito"
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#00A859] px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:bg-[#008f4c] hover:scale-[1.03]"
+                      title="Comprar ahora"
+                      aria-label="Comprar"
                     >
                       <ShoppingCart className="h-4 w-4" />
+                      Comprar
                     </button>
                   </div>
                 </div>
