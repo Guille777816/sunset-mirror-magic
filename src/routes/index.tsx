@@ -487,6 +487,12 @@ function Index() {
             >
               Todas las medidas
             </button>
+            <Link
+              to="/politica-devoluciones"
+              className="whitespace-nowrap px-4 py-3 text-sm font-semibold uppercase tracking-wide text-secondary transition hover:text-primary"
+            >
+              Envíos y Devoluciones
+            </Link>
           </div>
         </nav>
       </header>

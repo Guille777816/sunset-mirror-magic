@@ -39,7 +39,7 @@ function PoliticaDevolucionesPage() {
             <h2 className="text-lg font-bold text-secondary">Envíos</h2>
             <ul className="mt-3 space-y-2 text-sm text-foreground/90">
               <li>• Envío gratuito a Argentina y Chile.</li>
-              <li>• Tiempo de entrega: 0 a 1 días hábiles.</li>
+              <li>• Tiempo de preparación: 2 días hábiles, para luego enviar el pedido.</li>
               <li>• Pedido mínimo: 4 unidades por compra.</li>
             </ul>
           </section>
@@ -47,9 +47,22 @@ function PoliticaDevolucionesPage() {
           <section className="mt-8">
             <h2 className="text-lg font-bold text-secondary">Devoluciones</h2>
             <p className="mt-3 text-sm text-foreground/90">
-              Aceptamos devoluciones únicamente por defecto de fabricación. No se aceptan
-              devoluciones por arrepentimiento de compra.
+              Una vez recibido el producto, aceptamos devoluciones únicamente por defecto de
+              fabricación.
             </p>
+            <p className="mt-4 text-sm text-foreground/90">
+              En caso de demora en aduana o arrepentimiento de compra con el envío ya iniciado
+              (con gastos operativos y logísticos en curso), si el cliente prefiere no aguardar
+              puede optar por:
+            </p>
+            <ol className="mt-3 list-decimal space-y-2 pl-6 text-sm text-foreground/90">
+              <li>Nota de crédito para canjear por otro neumático.</li>
+              <li>
+                Cancelar la compra y recibir la devolución del dinero en un plazo de 20 a 30 días
+                hábiles desde la confirmación de la cancelación.
+              </li>
+              <li>Seguir esperando a que la aduana libere el envío.</li>
+            </ol>
           </section>
 
           <section className="mt-8">
