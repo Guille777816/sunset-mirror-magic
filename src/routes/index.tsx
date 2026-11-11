@@ -621,10 +621,21 @@ function Index() {
         <FeaturedWhiteSection products={products as any[]} />
       )}
 
-      {/* Banners administrables (rotan solos) */}
+      {/* Video promocional XBRI (reemplaza el carrusel de banners) */}
       {!searchActive && !activeCategory && !viewAllSizes && (
         <section id="banners" className="container mx-auto px-4 py-10">
-          <BannerCarousel banners={banners.length > 0 ? (banners as any[]) : DEFAULT_BANNERS} circleLogoUrl={CIRCLE_LOGO_URL} />
+          <div className="overflow-hidden rounded-3xl bg-black shadow-[var(--shadow-product)]">
+            <video
+              src="/videos/xbri-promo.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="aspect-video h-auto w-full object-cover"
+              aria-label="Video promocional XBRI"
+            />
+          </div>
         </section>
       )}
 
