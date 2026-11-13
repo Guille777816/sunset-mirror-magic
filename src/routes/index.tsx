@@ -220,6 +220,85 @@ const rims = [
   "24","24.5","25","26","28","30","30.5","32","34","36","38","42",
 ];
 
+const VALID_NAV_CATEGORIES = new Set([
+  "autos",
+  "camionetas",
+  "suv",
+  "camiones",
+  "agricolas",
+  "industriales",
+  "baterias",
+  "lonas",
+  "ofertas",
+]);
+
+function parseCategoryAndMeasureFromPath(pathname: string): { category?: string; medida?: string } | null {
+  const clean = pathname.replace(/^\/+|\/+$/g, "");
+  if (!clean) return null;
+  const parts = clean.split("/");
+
+  if (parts.length === 1) {
+    const first = parts[0].toLowerCase();
+    if (VALID_NAV_CATEGORIES.has(first)) {
+      return { category: first };
+    }
+    if (/\d/.test(first) && (first.includes("r") || first.includes("x") || first.includes("-"))) {
+      return { medida: first };
+    }
+  } else if (parts.length === 2) {
+    const first = parts[0].toLowerCase();
+    const second = parts[1].toLowerCase();
+    if (VALID_NAV_CATEGORIES.has(first)) {
+      return { category: first, medida: second };
+    }
+    if (first === "medida") {
+      return { medida: second };
+    }
+  }
+  return null;
+}
+
+function parseMeasureDetails(raw?: string | null): { w?: string; h?: string; r?: string } {
+  if (!raw) return {};
+  const s = String(raw).trim();
+  // Imperial: 31x10.50xr15, 31x10.50r15, 33x12.50R15
+  const mImp = s.match(/(\d{1,2}(?:\.\d+)?)\s*[xX\s]\s*(\d{1,2}(?:\.\d+)?)\s*(?:[xXR\-\s]*)\s*(\d{1,2})\b/i);
+  if (mImp) {
+    return { w: mImp[1], h: mImp[2], r: mImp[3] };
+  }
+  // Metric: 205/55R16, 205-55r16, 185 60 15
+  const mMet = s.match(/(\d{3})\s*(?:[\/\-\s]+)\s*(\d{2})\s*(?:Z?R)?\s*(\d{2})\b/i);
+  if (mMet) {
+    return { w: mMet[1], h: mMet[2], r: mMet[3] };
+  }
+  return {};
+}
+
+function formatMeasureSlug(w?: string, h?: string, r?: string): string {
+  if (!w || w === "Todos") return "";
+  const cleanW = w.trim();
+  const cleanH = h && h !== "Todos" ? h.trim() : "";
+  const cleanR = r && r !== "Todos" ? r.trim() : "";
+  if (cleanW.includes(".") || (cleanH && cleanH.includes("."))) {
+    return `${cleanW}x${cleanH || "0"}${cleanR ? `r${cleanR}` : ""}`.toLowerCase();
+  }
+  return `${cleanW}${cleanH ? `-${cleanH}` : ""}${cleanR ? `r${cleanR}` : ""}`.toLowerCase();
+}
+
+function syncUrl(category: string | null, w?: string, h?: string, r?: string) {
+  if (typeof window === "undefined") return;
+  const measureSlug = formatMeasureSlug(w, h, r);
+  let newPath = "/";
+  if (category && category !== "todos") {
+    newPath = measureSlug ? `/${category}/${measureSlug}` : `/${category}`;
+  } else if (measureSlug) {
+    newPath = `/medida/${measureSlug}`;
+  }
+  if (window.location.pathname !== newPath) {
+    window.history.pushState({ category, w, h, r }, "", newPath);
+  }
+}
+
 function Index() {
   const searchParams = Route.useSearch();
   const [w, setW] = useState("Todos");
@@ -246,32 +325,66 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (searchParams?.medida) {
+    let targetCat: string | null = (searchParams?.categoria as string) || null;
+    let targetMed: string | null = (searchParams?.medida as string) || null;
+
+    if (typeof window !== "undefined") {
+      const fromPath = parseCategoryAndMeasureFromPath(window.location.pathname);
+      if (fromPath?.category && !targetCat) targetCat = fromPath.category;
+      if (fromPath?.medida && !targetMed) targetMed = fromPath.medida;
+    }
+
+    if (targetMed) {
       triggerDocSearch(650);
-      const m = String(searchParams.medida).match(/([0-9]{3})\s*(?:\/|\s*-\s*|\s+)([0-9]{2})\s*R?\s*([0-9]{2}(?:\.[0-9]+)?)/i);
-      if (m) {
-        setW(m[1]);
-        setH(m[2]);
-        setR(m[3]);
+      const m = parseMeasureDetails(targetMed);
+      if (m.w) {
+        setW(m.w);
+        setH(m.h || "Todos");
+        setR(m.r || "Todos");
         setSearchActive(true);
-        setActiveCategory(null);
+        setActiveCategory(targetCat || null);
         setViewAllSizes(false);
+        syncUrl(targetCat, m.w, m.h, m.r);
         setTimeout(() => {
           document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 80);
         return;
       }
     }
-    if (searchParams?.categoria) {
+    if (targetCat) {
       triggerDocSearch(650);
       setSearchActive(false);
       setViewAllSizes(false);
-      setActiveCategory(searchParams.categoria);
+      setActiveCategory(targetCat);
+      syncUrl(targetCat);
       setTimeout(() => {
         document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
     }
   }, [searchParams?.categoria, searchParams?.medida]);
+
+  useEffect(() => {
+    function handlePopState() {
+      const fromPath = parseCategoryAndMeasureFromPath(window.location.pathname);
+      setActiveCategory(fromPath?.category || null);
+      if (fromPath?.medida) {
+        const m = parseMeasureDetails(fromPath.medida);
+        if (m.w) {
+          setW(m.w);
+          setH(m.h || "Todos");
+          setR(m.r || "Todos");
+          setSearchActive(true);
+        }
+      } else {
+        setSearchActive(false);
+        setW("Todos");
+        setH("Todos");
+        setR("Todos");
+      }
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const initial = Route.useLoaderData();
   const fetchProducts = useServerFn(listPublicProducts);
@@ -361,6 +474,7 @@ function Index() {
     setSearchActive(false);
     setViewAllSizes(false);
     setActiveCategory(slug);
+    syncUrl(slug);
     setTimeout(() => {
       document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
@@ -442,6 +556,7 @@ function Index() {
                 setActiveCategory(null);
                 setSearchActive(false);
                 setViewAllSizes(false);
+                syncUrl(null);
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               className={`whitespace-nowrap px-4 py-3 text-sm font-semibold uppercase tracking-wide transition ${
@@ -455,9 +570,10 @@ function Index() {
             <button
               onClick={() => {
                 triggerDocSearch(600);
-                setActiveCategory(null);
+                setActiveCategory("ofertas");
                 setSearchActive(false);
                 setViewAllSizes(false);
+                syncUrl("ofertas");
                 setTimeout(() => {
                   document.getElementById("auto-ofertas")?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }, 50);
@@ -529,12 +645,15 @@ function Index() {
               products={products as any[]}
               onSearch={({ width, aspect, rim }) => {
                 triggerDocSearch(650);
-                setW(width || "Todos");
-                setH(aspect || "Todos");
-                setR(rim || "Todos");
+                const newW = width || "Todos";
+                const newH = aspect || "Todos";
+                const newR = rim || "Todos";
+                setW(newW);
+                setH(newH);
+                setR(newR);
                 setSearchActive(true);
-                setActiveCategory(null);
                 setViewAllSizes(false);
+                syncUrl(activeCategory, newW, newH, newR);
                 setTimeout(() => {
                   document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
                 }, 50);
@@ -552,6 +671,7 @@ function Index() {
           selectedCategory={activeCategory}
           onSelectCategory={(cat) => {
             setActiveCategory(cat);
+            syncUrl(cat, w, h, r);
             if (!cat && !searchActive) {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }
@@ -570,6 +690,7 @@ function Index() {
             setW("Todos");
             setH("Todos");
             setR("Todos");
+            syncUrl(activeCategory);
           }}
           onBackToHome={() => {
             setActiveCategory(null);
@@ -578,6 +699,7 @@ function Index() {
             setW("Todos");
             setH("Todos");
             setR("Todos");
+            syncUrl(null);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
@@ -588,11 +710,12 @@ function Index() {
         <AllSizesBrowser
           products={products as any[]}
           onSelectSize={(size) => {
-            const m = size.match(/([0-9]{3})\s*(?:\/|\s*-\s*)([0-9]{2})\s*R\s*([0-9]{2}(?:\.[0-9]+)?)/i);
-            if (m) {
-              setW(m[1]);
-              setH(m[2]);
-              setR(m[3]);
+            const m = parseMeasureDetails(size);
+            if (m.w) {
+              setW(m.w);
+              setH(m.h || "Todos");
+              setR(m.r || "Todos");
+              syncUrl(null, m.w, m.h, m.r);
             }
             setViewAllSizes(false);
             setSearchActive(true);
