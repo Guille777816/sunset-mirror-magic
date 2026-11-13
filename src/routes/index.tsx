@@ -28,6 +28,7 @@ import { SunsetStoreView } from "@/components/SunsetStoreView";
 import { AllSizesBrowser } from "@/components/AllSizesBrowser";
 import { BrandLogo } from "@/components/BrandLogo";
 import { InteractiveTireSearch } from "@/components/InteractiveTireSearch";
+import { DocLeRadialSearchLoader } from "@/components/DocLeRadialSearchLoader";
 
 const HEADER_LOGO_URL = "/images/logo-leradial.png";
 const CIRCLE_LOGO_URL = "/images/logo-leradial.png";
@@ -230,6 +231,11 @@ function Index() {
     (searchParams?.categoria as string) || null
   );
   const [viewAllSizes, setViewAllSizes] = useState(false);
+  const [isSearchingTires, setIsSearchingTires] = useState(false);
+  const triggerDocSearch = (duration = 700) => {
+    setIsSearchingTires(true);
+    setTimeout(() => setIsSearchingTires(false), duration);
+  };
   const cart = useCart();
   const { currency, setCurrency, setRates } = useCurrency();
 
@@ -241,6 +247,7 @@ function Index() {
 
   useEffect(() => {
     if (searchParams?.medida) {
+      triggerDocSearch(650);
       const m = String(searchParams.medida).match(/([0-9]{3})\s*(?:\/|\s*-\s*|\s+)([0-9]{2})\s*R?\s*([0-9]{2}(?:\.[0-9]+)?)/i);
       if (m) {
         setW(m[1]);
@@ -256,6 +263,7 @@ function Index() {
       }
     }
     if (searchParams?.categoria) {
+      triggerDocSearch(650);
       setSearchActive(false);
       setViewAllSizes(false);
       setActiveCategory(searchParams.categoria);
@@ -349,6 +357,7 @@ function Index() {
 
   // Handle nav category click
   function handleCategoryNav(slug: string) {
+    triggerDocSearch(650);
     setSearchActive(false);
     setViewAllSizes(false);
     setActiveCategory(slug);
@@ -445,6 +454,7 @@ function Index() {
             </button>
             <button
               onClick={() => {
+                triggerDocSearch(600);
                 setActiveCategory(null);
                 setSearchActive(false);
                 setViewAllSizes(false);
@@ -518,6 +528,7 @@ function Index() {
             <InteractiveTireSearch
               products={products as any[]}
               onSearch={({ width, aspect, rim }) => {
+                triggerDocSearch(650);
                 setW(width || "Todos");
                 setH(aspect || "Todos");
                 setR(rim || "Todos");
@@ -808,6 +819,7 @@ function Index() {
         </div>
       </footer>
       <FloatingSearchButton />
+      <DocLeRadialSearchLoader active={isSearchingTires} />
     </div>
   );
 }
