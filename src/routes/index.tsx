@@ -28,6 +28,7 @@ import { SunsetStoreView } from "@/components/SunsetStoreView";
 import { AllSizesBrowser } from "@/components/AllSizesBrowser";
 import { BrandLogo } from "@/components/BrandLogo";
 import { InteractiveTireSearch } from "@/components/InteractiveTireSearch";
+import { DocLeRadialFloatingWidget } from "@/components/DocLeRadialFloatingWidget";
 
 const HEADER_LOGO_URL = "/images/logo-leradial.png";
 const CIRCLE_LOGO_URL = "/images/logo-leradial.png";
@@ -808,6 +809,7 @@ function Index() {
         </div>
       </footer>
       <FloatingSearchButton />
+      <DocLeRadialFloatingWidget whatsappNumber={settings?.whatsapp || "5491123951455"} />
     </div>
   );
 }
