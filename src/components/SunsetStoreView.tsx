@@ -98,9 +98,13 @@ export function SunsetStoreView({
   // Sync when selectedMeasure prop changes
   useEffect(() => {
     if (selectedMeasure) {
-      if (selectedMeasure.width !== undefined) setFilterWidth(selectedMeasure.width);
-      if (selectedMeasure.aspect !== undefined) setFilterAspect(selectedMeasure.aspect);
-      if (selectedMeasure.rim !== undefined) setFilterRim(selectedMeasure.rim);
+      setFilterWidth(selectedMeasure.width || "");
+      setFilterAspect(selectedMeasure.aspect || "");
+      setFilterRim(selectedMeasure.rim || "");
+    } else {
+      setFilterWidth("");
+      setFilterAspect("");
+      setFilterRim("");
     }
   }, [selectedMeasure]);
 
@@ -169,8 +173,9 @@ export function SunsetStoreView({
       if (filterWidth && !sizeStr.includes(filterWidth.toLowerCase())) return false;
       if (filterAspect && !sizeStr.includes(filterAspect.toLowerCase())) return false;
       if (filterRim) {
-        const rimNorm = filterRim.replace(/^r/i, "");
-        if (!sizeStr.includes(`r${rimNorm}`) && !sizeStr.includes(`r ${rimNorm}`) && !sizeStr.includes(rimNorm)) {
+        const rimNorm = filterRim.replace(/^r/i, "").trim();
+        const rimPattern = new RegExp(`(?:r|\\-|\\s)${rimNorm}(?![0-9.])`, "i");
+        if (!rimPattern.test(sizeStr)) {
           return false;
         }
       }
@@ -199,6 +204,23 @@ export function SunsetStoreView({
   const hasActiveFilters = Boolean(
     selectedCategory || filterWidth || filterAspect || filterRim || filterBrand || textSearch || maxPrice > 0
   );
+
+  // Paginación eficiente para carga instantánea sin congelar el navegador
+  const [visibleCount, setVisibleCount] = useState(24);
+
+  // Reiniciar paginación al cambiar cualquier filtro
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [selectedCategory, filterWidth, filterAspect, filterRim, filterBrand, textSearch, maxPrice]);
+
+  const displayedProducts = useMemo(() => {
+    return filteredProducts.slice(0, visibleCount);
+  }, [filteredProducts, visibleCount]);
+
+  const hasMore = visibleCount < filteredProducts.length;
+  const loadMore = () => {
+    setVisibleCount((prev) => Math.min(prev + 24, filteredProducts.length));
+  };
 
   const clearAllFilters = () => {
     setFilterWidth("");
@@ -490,7 +512,7 @@ export function SunsetStoreView({
             {/* Barra superior de resultados y filtro activo */}
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200/80 bg-white px-5 py-3.5 shadow-sm">
               <span className="text-xs sm:text-sm font-semibold text-neutral-600">
-                Mostrando 1-{filteredProducts.length} de {filteredProducts.length} resultados
+                Mostrando {filteredProducts.length === 0 ? 0 : 1}-{Math.min(visibleCount, filteredProducts.length)} de {filteredProducts.length} resultado{filteredProducts.length !== 1 ? "s" : ""}
               </span>
 
               {hasActiveFilters && (
@@ -528,9 +550,24 @@ export function SunsetStoreView({
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredProducts.map((p, idx) => (
+                {displayedProducts.map((p, idx) => (
                   <SunsetProductCard key={p.id} product={p} eager={idx < 3} />
                 ))}
+
+                {hasMore && (
+                  <div className="pt-6 pb-4 text-center border-t border-neutral-200/80">
+                    <p className="text-xs text-neutral-500 mb-3 font-medium">
+                      Mostrando {displayedProducts.length} de {filteredProducts.length} neumáticos disponibles
+                    </p>
+                    <button
+                      type="button"
+                      onClick={loadMore}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-8 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md hover:bg-[#E3151A] hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+                    >
+                      Cargar más neumáticos ({filteredProducts.length - displayedProducts.length} restantes) ↓
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </main>

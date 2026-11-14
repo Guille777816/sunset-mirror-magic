@@ -677,46 +677,44 @@ function Index() {
 
 
 
-      {/* Vista de Tienda y Catálogo estilo Sunset / XBRI */}
-      {(searchActive || activeCategory) && (
-        <SunsetStoreView
-          products={products as any[]}
-          selectedCategory={activeCategory}
-          onSelectCategory={(cat) => {
-            setActiveCategory(cat);
-            syncUrl(cat, w, h, r);
-            if (!cat && !searchActive) {
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }
-          }}
-          selectedMeasure={
-            searchActive
-              ? {
-                  width: w !== "Todos" ? w : undefined,
-                  aspect: h !== "Todos" ? h : undefined,
-                  rim: r !== "Todos" ? r : undefined,
-                }
-              : null
-          }
-          onClearMeasure={() => {
-            setSearchActive(false);
-            setW("Todos");
-            setH("Todos");
-            setR("Todos");
-            syncUrl(activeCategory);
-          }}
-          onBackToHome={() => {
-            setActiveCategory(null);
-            setSearchActive(false);
-            setViewAllSizes(false);
-            setW("Todos");
-            setH("Todos");
-            setR("Todos");
-            syncUrl(null);
+      {/* Vista de Tienda y Catálogo estilo Sunset / XBRI (Siempre visible con paginación instantánea) */}
+      <SunsetStoreView
+        products={products as any[]}
+        selectedCategory={activeCategory}
+        onSelectCategory={(cat) => {
+          setActiveCategory(cat);
+          syncUrl(cat, w, h, r);
+          if (!cat && !searchActive) {
             window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-        />
-      )}
+          }
+        }}
+        selectedMeasure={
+          searchActive
+            ? {
+                width: w !== "Todos" ? w : undefined,
+                aspect: h !== "Todos" ? h : undefined,
+                rim: r !== "Todos" ? r : undefined,
+              }
+            : null
+        }
+        onClearMeasure={() => {
+          setSearchActive(false);
+          setW("Todos");
+          setH("Todos");
+          setR("Todos");
+          syncUrl(activeCategory);
+        }}
+        onBackToHome={() => {
+          setActiveCategory(null);
+          setSearchActive(false);
+          setViewAllSizes(false);
+          setW("Todos");
+          setH("Todos");
+          setR("Todos");
+          syncUrl(null);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
 
       {/* Vista 'Todas las medidas' estilo Sunset / XBRI */}
       {viewAllSizes && (
