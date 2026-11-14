@@ -16,6 +16,12 @@ import { Route as PoliticaDevolucionesRouteImport } from './routes/politica-devo
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProductoSlugRouteImport } from './routes/producto.$slug'
 import { Route as CategoriaCategoryRouteImport } from './routes/categoria.$category'
+import { Route as AutosRouteImport } from './routes/autos'
+import { Route as CamionetasRouteImport } from './routes/camionetas'
+import { Route as SuvRouteImport } from './routes/suv'
+import { Route as CamionesRouteImport } from './routes/camiones'
+import { Route as AgricolasRouteImport } from './routes/agricolas'
+import { Route as MedidaMedidaRouteImport } from './routes/medida.$medida'
 import { Route as ApiPublicCatalogoRouteImport } from './routes/api/public/catalogo'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 
@@ -52,6 +58,36 @@ const ProductoSlugRoute = ProductoSlugRouteImport.update({
 const CategoriaCategoryRoute = CategoriaCategoryRouteImport.update({
   id: '/categoria/$category',
   path: '/categoria/$category',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AutosRoute = AutosRouteImport.update({
+  id: '/autos',
+  path: '/autos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CamionetasRoute = CamionetasRouteImport.update({
+  id: '/camionetas',
+  path: '/camionetas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuvRoute = SuvRouteImport.update({
+  id: '/suv',
+  path: '/suv',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CamionesRoute = CamionesRouteImport.update({
+  id: '/camiones',
+  path: '/camiones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgricolasRoute = AgricolasRouteImport.update({
+  id: '/agricolas',
+  path: '/agricolas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MedidaMedidaRoute = MedidaMedidaRouteImport.update({
+  id: '/medida/$medida',
+  path: '/medida/$medida',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicCatalogoRoute = ApiPublicCatalogoRouteImport.update({
@@ -198,6 +234,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriaCategoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/autos': {
+      id: '/autos'
+      path: '/autos'
+      fullPath: '/autos'
+      preLoaderRoute: typeof AutosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/camionetas': {
+      id: '/camionetas'
+      path: '/camionetas'
+      fullPath: '/camionetas'
+      preLoaderRoute: typeof CamionetasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suv': {
+      id: '/suv'
+      path: '/suv'
+      fullPath: '/suv'
+      preLoaderRoute: typeof SuvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/camiones': {
+      id: '/camiones'
+      path: '/camiones'
+      fullPath: '/camiones'
+      preLoaderRoute: typeof CamionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agricolas': {
+      id: '/agricolas'
+      path: '/agricolas'
+      fullPath: '/agricolas'
+      preLoaderRoute: typeof AgricolasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/medida/$medida': {
+      id: '/medida/$medida'
+      path: '/medida/$medida'
+      fullPath: '/medida/$medida'
+      preLoaderRoute: typeof MedidaMedidaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/catalogo': {
       id: '/api/public/catalogo'
       path: '/api/public/catalogo'
@@ -223,6 +301,12 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ProductoSlugRoute: ProductoSlugRoute,
   CategoriaCategoryRoute: CategoriaCategoryRoute,
+  AutosRoute: AutosRoute,
+  CamionetasRoute: CamionetasRoute,
+  SuvRoute: SuvRoute,
+  CamionesRoute: CamionesRoute,
+  AgricolasRoute: AgricolasRoute,
+  MedidaMedidaRoute: MedidaMedidaRoute,
   ApiPublicCatalogoRoute: ApiPublicCatalogoRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
 }

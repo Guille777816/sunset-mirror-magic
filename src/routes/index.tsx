@@ -287,15 +287,22 @@ function formatMeasureSlug(w?: string, h?: string, r?: string): string {
 
 function syncUrl(category: string | null, w?: string, h?: string, r?: string) {
   if (typeof window === "undefined") return;
-  const measureSlug = formatMeasureSlug(w, h, r);
-  let newPath = "/";
+  const params = new URLSearchParams();
   if (category && category !== "todos") {
-    newPath = measureSlug ? `/${category}/${measureSlug}` : `/${category}`;
-  } else if (measureSlug) {
-    newPath = `/medida/${measureSlug}`;
+    params.set("categoria", category);
   }
-  if (window.location.pathname !== newPath) {
-    window.history.pushState({ category, w, h, r }, "", newPath);
+  if (w && w !== "Todos") {
+    const cleanW = w.trim();
+    const cleanH = h && h !== "Todos" ? h.trim() : "";
+    const cleanR = r && r !== "Todos" ? r.trim() : "";
+    const measureStr = `${cleanW}${cleanH ? `/${cleanH}` : ""}${cleanR ? `R${cleanR}` : ""}`;
+    params.set("medida", measureStr);
+  }
+  const queryStr = params.toString();
+  const targetUrl = queryStr ? `/?${queryStr}` : "/";
+  const currentUrl = `${window.location.pathname}${window.location.search}`;
+  if (currentUrl !== targetUrl) {
+    window.history.replaceState({ category, w, h, r }, "", targetUrl);
   }
 }
 
@@ -365,22 +372,28 @@ function Index() {
 
   useEffect(() => {
     function handlePopState() {
+      const url = new URL(window.location.href);
+      const cat = url.searchParams.get("categoria");
+      const med = url.searchParams.get("medida");
       const fromPath = parseCategoryAndMeasureFromPath(window.location.pathname);
-      setActiveCategory(fromPath?.category || null);
-      if (fromPath?.medida) {
-        const m = parseMeasureDetails(fromPath.medida);
+      const targetCat = cat || fromPath?.category || null;
+      const targetMed = med || fromPath?.medida || null;
+
+      setActiveCategory(targetCat);
+      if (targetMed) {
+        const m = parseMeasureDetails(targetMed);
         if (m.w) {
           setW(m.w);
           setH(m.h || "Todos");
           setR(m.r || "Todos");
           setSearchActive(true);
+          return;
         }
-      } else {
-        setSearchActive(false);
-        setW("Todos");
-        setH("Todos");
-        setR("Todos");
       }
+      setSearchActive(false);
+      setW("Todos");
+      setH("Todos");
+      setR("Todos");
     }
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
