@@ -344,9 +344,9 @@ export function DocLeRadialFloatingWidget({ whatsappNumber = "5491123951455" }: 
           target="_blank"
           rel="noopener noreferrer"
           className="leradial-wa-pill"
-          aria-label="Hablá con nosotros por WhatsApp"
+          aria-label="Comunicate con nosotros por WhatsApp"
         >
-          ¿Dudas con tu medida? Hablá con el Doc 👋
+          ¿Dudas con tu medida? ¡Comunicate con nosotros! 👋
         </a>
 
         {/* Botón base de WhatsApp con Doc Le Radial */}

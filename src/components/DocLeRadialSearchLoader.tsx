@@ -7,7 +7,7 @@ interface Props {
 
 export function DocLeRadialSearchLoader({
   active,
-  message = "El Doc está buscando tus cubiertas...",
+  message = "Buscando tus cubiertas en catálogo...",
 }: Props) {
   if (!active) return null;
 
