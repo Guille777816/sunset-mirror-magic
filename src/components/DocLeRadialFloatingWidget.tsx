@@ -313,42 +313,9 @@ export function DocLeRadialFloatingWidget({ whatsappNumber = "5491123951455" }: 
           will-change: transform, opacity;
           pointer-events: none;
         }
-        .leradial-wa-pill {
-          position: absolute;
-          top: 50%;
-          right: calc(100% + 14px);
-          white-space: nowrap;
-          color: #1c2233;
-          background: #ffffff;
-          border: 1px solid #eef1f6;
-          border-radius: 999px;
-          padding: 8px 18px;
-          font-size: 13px;
-          font-weight: 700;
-          box-shadow: 0 10px 25px rgba(15, 26, 58, 0.18);
-          pointer-events: auto;
-          cursor: pointer;
-          opacity: var(--pill-op, 0);
-          transform: translateY(-50%) translateX(var(--pill-x, 8px));
-          transition: background-color 0.15s ease;
-        }
-        .leradial-wa-pill:hover {
-          background-color: #f8fafc;
-        }
       `}</style>
 
       <div ref={containerRef} className="leradial-wa-container">
-        {/* Globo / Pill con mensaje directo */}
-        <a
-          href={waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="leradial-wa-pill"
-          aria-label="Comunicate con nosotros por WhatsApp"
-        >
-          ¿Dudas con tu medida? ¡Comunicate con nosotros! 👋
-        </a>
-
         {/* Botón base de WhatsApp con Doc Le Radial */}
         <a
           href={waHref}

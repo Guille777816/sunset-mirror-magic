@@ -11,10 +11,10 @@ interface InteractiveTireSearchProps {
 // Medidas estándar de neumáticos Mercosur para garantizar que el buscador SIEMPRE
 // tenga opciones operativas incluso si la base de datos está cargando o tarda en responder.
 const DEFAULT_PASSENGER_WIDTHS = [
-  "145", "155", "165", "170", "175", "185", "195", "205", "215", "225", "235", "245", "255", "265", "275", "285"
+  "145", "155", "165", "170", "175", "185", "195", "205", "215", "225", "235", "245", "255", "265", "275", "285", "295", "305", "315"
 ];
 const DEFAULT_COMMERCIAL_WIDTHS = [
-  "7.50", "8.25", "9.00", "10.00", "11.00", "12.00", "285", "295", "305", "315", "385"
+  "7.50", "8.25", "9.00", "10.00", "11.00", "12.00", "295", "315", "385"
 ];
 const DEFAULT_ASPECTS = [
   "40", "45", "50", "55", "60", "65", "70", "75", "80", "85"
@@ -77,7 +77,9 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
       if (m1) {
         const wNum = parseInt(m1[1]);
         const rNum = parseFloat(m1[3]);
-        const isCommercial = wNum >= 285 || rNum >= 19.5;
+        // Cubiertas de camionetas / 4x4 (ej: 285/70R17, 315/70R17) van en Pasajero/SUV/Pickup.
+        // Solo aros de camión (>= 19.5 como 295/80R22.5) o anchos gigantes (>= 385) son comerciales.
+        const isCommercial = rNum >= 19.5 || wNum >= 385;
         list.push({ w: m1[1], h: m1[2], r: m1[3], isCommercial });
         return;
       }
