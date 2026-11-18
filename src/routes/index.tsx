@@ -406,8 +406,12 @@ function Index() {
   const { data: rawProducts = [], isLoading: productsLoading } = useQuery({
     queryKey: ["public-products"],
     queryFn: () => fetchProducts().catch(() => []),
-    initialData: (initial?.products as any) ?? [],
+    initialData: (initial?.products && Array.isArray(initial.products) && initial.products.length > 0)
+      ? (initial.products as any)
+      : undefined,
     staleTime: 60_000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 3000),
   });
   const products = useMemo(() => (Array.isArray(rawProducts) ? rawProducts : []), [rawProducts]);
   const { data: settings } = useQuery({

@@ -8,6 +8,21 @@ interface InteractiveTireSearchProps {
   className?: string;
 }
 
+// Medidas estándar de neumáticos Mercosur para garantizar que el buscador SIEMPRE
+// tenga opciones operativas incluso si la base de datos está cargando o tarda en responder.
+const DEFAULT_PASSENGER_WIDTHS = [
+  "145", "155", "165", "170", "175", "185", "195", "205", "215", "225", "235", "245", "255", "265", "275", "285"
+];
+const DEFAULT_COMMERCIAL_WIDTHS = [
+  "7.50", "8.25", "9.00", "10.00", "11.00", "12.00", "285", "295", "305", "315", "385"
+];
+const DEFAULT_ASPECTS = [
+  "40", "45", "50", "55", "60", "65", "70", "75", "80", "85"
+];
+const DEFAULT_RIMS = [
+  "13", "14", "15", "16", "17", "18", "19", "20", "22.5"
+];
+
 export function InteractiveTireSearch({ products, onSearch, className = "" }: InteractiveTireSearchProps) {
   const [selectedWidth, setSelectedWidth] = useState<string>("");
   const [selectedAspect, setSelectedAspect] = useState<string>("");
@@ -82,7 +97,7 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
     return list;
   }, [products]);
 
-  // Anchos disponibles
+  // Anchos disponibles con fallback robusto
   const { passengerWidths, commercialWidths } = useMemo(() => {
     const pass = new Set<string>();
     const comm = new Set<string>();
@@ -91,13 +106,15 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
       else pass.add(t.w);
     });
     const sortFn = (a: string, b: string) => parseFloat(a) - parseFloat(b);
+    const passArr = Array.from(pass).sort(sortFn);
+    const commArr = Array.from(comm).sort(sortFn);
     return {
-      passengerWidths: Array.from(pass).sort(sortFn),
-      commercialWidths: Array.from(comm).sort(sortFn),
+      passengerWidths: passArr.length > 0 ? passArr : DEFAULT_PASSENGER_WIDTHS,
+      commercialWidths: commArr.length > 0 ? commArr : DEFAULT_COMMERCIAL_WIDTHS,
     };
   }, [parsedTires]);
 
-  // Perfiles disponibles
+  // Perfiles disponibles con fallback robusto
   const availableAspects = useMemo(() => {
     const aspects = new Set<string>();
     parsedTires.forEach((t) => {
@@ -105,10 +122,11 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
         if (t.h !== "STD") aspects.add(t.h);
       }
     });
-    return Array.from(aspects).sort((a, b) => parseFloat(a) - parseFloat(b));
+    const arr = Array.from(aspects).sort((a, b) => parseFloat(a) - parseFloat(b));
+    return arr.length > 0 ? arr : DEFAULT_ASPECTS;
   }, [parsedTires, selectedWidth]);
 
-  // Aros disponibles
+  // Aros disponibles con fallback robusto
   const availableRims = useMemo(() => {
     const rims = new Set<string>();
     parsedTires.forEach((t) => {
@@ -116,8 +134,64 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
       const matchH = !selectedAspect || t.h === selectedAspect;
       if (matchW && matchH) rims.add(t.r);
     });
-    return Array.from(rims).sort((a, b) => parseFloat(a) - parseFloat(b));
+    const arr = Array.from(rims).sort((a, b) => parseFloat(a) - parseFloat(b));
+    return arr.length > 0 ? arr : DEFAULT_RIMS;
   }, [parsedTires, selectedWidth, selectedAspect]);
+
+  // Detección automática si el usuario escribe una medida completa (ej: 205/55R16 o 205 55 16)
+  const detectedFullMeasure = useMemo(() => {
+    if (!trayFilterQuery || trayFilterQuery.trim().length < 5) return null;
+    const clean = trayFilterQuery.trim();
+    const mMet = clean.match(/(\d{3})\s*(?:[\/\-\s]+)\s*(\d{2})\s*(?:Z?R|\-|\s)?\s*(\d{2})\b/i);
+    if (mMet) {
+      return { width: mMet[1], aspect: mMet[2], rim: mMet[3] };
+    }
+    const mImp = clean.match(/(\d{1,2}(?:\.\d+)?)\s*[xX\s]\s*(\d{1,2}(?:\.\d+)?)\s*(?:[xXR\-\s]*)\s*(\d{1,2})\b/i);
+    if (mImp) {
+      return { width: mImp[1], aspect: mImp[2], rim: mImp[3] };
+    }
+    return null;
+  }, [trayFilterQuery]);
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (detectedFullMeasure) {
+        setSelectedWidth(detectedFullMeasure.width);
+        setSelectedAspect(detectedFullMeasure.aspect);
+        setSelectedRim(detectedFullMeasure.rim);
+        setOpenStep(null);
+        setTrayFilterQuery("");
+        onSearch(detectedFullMeasure);
+        return;
+      }
+      const q = trayFilterQuery.trim();
+      if (!q) return;
+
+      if (openStep === "width") {
+        const matches = [...passengerWidths, ...commercialWidths].filter((w) => w.includes(q));
+        if (matches.length > 0) {
+          handleSelectWidth(matches[0]);
+        } else if (/^\d{2,3}(?:\.\d+)?$/.test(q)) {
+          handleSelectWidth(q);
+        }
+      } else if (openStep === "aspect") {
+        const matches = availableAspects.filter((h) => h.includes(q));
+        if (matches.length > 0) {
+          handleSelectAspect(matches[0]);
+        } else if (/^\d{2}$/.test(q)) {
+          handleSelectAspect(q);
+        }
+      } else if (openStep === "rim") {
+        const matches = availableRims.filter((r) => r.includes(q));
+        if (matches.length > 0) {
+          handleSelectRim(matches[0]);
+        } else if (/^\d{1,2}(?:\.\d+)?$/.test(q)) {
+          handleSelectRim(q);
+        }
+      }
+    }
+  };
 
   // Manejo de selección secuencial automática
   const handleSelectWidth = (w: string) => {
@@ -465,24 +539,51 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
         {/* ────────────────── BANDEJA FLOTANTE INFERIOR ESTILO XBRI ────────────────── */}
         {openStep && (
           <div className="mt-6 rounded-2xl bg-white p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-neutral-100 animate-in fade-in zoom-in-95 duration-150">
-            {/* Input de filtro predictivo dentro de la bandeja */}
+            {/* Input de filtro predictivo dentro de la bandeja con soporte para Enter y medida directa */}
             <div className="relative mb-4">
               <input
                 type="text"
                 autoFocus
                 placeholder={
                   openStep === "width"
-                    ? "Buscar Ancho (ej. 215, 265, 175)..."
+                    ? "Buscar Ancho (ej. 215, 265, 175) o escribe la medida..."
                     : openStep === "aspect"
                     ? "Buscar Altura (ej. 65, 70, 55)..."
                     : "Buscar Aro (ej. 16, 17, 18)..."
                 }
                 value={trayFilterQuery}
                 onChange={(e) => setTrayFilterQuery(e.target.value)}
+                onKeyDown={handleInputKeyDown}
                 className="w-full rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 py-2.5 text-xs font-semibold text-neutral-800 placeholder-neutral-400 focus:border-[#E3151A] focus:bg-white focus:outline-none transition"
               />
               <Search className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
             </div>
+
+            {/* Acceso directo si escribió una medida completa (ej: 205/55R16) */}
+            {detectedFullMeasure && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-neutral-600">Medida detectada: </span>
+                  <span className="text-sm font-black text-neutral-900">
+                    {detectedFullMeasure.width}/{detectedFullMeasure.aspect} R{detectedFullMeasure.rim}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedWidth(detectedFullMeasure.width);
+                    setSelectedAspect(detectedFullMeasure.aspect);
+                    setSelectedRim(detectedFullMeasure.rim);
+                    setOpenStep(null);
+                    setTrayFilterQuery("");
+                    onSearch(detectedFullMeasure);
+                  }}
+                  className="rounded-lg bg-[#E3151A] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-red-700 transition"
+                >
+                  Buscar medida directa ↵
+                </button>
+              </div>
+            )}
 
             {/* OPCIONES DE ANCHO */}
             {openStep === "width" && (
@@ -536,6 +637,23 @@ export function InteractiveTireSearch({ products, onSearch, className = "" }: In
                     </div>
                   </div>
                 )}
+
+                {/* Si no hubo ningún ancho que coincida con el texto tipeado */}
+                {passengerWidths.filter((w) => !trayFilterQuery || w.includes(trayFilterQuery)).length === 0 &&
+                  commercialWidths.filter((w) => !trayFilterQuery || w.includes(trayFilterQuery)).length === 0 && (
+                    <div className="py-4 text-center">
+                      <p className="text-xs text-neutral-500 mb-2">
+                        No hay anchos estándar que contengan "{trayFilterQuery}".
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setTrayFilterQuery("")}
+                        className="text-xs font-bold text-[#E3151A] hover:underline"
+                      >
+                        Ver todos los anchos
+                      </button>
+                    </div>
+                  )}
               </div>
             )}
 

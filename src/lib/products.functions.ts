@@ -5,19 +5,68 @@ import { supabase } from "@/integrations/supabase/client";
 import { productIdSchema, productSchema } from "@/lib/products.schema";
 import { assertAdmin } from "@/lib/products.server";
 
+// Cache en memoria a nivel de Worker/Servidor para evitar consultas pesadas repetidas
+// de 7.800+ productos a Supabase en cada visita (elimina tiempos de 4-8s y timeouts 500)
+let cachedPublicProducts: any[] | null = null;
+let cachedPublicProductsTime = 0;
+let inflightPublicProductsPromise: Promise<any[]> | null = null;
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutos de caché en memoria del servidor
+
+export function invalidatePublicProductsCache() {
+  cachedPublicProducts = null;
+  cachedPublicProductsTime = 0;
+  inflightPublicProductsPromise = null;
+}
+
 export const listPublicProducts = createServerFn({ method: "GET" }).handler(async () => {
-  // Sólo las columnas que usa la vitrina: evita mandar textos largos y acelera la carga.
-  const { data, error } = await supabase
-    .from("products")
-    .select("id,slug,brand,model,size,category,categories,price_ars,stock,image_url,is_featured,free_shipping,catalog_url")
-    .eq("is_active", true)
-    .order("is_featured", { ascending: false })
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((p) => ({
-    ...p,
-    image_url: p.image_url && p.image_url.startsWith("data:") ? null : p.image_url,
-  }));
+  const now = Date.now();
+  if (cachedPublicProducts && now - cachedPublicProductsTime < CACHE_TTL_MS) {
+    return cachedPublicProducts;
+  }
+
+  if (inflightPublicProductsPromise) {
+    return inflightPublicProductsPromise;
+  }
+
+  inflightPublicProductsPromise = (async () => {
+    try {
+      // Timeout seguro de 6.5s para no bloquear el Worker ni el renderizado
+      const queryPromise = supabase
+        .from("products")
+        .select("id,slug,brand,model,size,category,categories,price_ars,stock,image_url,is_featured,free_shipping,catalog_url")
+        .eq("is_active", true)
+        .order("is_featured", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
+        setTimeout(() => reject(new Error("Supabase public products query timed out")), 6500)
+      );
+
+      const { data, error } = await (Promise.race([queryPromise, timeoutPromise]) as any);
+      if (error) throw new Error(error.message);
+
+      const mapped = (data ?? []).map((p: any) => ({
+        ...p,
+        image_url: p.image_url && p.image_url.startsWith("data:") ? null : p.image_url,
+      }));
+
+      cachedPublicProducts = mapped;
+      cachedPublicProductsTime = Date.now();
+      return mapped;
+    } catch (err) {
+      console.error("[listPublicProducts] Error fetching from Supabase:", err);
+      // Resiliencia crítica: si la base de datos se satura o demora, devolvemos la última caché disponible
+      if (cachedPublicProducts && cachedPublicProducts.length > 0) {
+        console.warn("[listPublicProducts] Devolviendo catálogo en caché previo como salvavidas");
+        return cachedPublicProducts;
+      }
+      throw err;
+    } finally {
+      inflightPublicProductsPromise = null;
+    }
+  })();
+
+  return inflightPublicProductsPromise;
 });
 export const listAllProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -42,6 +91,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
     if (id) {
       const { error } = await supabaseAuthed.from("products").update(rest).eq("id", id);
       if (error) throw new Error(error.message);
+      invalidatePublicProductsCache();
       return { id };
     }
     const { data: created, error } = await supabaseAuthed
@@ -50,6 +100,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    invalidatePublicProductsCache();
     return created;
   });
 
@@ -61,6 +112,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
     await assertAdmin(supabaseAuthed, userId);
     const { error } = await supabaseAuthed.from("products").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    invalidatePublicProductsCache();
     return { ok: true };
   });
 
@@ -134,6 +186,7 @@ export const applyModelBatchAssets = createServerFn({ method: "POST" })
 
     const { data: updated, error } = await query.select("id");
     if (error) throw new Error(error.message);
+    invalidatePublicProductsCache();
     return { count: updated?.length ?? 0, matchedPattern: rawPattern };
   });
 
@@ -167,6 +220,7 @@ export const applyCatalogToModel = createServerFn({ method: "POST" })
 
     const { data: updated, error } = await query.select("id");
     if (error) throw new Error(error.message);
+    invalidatePublicProductsCache();
     return { count: updated?.length ?? 0, matchedPattern: rawPattern };
   });
 
