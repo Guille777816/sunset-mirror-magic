@@ -42,10 +42,16 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
   // Fallback placeholder tire if image is missing
   const isPickup = p.category === "camionetas" || p.category === "suv" || p.model?.toLowerCase().includes("brutus");
   const isTruck = p.category === "camiones" || p.category === "pesados" || p.model?.toLowerCase().includes("xcurve");
+  const isIndustrial = p.category === "industriales" || p.category === "industrial" || (Array.isArray(p.categories) && (p.categories.includes("industriales") || p.categories.includes("industrial")));
+  const isAgro = p.category === "agricolas" || p.category === "agro" || (Array.isArray(p.categories) && (p.categories.includes("agricolas") || p.categories.includes("agro")));
   const fallbackImg = isPickup
     ? "/images/featured/brutus.webp"
     : isTruck
     ? "/images/featured/xcurve.webp"
+    : isIndustrial
+    ? "https://www.gyscubiertas.com.py/userfiles/images/productos/600/bkt-fl-252-r.jpg"
+    : isAgro
+    ? "https://www.gyscubiertas.com.py/userfiles/images/productos/600/bkt-tr-273-r.jpg"
     : "/images/featured/fastway.webp";
 
   const customVehicleImg = settings?.category_images?.[`vehicle:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle:${p.slug}`] : null);
@@ -55,10 +61,22 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
     ? "/images/featured/brutus-bg.jpg"
     : isTruck
     ? "/images/featured/xcurve-bg.jpg"
+    : isIndustrial || isAgro
+    ? "https://www.gyscubiertas.com.py/userfiles/images/agregados/600/bkt-xl-grip-r.jpg"
     : "/images/featured/fastway-bg.jpg";
 
   const vehicleImg = customVehicleImg || defaultVehicleImg;
-  const vehicleLabel = customVehicleLabel || (isPickup ? "Camioneta / SUV" : isTruck ? "Camión Pesado" : "Auto / Calle");
+  const vehicleLabel = customVehicleLabel || (
+    isPickup
+      ? "Camioneta / SUV"
+      : isTruck
+      ? "Camión Pesado"
+      : isIndustrial
+      ? "Vial / Industrial"
+      : isAgro
+      ? "Agro / Campo"
+      : "Auto / Calle"
+  );
 
   const tireImg = p.image_url || fallbackImg;
 
