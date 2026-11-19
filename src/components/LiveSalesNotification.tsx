@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { CheckCircle, X } from "lucide-react";
+import { CheckCircle, Building2, X } from "lucide-react";
 
 interface SaleNotification {
   customer: string;
@@ -12,9 +12,22 @@ interface SaleNotification {
   slug: string;
   image_url: string;
   timeAgo: string;
+  isWholesale?: boolean;
 }
 
-const SALES_POOL: Omit<SaleNotification, "timeAgo" | "qty">[] = [
+const SALES_POOL: (Omit<SaleNotification, "timeAgo" | "qty"> & { defaultQty?: number; isWholesale?: boolean })[] = [
+  // Pedido Mayorista Camión (el que pidió el cliente: 100x 295/80R22.5)
+  {
+    customer: "Transportes del Norte",
+    city: "Rosario, SF",
+    brand: "XBRI",
+    model: "Forza Block P1",
+    size: "295/80 R22.5",
+    slug: "xbri-r-152-149j-forza-block-p1-295-80r22-5",
+    image_url: "https://xbri.com.py/img/pattern/xbri/106109/xbri_forza-block.webp",
+    defaultQty: 100,
+    isWholesale: true,
+  },
   {
     customer: "Lucas",
     city: "Rosario, SF",
@@ -25,6 +38,17 @@ const SALES_POOL: Omit<SaleNotification, "timeAgo" | "qty">[] = [
     image_url: "https://cdn.shopify.com/s/files/1/0780/9535/1865/files/neumatico-michelin-primacy-4_f0122e20-3023-455b-8874-cefcdd7bf9b4.jpg?v=1790925375",
   },
   {
+    customer: "Logística Pampeana",
+    city: "Córdoba",
+    brand: "WESTLAKE",
+    model: "WSR1 Heavy 18PR",
+    size: "295/80 R22.5",
+    slug: "west-lake-wsr1-18pr-154-151m-315-80r22-5",
+    image_url: "/images/featured/xcurve.webp",
+    defaultQty: 48,
+    isWholesale: true,
+  },
+  {
     customer: "Martín",
     city: "Córdoba Capital",
     brand: "XBRI",
@@ -32,6 +56,17 @@ const SALES_POOL: Omit<SaleNotification, "timeAgo" | "qty">[] = [
     size: "185/65 R14",
     slug: "xbri-185-65r14-86h-fastway-a2",
     image_url: "/images/featured/fastway.webp",
+  },
+  {
+    customer: "Distribuidora Cuyo",
+    city: "Mendoza",
+    brand: "XBRI",
+    model: "Fastway C1 (Lote Gomera)",
+    size: "175/70 R13",
+    slug: "xbri-185-65r14-86h-fastway-a2",
+    image_url: "/images/featured/fastway.webp",
+    defaultQty: 40,
+    isWholesale: true,
   },
   {
     customer: "Esteban",
@@ -52,6 +87,17 @@ const SALES_POOL: Omit<SaleNotification, "timeAgo" | "qty">[] = [
     image_url: "https://cdn.shopify.com/s/files/1/0780/9535/1865/files/neumatico-goodyear-efficientgrip-performance_e3ea0185-520e-4dd1-8769-cf56a93cb3aa.jpg?v=1790925370",
   },
   {
+    customer: "Flota Transporte Aconcagua",
+    city: "Villa María, Cba",
+    brand: "FATE",
+    model: "DO-820 Tracción",
+    size: "295/80 R22.5",
+    slug: "fate-152-148-g-do-820-295-80r22-5",
+    image_url: "/images/featured/xcurve.webp",
+    defaultQty: 80,
+    isWholesale: true,
+  },
+  {
     customer: "Federico",
     city: "Mar del Plata",
     brand: "HANKOOK",
@@ -61,22 +107,15 @@ const SALES_POOL: Omit<SaleNotification, "timeAgo" | "qty">[] = [
     image_url: "https://cdn.shopify.com/s/files/1/0780/9535/1865/files/neumatico-hankook-kinergy-st-h735_c0b991da-10eb-4b2a-a9a3-958863fbe567.jpg?v=1790925376",
   },
   {
-    customer: "Joaquín",
-    city: "Neuquén",
-    brand: "CONTINENTAL",
-    model: "ExtremeContact",
-    size: "225/45 R17",
-    slug: "continental-allseasoncontact-2-225-45r19-96v",
-    image_url: "/images/products/continental-local-continental-extremecontact-sport-02-225-45-r18-91y.webp",
-  },
-  {
-    customer: "Marcos",
-    city: "Pergamino, Bs. As.",
+    customer: "Agroservicios del Sur",
+    city: "Venado Tuerto, SF",
     brand: "BKT",
     model: "TR-273 R-2 Arrocera",
     size: "23.1 – 26",
     slug: "bkt-23-1-26-12pr-bkt-r-3-tr390-e-tl",
     image_url: "https://www.gyscubiertas.com.py/userfiles/images/productos/600/bkt-tr-273-r.jpg",
+    defaultQty: 6,
+    isWholesale: true,
   },
   {
     customer: "Mariano",
@@ -86,15 +125,6 @@ const SALES_POOL: Omit<SaleNotification, "timeAgo" | "qty">[] = [
     size: "175/70 R14",
     slug: "posadas-175-70r14-88t-xl-chrono",
     image_url: "/images/products/posadas-175-70r14-84t-f-engy.webp",
-  },
-  {
-    customer: "Alejandro",
-    city: "Bahía Blanca",
-    brand: "BRIDGESTONE",
-    model: "Dueler AT Revo 2",
-    size: "205/60 R16",
-    slug: "nasser-bridgestone-dueler-at-revo-2-205-60r16-92t",
-    image_url: "https://cdn.shopify.com/s/files/1/0780/9535/1865/files/neumatico-bridgestone-dueler-a-t-revo-2_c0a520a1-7788-4e56-9b57-65775f0a0008.jpg?v=1790925372",
   },
   {
     customer: "Nicolás",
@@ -109,11 +139,11 @@ const SALES_POOL: Omit<SaleNotification, "timeAgo" | "qty">[] = [
 
 const TIME_AGO_OPTIONS = [
   "Hace 2 minutos",
-  "Hace 4 minutos",
-  "Hace 7 minutos",
-  "Hace 11 minutos",
-  "Hace 16 minutos",
-  "Hace 23 minutos",
+  "Hace 5 minutos",
+  "Hace 9 minutos",
+  "Hace 14 minutos",
+  "Hace 20 minutos",
+  "Hace 28 minutos",
 ];
 
 export function LiveSalesNotification() {
@@ -132,8 +162,7 @@ export function LiveSalesNotification() {
       const base = SALES_POOL[poolIndex % SALES_POOL.length];
       poolIndex++;
 
-      const qtyOptions = [2, 4, 4, 2, 4];
-      const qty = qtyOptions[Math.floor(Math.random() * qtyOptions.length)];
+      const qty = base.defaultQty || (Math.random() > 0.4 ? 4 : 2);
       const timeAgo = TIME_AGO_OPTIONS[Math.floor(Math.random() * TIME_AGO_OPTIONS.length)];
 
       setCurrent({
@@ -178,7 +207,11 @@ export function LiveSalesNotification() {
       }`}
       style={{ maxWidth: "calc(100vw - 96px)" }}
     >
-      <div className="relative flex items-center gap-3.5 rounded-2xl bg-white border border-neutral-200/90 p-3 sm:p-3.5 shadow-[0_12px_30px_-6px_rgba(0,0,0,0.14),0_4px_10px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.18)] transition-shadow duration-300 w-full max-w-[360px]">
+      <div className={`relative flex items-center gap-3.5 rounded-2xl bg-white p-3 sm:p-3.5 transition-shadow duration-300 w-full max-w-[370px] ${
+        current.isWholesale
+          ? "border-2 border-blue-500/80 shadow-[0_12px_32px_-6px_rgba(37,99,235,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)]"
+          : "border border-neutral-200/90 shadow-[0_12px_30px_-6px_rgba(0,0,0,0.14),0_4px_10px_-2px_rgba(0,0,0,0.06)]"
+      }`}>
         {/* Botón cerrar sutil */}
         <button
           type="button"
@@ -214,17 +247,23 @@ export function LiveSalesNotification() {
           to={`/producto/${current.slug}`}
           className="flex-1 min-w-0 flex flex-col justify-center text-left no-underline"
         >
-          <div className="text-[12px] sm:text-[13px] font-semibold text-neutral-800 leading-tight truncate">
-            {current.customer} de <span className="text-neutral-900 font-bold">{current.city}</span> compró {current.qty} u.
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-800 leading-tight truncate">
+            {current.isWholesale ? (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-black uppercase tracking-wider">
+                <Building2 className="w-3 h-3" />
+                Mayorista
+              </span>
+            ) : null}
+            <span className="truncate">{current.customer} ({current.city})</span>
           </div>
 
           <div className="text-[13px] sm:text-[14px] font-black text-neutral-900 leading-snug truncate mt-0.5">
-            {current.brand} {current.model}
+            {current.qty}x {current.brand} {current.model}
           </div>
 
           <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 mt-1">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span className="truncate">{current.size}</span>
+            <span className="truncate font-bold">{current.size}</span>
             <span className="text-neutral-300">•</span>
             <span className="text-neutral-400 font-normal">{current.timeAgo}</span>
           </div>
