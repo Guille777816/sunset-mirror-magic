@@ -12,6 +12,7 @@ import { CartProvider } from "@/lib/cart";
 import { CurrencyProvider } from "@/lib/currency";
 import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 import { DocLeRadialFloatingWidget } from "@/components/DocLeRadialFloatingWidget";
+import { LiveSalesNotification } from "@/components/LiveSalesNotification";
 
 import appCss from "../styles.css?url";
 
@@ -127,7 +128,12 @@ function RootComponent() {
         <CartProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
-          {!isAdmin && <DocLeRadialFloatingWidget />}
+          {!isAdmin && (
+            <>
+              <DocLeRadialFloatingWidget />
+              <LiveSalesNotification />
+            </>
+          )}
         </CartProvider>
       </CurrencyProvider>
     </QueryClientProvider>
