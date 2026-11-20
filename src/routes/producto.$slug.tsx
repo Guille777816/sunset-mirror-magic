@@ -7,6 +7,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { getSettings } from "@/lib/settings.functions";
 import { useCart } from "@/lib/cart";
+import { PaymentMethodsWidget } from "@/components/PaymentMethodsWidget";
 import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
@@ -586,32 +587,10 @@ function ProductDetail() {
               </div>
             </div>
             {Number(p.price_ars) > 0 && (
-              <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-xs">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-emerald-600 shrink-0" />
-                  <p className="text-base sm:text-lg font-black text-emerald-950">
-                    3 cuotas fijas sin interés de $ {Math.round(Number(p.price_ars) / 3).toLocaleString("es-AR")}
-                  </p>
-                </div>
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs font-bold text-emerald-900">Tarjetas de crédito:</span>
-                  {["Visa", "Naranja X", "SuCrédito", "Cabal", "Amex", "Mastercard"].map((card) => (
-                    <span
-                      key={card}
-                      className="rounded-md border border-emerald-200 bg-white px-2 py-0.5 text-xs font-bold text-neutral-800 shadow-xs"
-                    >
-                      {card}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-emerald-200/70 pt-2 text-xs text-neutral-700">
-                  <span className="font-bold text-neutral-800">Otros medios:</span>
-                  <span className="rounded bg-white/90 px-2 py-0.5 font-medium border border-neutral-200 shadow-xs">Tarjeta de Débito</span>
-                  <span className="rounded bg-white/90 px-2 py-0.5 font-medium border border-neutral-200 shadow-xs">Prepagas (Ualá, MP)</span>
-                  <span className="rounded bg-emerald-100 px-2 py-0.5 font-bold text-emerald-900 border border-emerald-300 shadow-xs">PIX 🇧🇷</span>
-                  <span className="rounded bg-sky-50 px-2 py-0.5 font-bold text-sky-900 border border-sky-200 shadow-xs">Tarjetas Extranjeras 🌐</span>
-                </div>
-              </div>
+              <PaymentMethodsWidget
+                priceArs={Number(p.price_ars)}
+                className="mt-4"
+              />
             )}
             <p className="mt-3 text-sm text-muted-foreground">
               {p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}

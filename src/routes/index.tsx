@@ -20,6 +20,7 @@ import { useCurrency, CURRENCIES, type Currency } from "@/lib/currency";
 import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 import { TireSizeGuide } from "@/components/TireSizeGuide";
 import { FeaturedWhiteSection } from "@/components/FeaturedWhiteSection";
+import { Carrusel3DOfertas } from "@/components/Carrusel3DOfertas";
 import { FloatingSearchButton } from "@/components/FloatingSearchButton";
 import { SocialCollageSection } from "@/components/SocialCollageSection";
 import { BranchLocationSection } from "@/components/BranchLocationSection";
@@ -763,6 +764,23 @@ function Index() {
       {/* Rueda giratoria interactiva ("Cómo leer la medida de su neumático") */}
       {!searchActive && !activeCategory && !viewAllSizes && (
         <TireSizeGuide />
+      )}
+
+      {/* Carrusel 3D de Ofertas con Vehículos estilo Wigy */}
+      {!searchActive && !activeCategory && !viewAllSizes && (
+        <Carrusel3DOfertas
+          onSelectSize={(wVal, hVal, rVal) => {
+            setW(wVal);
+            setH(hVal);
+            setR(rVal);
+            syncUrl(null, wVal, hVal, rVal);
+            setSearchActive(true);
+            setActiveCategory(null);
+            setTimeout(() => {
+              document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
+            }, 50);
+          }}
+        />
       )}
 
       {/* Productos Destacados (Fondo blanco solicitado) */}

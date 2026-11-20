@@ -4,6 +4,7 @@ import { X, Minus, Plus, ShoppingCart, Trash2, Check, Lock, CreditCard, Copy, Ch
 import { createOrder } from "./orders.functions";
 import { createMpPreference } from "./mercadopago.functions";
 import { useCurrency } from "./currency";
+import { PaymentMethodsWidget } from "@/components/PaymentMethodsWidget";
 
 export type CartItem = {
   id: string;
@@ -258,12 +259,12 @@ function CartDrawer() {
                 <Lock className="h-4 w-4" /> Finalizar compra ({format(finalTotal)})
               </button>
 
-              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 text-center">
-                <p className="text-[11px] font-bold text-emerald-950">
-                  {isTransfer
-                    ? "🏦 Descuento del 15% aplicado para pago inmediato por Transferencia Bancaria (Alias LERADIAL)"
-                    : "💳 3 cuotas fijas sin interés con Visa, Naranja X, SuCrédito, Cabal y Amex"}
-                </p>
+              <div className="mt-3">
+                <PaymentMethodsWidget
+                  priceArs={isTransfer ? undefined : total}
+                  compact
+                  showTransferBadge={false}
+                />
               </div>
             </footer>
           </>
