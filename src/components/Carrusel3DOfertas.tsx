@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, CreditCard, Sparkles, Tag, ShieldCheck } from "lucide-react";
 
 export interface OfertaCard {
@@ -17,7 +16,7 @@ export interface OfertaCard {
   searchParams?: { w: string; h: string; r: string };
 }
 
-const DEFAULT_OFERTAS: OfertaCard[] = [
+export const DEFAULT_OFERTAS: OfertaCard[] = [
   {
     id: "brutus-pickup",
     vehicleType: "Pickups 4x4 & All-Terrain",
@@ -85,6 +84,22 @@ const DEFAULT_OFERTAS: OfertaCard[] = [
   },
 ];
 
+export function parseCarruselCards(categoryImages?: Record<string, string> | null): OfertaCard[] {
+  if (!categoryImages) return DEFAULT_OFERTAS;
+  try {
+    const raw = categoryImages.carrusel_3d_cards || categoryImages["carrusel_3d"];
+    if (raw) {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Error parseando carrusel_3d_cards:", e);
+  }
+  return DEFAULT_OFERTAS;
+}
+
 interface Carrusel3DOfertasProps {
   cards?: OfertaCard[];
   onSelectSize?: (w: string, h: string, r: string) => void;
@@ -111,10 +126,10 @@ export function Carrusel3DOfertas({
 
   // Autoplay con pausa en hover
   useEffect(() => {
-    if (isHovered) return;
+    if (isHovered || total <= 1) return;
     const interval = setInterval(nextSlide, 4500);
     return () => clearInterval(interval);
-  }, [isHovered, nextSlide]);
+  }, [isHovered, nextSlide, total]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -139,36 +154,32 @@ export function Carrusel3DOfertas({
   return (
     <section
       id="carrusel-3d-ofertas"
-      className="relative overflow-hidden bg-gradient-to-b from-neutral-950 via-neutral-900 to-black py-16 sm:py-24 text-white"
+      className="relative overflow-hidden bg-white py-14 sm:py-20 border-y border-neutral-100"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Luces y resplandores de fondo */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-[450px] w-[800px] -translate-x-1/2 rounded-full bg-emerald-600/15 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-40 left-1/3 h-[400px] w-[600px] rounded-full bg-primary/15 blur-[120px]" />
-
       <div className="container relative z-10 mx-auto px-4">
-        {/* Encabezado estilo Wigy con tipografía moderna */}
+        {/* Encabezado limpio con fondo blanco estilo Wigy */}
         <div className="mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-emerald-400 shadow-sm backdrop-blur-md">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            <span>OFERTAS EXCLUSIVAS LE RADIAL</span>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800 border border-emerald-200/80">
+            <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+            <span>OFERTAS EN VEHÍCULOS</span>
           </div>
 
-          <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl md:text-5xl">
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-neutral-900 sm:text-4xl lg:text-5xl">
             Vehículos en Acción con Neumáticos en Oferta
           </h2>
 
-          <p className="mt-3 text-sm sm:text-base text-neutral-300">
-            Encontrá el neumático ideal para tu camioneta, auto, SUV o camión.{" "}
-            <strong className="text-emerald-400 font-bold">3 cuotas fijas sin interés</strong> o{" "}
-            <strong className="text-emerald-400 font-bold">15% OFF abonando por transferencia</strong> con envío a todo el país.
+          <p className="mt-2 text-sm sm:text-base text-neutral-500 max-w-2xl mx-auto">
+            Mirá cómo lucen y rinden en autos, pickups, SUVs y transporte pesado.{" "}
+            <strong className="text-emerald-700 font-bold">3 cuotas fijas sin interés</strong> o{" "}
+            <strong className="text-emerald-700 font-bold">15% OFF por transferencia</strong>.
           </p>
         </div>
 
-        {/* Escenario 3D */}
+        {/* Escenario 3D Claro y Limpio */}
         <div
-          className="relative mx-auto mt-12 sm:mt-16 h-[500px] sm:h-[550px] w-full max-w-5xl"
+          className="relative mx-auto mt-10 sm:mt-14 h-[490px] sm:h-[530px] w-full max-w-5xl"
           style={{ perspective: "1200px" }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -176,7 +187,7 @@ export function Carrusel3DOfertas({
         >
           <div className="relative h-full w-full">
             {cards.map((card, idx) => {
-              // Calcular distancia relativa respecto al activo
+              // Distancia relativa
               let diff = (idx - activeIndex) % total;
               if (diff > total / 2) diff -= total;
               if (diff < -total / 2) diff += total;
@@ -187,43 +198,40 @@ export function Carrusel3DOfertas({
               const isFarPrev = diff === -2;
               const isFarNext = diff === 2;
 
-              // Calcular transformación 3D
               let transform = "";
               let zIndex = 10;
               let opacity = 0;
               let pointerEvents: "auto" | "none" = "none";
-              let filter = "brightness(0.4)";
+              let shadow = "0 10px 25px -5px rgba(0, 0, 0, 0.08)";
 
               if (isActive) {
                 transform = "translate3d(-50%, -50%, 0px) scale(1) rotateY(0deg)";
                 zIndex = 40;
                 opacity = 1;
                 pointerEvents = "auto";
-                filter = "brightness(1)";
+                shadow = "0 25px 50px -12px rgba(0, 0, 0, 0.18)";
               } else if (isNext) {
-                transform = "translate3d(calc(-50% + 220px), -50%, -100px) scale(0.85) rotateY(-25deg)";
+                transform = "translate3d(calc(-50% + 230px), -50%, -90px) scale(0.86) rotateY(-24deg)";
                 zIndex = 30;
-                opacity = 0.85;
+                opacity = 0.88;
                 pointerEvents = "auto";
-                filter = "brightness(0.65)";
+                shadow = "0 15px 30px -10px rgba(0, 0, 0, 0.12)";
               } else if (isPrev) {
-                transform = "translate3d(calc(-50% - 220px), -50%, -100px) scale(0.85) rotateY(25deg)";
+                transform = "translate3d(calc(-50% - 230px), -50%, -90px) scale(0.86) rotateY(24deg)";
                 zIndex = 30;
-                opacity = 0.85;
+                opacity = 0.88;
                 pointerEvents = "auto";
-                filter = "brightness(0.65)";
+                shadow = "0 15px 30px -10px rgba(0, 0, 0, 0.12)";
               } else if (isFarNext) {
-                transform = "translate3d(calc(-50% + 380px), -50%, -220px) scale(0.7) rotateY(-38deg)";
+                transform = "translate3d(calc(-50% + 400px), -50%, -200px) scale(0.72) rotateY(-36deg)";
                 zIndex = 20;
-                opacity = 0.4;
+                opacity = 0.45;
                 pointerEvents = "auto";
-                filter = "brightness(0.4)";
               } else if (isFarPrev) {
-                transform = "translate3d(calc(-50% - 380px), -50%, -220px) scale(0.7) rotateY(38deg)";
+                transform = "translate3d(calc(-50% - 400px), -50%, -200px) scale(0.72) rotateY(36deg)";
                 zIndex = 20;
-                opacity = 0.4;
+                opacity = 0.45;
                 pointerEvents = "auto";
-                filter = "brightness(0.4)";
               } else {
                 transform = "translate3d(-50%, -50%, -350px) scale(0.5)";
                 opacity = 0;
@@ -235,60 +243,63 @@ export function Carrusel3DOfertas({
 
               return (
                 <div
-                  key={card.id}
+                  key={card.id || idx}
                   onClick={() => {
                     if (!isActive) setActiveIndex(idx);
                   }}
-                  className="absolute left-1/2 top-1/2 w-[290px] sm:w-[340px] md:w-[360px] h-[450px] sm:h-[490px] cursor-pointer select-none rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 ease-out border border-white/10"
+                  className="absolute left-1/2 top-1/2 w-[290px] sm:w-[340px] md:w-[360px] h-[450px] sm:h-[490px] cursor-pointer select-none rounded-3xl overflow-hidden bg-white border border-neutral-200/90 transition-all duration-500 ease-out flex flex-col justify-between"
                   style={{
                     transform,
                     zIndex,
                     opacity,
                     pointerEvents,
-                    filter,
+                    boxShadow: shadow,
                     transformStyle: "preserve-3d",
                   }}
                 >
-                  {/* Foto de fondo del vehículo equipado con neumáticos */}
-                  <img
-                    src={card.vehicleImageUrl}
-                    alt={card.title}
-                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
+                  {/* Foto del vehículo */}
+                  <div className="relative h-[250px] sm:h-[280px] w-full overflow-hidden bg-neutral-100">
+                    <img
+                      src={card.vehicleImageUrl}
+                      alt={card.title}
+                      className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-105"
+                      loading="lazy"
+                    />
 
-                  {/* Degradado oscuro para lectura óptima */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/20" />
+                    {/* Sutil sombra para badges */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
-                  {/* Badges superiores estilo Wigy */}
-                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2">
-                    <span className="rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white border border-white/15">
-                      {card.vehicleType}
-                    </span>
-                    <span className="rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-black shadow-md">
-                      {card.badge}
-                    </span>
-                  </div>
-
-                  {/* Tarjeta flotante inferior estilo Wigy */}
-                  <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-white/95 backdrop-blur-md p-4 text-neutral-900 shadow-xl border border-white/50">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-primary">
-                        {card.tireBrand} · Medida {card.tireSize}
+                    {/* Badges superiores limpios */}
+                    <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2">
+                      <span className="rounded-full bg-white/95 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-neutral-800 border border-neutral-200/80 shadow-xs">
+                        {card.vehicleType}
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">
-                        <Tag className="h-2.5 w-2.5" /> 15% OFF
+                      <span className="rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white shadow-xs">
+                        {card.badge}
                       </span>
                     </div>
 
-                    <h3 className="mt-1 text-base font-black text-neutral-900 leading-tight">
-                      {card.title}
-                    </h3>
-                    <p className="mt-0.5 text-xs text-neutral-600 line-clamp-1">
-                      {card.subtitle}
-                    </p>
+                    {/* Medida sobre la foto */}
+                    <div className="absolute bottom-3 left-3.5">
+                      <span className="rounded-md bg-black/75 backdrop-blur-md px-2.5 py-1 text-xs font-black text-white">
+                        {card.tireBrand} {card.tireSize}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Detalle inferior limpio en fondo blanco */}
+                  <div className="p-4 bg-white flex-1 flex flex-col justify-between border-t border-neutral-100">
+                    <div>
+                      <h3 className="text-base font-black text-neutral-900 leading-tight">
+                        {card.title}
+                      </h3>
+                      <p className="mt-1 text-xs text-neutral-500 line-clamp-1">
+                        {card.subtitle}
+                      </p>
+                    </div>
 
                     {/* Precios y cuotas */}
-                    <div className="mt-3 flex items-baseline justify-between border-t border-neutral-200/80 pt-2.5">
+                    <div className="mt-3 flex items-baseline justify-between border-t border-neutral-100 pt-2.5">
                       <div>
                         <span className="text-[10px] text-neutral-400 line-through block font-medium">
                           Lista: ${card.priceArs.toLocaleString("es-AR")}
@@ -298,8 +309,8 @@ export function Carrusel3DOfertas({
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] font-bold text-neutral-600 block">
-                          o 3 cuotas fijas de
+                        <span className="text-[10px] font-bold text-neutral-500 block">
+                          3 cuotas fijas de
                         </span>
                         <span className="text-xs font-black text-neutral-900">
                           ${cuotaVal.toLocaleString("es-AR")}
@@ -319,14 +330,13 @@ export function Carrusel3DOfertas({
                             card.searchParams.r
                           );
                         } else {
-                          // Scroll hacia el catálogo
                           document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
                         }
                       }}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-xs font-black uppercase tracking-wider text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-xs hover:bg-primary/90 transition"
                     >
                       <CreditCard className="h-3.5 w-3.5" />
-                      <span>Ver Oferta y Comprar</span>
+                      <span>Ver Oferta</span>
                     </button>
                   </div>
                 </div>
@@ -334,12 +344,12 @@ export function Carrusel3DOfertas({
             })}
           </div>
 
-          {/* Flechas de navegación 3D con blur */}
+          {/* Flechas de navegación limpias con fondo blanco */}
           <button
             type="button"
             onClick={prevSlide}
             aria-label="Oferta anterior"
-            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-50 grid h-11 w-11 sm:h-12 sm:w-12 place-items-center rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 shadow-lg hover:bg-white/40 active:scale-95 transition"
+            className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 z-50 grid h-11 w-11 sm:h-12 sm:w-12 place-items-center rounded-full bg-white text-neutral-800 border border-neutral-200 shadow-lg hover:bg-neutral-50 active:scale-95 transition"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -347,14 +357,14 @@ export function Carrusel3DOfertas({
             type="button"
             onClick={nextSlide}
             aria-label="Oferta siguiente"
-            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-50 grid h-11 w-11 sm:h-12 sm:w-12 place-items-center rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 shadow-lg hover:bg-white/40 active:scale-95 transition"
+            className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 z-50 grid h-11 w-11 sm:h-12 sm:w-12 place-items-center rounded-full bg-white text-neutral-800 border border-neutral-200 shadow-lg hover:bg-neutral-50 active:scale-95 transition"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
         </div>
 
         {/* Indicadores de puntos (Dots) */}
-        <div className="mt-8 sm:mt-12 flex items-center justify-center gap-2">
+        <div className="mt-8 sm:mt-10 flex items-center justify-center gap-2">
           {cards.map((_, dotIdx) => (
             <button
               key={dotIdx}
@@ -362,25 +372,25 @@ export function Carrusel3DOfertas({
               aria-label={`Ir a diapositiva ${dotIdx + 1}`}
               className={`h-2.5 rounded-full transition-all duration-300 ${
                 dotIdx === activeIndex
-                  ? "w-8 bg-emerald-400"
-                  : "w-2.5 bg-white/30 hover:bg-white/50"
+                  ? "w-8 bg-emerald-600"
+                  : "w-2.5 bg-neutral-200 hover:bg-neutral-300"
               }`}
             />
           ))}
         </div>
 
-        {/* Footer de beneficios en oferta */}
-        <div className="mt-10 mx-auto max-w-2xl flex flex-wrap items-center justify-center gap-6 text-xs text-neutral-400">
+        {/* Footer de beneficios limpio */}
+        <div className="mt-8 mx-auto max-w-2xl flex flex-wrap items-center justify-center gap-6 text-xs text-neutral-500">
           <div className="flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
             <span>5 años de garantía oficial</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <CreditCard className="h-4 w-4 text-emerald-400" />
+            <CreditCard className="h-4 w-4 text-emerald-600" />
             <span>3 cuotas fijas sin interés</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-emerald-400" />
+            <Sparkles className="h-4 w-4 text-emerald-600" />
             <span>Envíos bonificados a todo el país</span>
           </div>
         </div>
