@@ -80,6 +80,10 @@ export const createOrder = createServerFn({ method: "POST" })
             unit_price: Number(it.price_ars) || 0,
             currency_id: "ARS",
           })),
+          payment_methods: {
+            installments: 3,
+            default_installments: 3,
+          },
           external_reference: orderId,
           statement_descriptor: "LE RADIAL",
           payer: {

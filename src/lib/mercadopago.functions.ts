@@ -75,6 +75,10 @@ export const createMpPreference = createServerFn({ method: "POST" })
 
     const payload = {
       items: mpItems,
+      payment_methods: {
+        installments: 3,
+        default_installments: 3,
+      },
       external_reference: data.order_id,
       statement_descriptor: "LE RADIAL",
       payer: {
