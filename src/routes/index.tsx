@@ -680,46 +680,63 @@ function Index() {
           </div>
         </section>
 
+      {/* Carrusel 3D de Ofertas con Vehículos estilo Wigy (En Portada de Inicio) */}
+      {!searchActive && !activeCategory && !viewAllSizes && (
+        <Carrusel3DOfertas
+          onSelectSize={(wVal, hVal, rVal) => {
+            setW(wVal);
+            setH(hVal);
+            setR(rVal);
+            syncUrl(null, wVal, hVal, rVal);
+            setSearchActive(true);
+            setActiveCategory(null);
+            setTimeout(() => {
+              document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
+            }, 50);
+          }}
+        />
+      )}
 
-
-      {/* Vista de Tienda y Catálogo estilo Sunset / XBRI (Siempre visible con paginación instantánea) */}
-      <SunsetStoreView
-        products={products as any[]}
-        selectedCategory={activeCategory}
-        onSelectCategory={(cat) => {
-          setActiveCategory(cat);
-          syncUrl(cat, w, h, r);
-          if (!cat && !searchActive) {
-            window.scrollTo({ top: 0, behavior: "smooth" });
+      {/* Vista de Tienda y Catálogo estilo Sunset / XBRI (Sólo visible cuando el usuario busca o filtra) */}
+      {(searchActive || activeCategory) && (
+        <SunsetStoreView
+          products={products as any[]}
+          selectedCategory={activeCategory}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            syncUrl(cat, w, h, r);
+            if (!cat && !searchActive) {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+          selectedMeasure={
+            searchActive
+              ? {
+                  width: w !== "Todos" ? w : undefined,
+                  aspect: h !== "Todos" ? h : undefined,
+                  rim: r !== "Todos" ? r : undefined,
+                }
+              : null
           }
-        }}
-        selectedMeasure={
-          searchActive
-            ? {
-                width: w !== "Todos" ? w : undefined,
-                aspect: h !== "Todos" ? h : undefined,
-                rim: r !== "Todos" ? r : undefined,
-              }
-            : null
-        }
-        onClearMeasure={() => {
-          setSearchActive(false);
-          setW("Todos");
-          setH("Todos");
-          setR("Todos");
-          syncUrl(activeCategory);
-        }}
-        onBackToHome={() => {
-          setActiveCategory(null);
-          setSearchActive(false);
-          setViewAllSizes(false);
-          setW("Todos");
-          setH("Todos");
-          setR("Todos");
-          syncUrl(null);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
-      />
+          onClearMeasure={() => {
+            setSearchActive(false);
+            setW("Todos");
+            setH("Todos");
+            setR("Todos");
+            syncUrl(activeCategory);
+          }}
+          onBackToHome={() => {
+            setActiveCategory(null);
+            setSearchActive(false);
+            setViewAllSizes(false);
+            setW("Todos");
+            setH("Todos");
+            setR("Todos");
+            syncUrl(null);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+      )}
 
       {/* Vista 'Todas las medidas' estilo Sunset / XBRI */}
       {viewAllSizes && (
@@ -764,23 +781,6 @@ function Index() {
       {/* Rueda giratoria interactiva ("Cómo leer la medida de su neumático") */}
       {!searchActive && !activeCategory && !viewAllSizes && (
         <TireSizeGuide />
-      )}
-
-      {/* Carrusel 3D de Ofertas con Vehículos estilo Wigy */}
-      {!searchActive && !activeCategory && !viewAllSizes && (
-        <Carrusel3DOfertas
-          onSelectSize={(wVal, hVal, rVal) => {
-            setW(wVal);
-            setH(hVal);
-            setR(rVal);
-            syncUrl(null, wVal, hVal, rVal);
-            setSearchActive(true);
-            setActiveCategory(null);
-            setTimeout(() => {
-              document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
-            }, 50);
-          }}
-        />
       )}
 
       {/* Productos Destacados (Fondo blanco solicitado) */}
