@@ -19,7 +19,6 @@ import { BrandLogo, DEFAULT_BRAND_LOGO_MAP } from "@/components/BrandLogo";
 import { SunsetSyncModal } from "@/components/SunsetSyncModal";
 import { optimizeAndReadImage } from "@/lib/image-utils";
 import { cleanTireSize } from "@/lib/utils";
-import { Carrusel3DAdminTab } from "@/components/Carrusel3DAdminTab";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -149,7 +148,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   ...OTHER_CATEGORIES,
 };
 
-type Tab = "productos" | "marcas" | "pedidos" | "sucursales" | "banners" | "carrusel3d" | "testimonios" | "imagenes" | "ajustes";
+type Tab = "productos" | "marcas" | "pedidos" | "sucursales" | "banners" | "testimonios" | "imagenes" | "ajustes";
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -572,7 +571,6 @@ function AdminPage() {
             { id: "pedidos", label: "Pedidos", icon: ClipboardList },
             { id: "sucursales", label: "Sucursales", icon: Store },
             { id: "banners", label: "Banners", icon: ImageLucide },
-            { id: "carrusel3d", label: "Carrusel 3D", icon: Sparkles },
             { id: "testimonios", label: "Testimonios", icon: MessageSquare },
             { id: "imagenes", label: "Imágenes", icon: ImageIcon },
             { id: "ajustes", label: "Ajustes del sitio", icon: Settings2 },
@@ -995,17 +993,6 @@ function AdminPage() {
             settings={settings}
             onRefresh={() => {
               qc.invalidateQueries({ queryKey: ["admin-products"] });
-              qc.invalidateQueries({ queryKey: ["admin-settings"] });
-              qc.invalidateQueries({ queryKey: ["settings"] });
-            }}
-          />
-        )}
-
-        {/* ── TAB: CARRUSEL 3D ── */}
-        {tab === "carrusel3d" && (
-          <Carrusel3DAdminTab
-            settings={settings}
-            onRefresh={() => {
               qc.invalidateQueries({ queryKey: ["admin-settings"] });
               qc.invalidateQueries({ queryKey: ["settings"] });
             }}

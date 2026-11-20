@@ -20,7 +20,6 @@ import { useCurrency, CURRENCIES, type Currency } from "@/lib/currency";
 import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 import { TireSizeGuide } from "@/components/TireSizeGuide";
 import { FeaturedWhiteSection } from "@/components/FeaturedWhiteSection";
-import { Carrusel3DOfertas, parseCarruselCards } from "@/components/Carrusel3DOfertas";
 import { FloatingSearchButton } from "@/components/FloatingSearchButton";
 import { SocialCollageSection } from "@/components/SocialCollageSection";
 import { BranchLocationSection } from "@/components/BranchLocationSection";
@@ -787,24 +786,6 @@ function Index() {
             />
           </div>
         </section>
-      )}
-
-      {/* Carrusel 3D de Ofertas con Vehículos (Fondo Blanco - Entre Video de XBRI y Ofertas) */}
-      {!searchActive && !activeCategory && !viewAllSizes && (
-        <Carrusel3DOfertas
-          cards={parseCarruselCards(settings?.category_images)}
-          onSelectSize={(wVal, hVal, rVal) => {
-            setW(wVal);
-            setH(hVal);
-            setR(rVal);
-            syncUrl(null, wVal, hVal, rVal);
-            setSearchActive(true);
-            setActiveCategory(null);
-            setTimeout(() => {
-              document.getElementById("tienda-catalogo")?.scrollIntoView({ behavior: "smooth" });
-            }, 50);
-          }}
-        />
       )}
 
       {/* Carruseles auto-scroll por categoría (estilo página original) */}
