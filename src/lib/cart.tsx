@@ -27,6 +27,8 @@ type CartCtx = {
   open: () => void;
   close: () => void;
   isOpen: boolean;
+  paymentMethod: "transfer" | "card";
+  setPaymentMethod: (pm: "transfer" | "card") => void;
 };
 
 const Ctx = createContext<CartCtx | null>(null);
@@ -35,6 +37,7 @@ const KEY = "leradial.cart.v1";
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "card">("card");
 
   useEffect(() => {
     try { const raw = localStorage.getItem(KEY); if (raw) setItems(JSON.parse(raw)); } catch {}
@@ -58,7 +61,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     open: () => setIsOpen(true),
     close: () => setIsOpen(false),
     isOpen,
-  }), [items, isOpen]);
+    paymentMethod,
+    setPaymentMethod,
+  }), [items, isOpen, paymentMethod]);
 
   return (
     <Ctx.Provider value={value}>
@@ -75,11 +80,10 @@ export function useCart() {
 }
 
 function CartDrawer() {
-  const { items, total, isOpen, close, remove, setQty, clear } = useCart();
+  const { items, total, count, isOpen, close, remove, setQty, clear, paymentMethod, setPaymentMethod } = useCart();
   const { format } = useCurrency();
   const submit = useServerFn(createOrder);
   const [step, setStep] = useState<"cart" | "form" | "done">("cart");
-  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "card">("transfer");
   const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
 
   const isTransfer = paymentMethod === "transfer";
@@ -101,7 +105,7 @@ function CartDrawer() {
     e.preventDefault();
     setError(null);
     if (!form.customer_name.trim() || !form.customer_phone.trim()) {
-      setError("Nombre y teléfono son obligatorios."); return;
+      setError("Nombre y teléfono son obligatorios para despachar tu pedido."); return;
     }
     setSending(true);
     try {
@@ -138,62 +142,147 @@ function CartDrawer() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/50" onClick={close} />
-      <aside className="flex h-full w-full max-w-md flex-col bg-background shadow-2xl">
-        <header className="flex items-center justify-between border-b px-5 py-4">
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onClick={close} />
+      <aside className="relative flex h-full max-h-[100dvh] w-full max-w-md flex-col bg-background shadow-2xl overflow-hidden z-10">
+        <header className="flex shrink-0 items-center justify-between border-b px-5 py-4 bg-card">
           <div className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold text-secondary">
-              {step === "done" ? "¡Pedido enviado!" : step === "form" ? "Tus datos" : "Tu carrito"}
+            <h2 className="text-base sm:text-lg font-bold text-secondary">
+              {step === "done" ? "¡Pedido recibido!" : step === "form" ? "Datos de envío y pago" : `Tu carrito (${count} ${count === 1 ? "cubierta" : "cubiertas"})`}
             </h2>
           </div>
-          <button onClick={close} className="rounded-full p-2 hover:bg-muted"><X className="h-5 w-5" /></button>
+          <button onClick={close} className="rounded-full p-2 hover:bg-muted transition" aria-label="Cerrar"><X className="h-5 w-5" /></button>
         </header>
 
         {step === "cart" && (
           <>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4">
               {items.length === 0 ? (
-                <p className="py-10 text-center text-sm text-muted-foreground">Tu carrito está vacío.</p>
+                <div className="py-12 text-center space-y-3">
+                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-muted text-muted-foreground">
+                    <ShoppingCart className="h-6 w-6" />
+                  </div>
+                  <p className="text-sm font-semibold text-secondary">Tu carrito está vacío.</p>
+                  <p className="text-xs text-muted-foreground">Elegí tus neumáticos en el catálogo para agregarlos.</p>
+                  <button onClick={close} className="rounded-full bg-primary px-5 py-2 text-xs font-bold uppercase text-primary-foreground hover:bg-primary/90 transition">
+                    Ver catálogo
+                  </button>
+                </div>
               ) : (
                 <ul className="space-y-3">
                   {items.map(it => (
-                    <li key={it.id} className="flex gap-3 rounded-xl border bg-card p-3">
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
-                        {it.image_url && <img src={it.image_url} alt="" className="h-full w-full object-cover" />}
+                    <li key={it.id} className="flex gap-3 rounded-2xl border bg-card p-3 shadow-xs">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted border border-neutral-200/60 flex items-center justify-center">
+                        {it.image_url ? (
+                          <img src={it.image_url} alt="" className="h-full w-full object-contain p-1" />
+                        ) : (
+                          <span className="text-xs font-bold text-muted-foreground">Neumático</span>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary">{it.brand}</p>
-                        <p className="truncate text-sm font-bold text-secondary">{it.model}</p>
-                        <p className="text-xs text-muted-foreground">{it.size}</p>
-                        <div className="mt-1 flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => setQty(it.id, it.qty - 1)} className="grid h-7 w-7 place-items-center rounded-full border"><Minus className="h-3 w-3" /></button>
-                            <span className="w-6 text-center text-sm font-bold">{it.qty}</span>
-                            <button onClick={() => setQty(it.id, it.qty + 1)} className="grid h-7 w-7 place-items-center rounded-full border"><Plus className="h-3 w-3" /></button>
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between gap-1">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-primary">{it.brand}</span>
+                            <button onClick={() => remove(it.id)} className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-destructive transition" title="Eliminar">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
-                          <span className="text-sm font-black text-secondary">{format(it.price_ars * it.qty)}</span>
+                          <p className="truncate text-sm font-bold text-secondary leading-snug">{it.model}</p>
+                          <p className="text-xs font-medium text-muted-foreground">{it.size}</p>
+                        </div>
+
+                        <div className="mt-2 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            {/* Selector manual de cantidad */}
+                            <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-0.5 border">
+                              <button
+                                onClick={() => setQty(it.id, it.qty - 1)}
+                                className="grid h-7 w-7 place-items-center rounded-md bg-white border border-neutral-200 shadow-2xs hover:bg-neutral-50 active:scale-95 transition"
+                                title="Restar 1"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="w-7 text-center text-sm font-black text-secondary">{it.qty}</span>
+                              <button
+                                onClick={() => setQty(it.id, it.qty + 1)}
+                                className="grid h-7 w-7 place-items-center rounded-md bg-white border border-neutral-200 shadow-2xs hover:bg-neutral-50 active:scale-95 transition"
+                                title="Sumar 1"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+
+                            {/* Subtotal del item */}
+                            <div className="text-right">
+                              <span className="text-sm font-black text-secondary block">{format(it.price_ars * it.qty)}</span>
+                              {it.qty > 1 && (
+                                <span className="text-[10px] text-muted-foreground block">{format(it.price_ars)} c/u</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Botones de selección rápida de cubiertas (1, 2, 4) */}
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground">Elegir:</span>
+                            {[
+                              { label: "1", qty: 1 },
+                              { label: "2 (par)", qty: 2 },
+                              { label: "4 (juego)", qty: 4 },
+                            ].map((preset) => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => setQty(it.id, preset.qty)}
+                                className={`rounded-md px-2 py-0.5 text-[10px] font-black transition ${
+                                  it.qty === preset.qty
+                                    ? "bg-primary text-primary-foreground shadow-2xs"
+                                    : "bg-muted text-neutral-600 hover:bg-neutral-200"
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <button onClick={() => remove(it.id)} className="self-start rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                     </li>
                   ))}
                 </ul>
               )}
-            </div>
-            <footer className="border-t p-5 bg-card">
-              {/* Selector de Forma de Pago */}
+
+              {/* Selector de Forma de Pago dentro del scroll */}
               {items.length > 0 && (
-                <div className="mb-4 space-y-2">
+                <div className="space-y-2 pt-2 border-t border-neutral-200/70">
                   <p className="text-xs font-black uppercase tracking-wider text-secondary">
-                    Seleccioná tu forma de pago:
+                    Seleccioná tu medio de pago:
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
+                      onClick={() => setPaymentMethod("card")}
+                      className={`rounded-2xl border p-3 text-left transition ${
+                        !isTransfer
+                          ? "border-[#009EE3] bg-[#009EE3]/10 text-secondary shadow-sm ring-2 ring-[#009EE3]/40"
+                          : "border-neutral-200 bg-background text-neutral-600 hover:border-neutral-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase text-[#009EE3]">Tarjeta / MP</span>
+                        <span className="rounded bg-[#009EE3] px-1.5 py-0.5 text-[9px] font-black text-white uppercase">3 cuotas</span>
+                      </div>
+                      <p className="mt-1 text-sm font-black text-secondary">
+                        {format(total)}
+                      </p>
+                      <p className="mt-0.5 text-[10px] font-semibold text-emerald-700">
+                        3 de {format(Math.round(total / 3))} sin interés
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => setPaymentMethod("transfer")}
-                      className={`rounded-xl border p-2.5 text-left transition ${
+                      className={`rounded-2xl border p-3 text-left transition ${
                         isTransfer
                           ? "border-emerald-600 bg-emerald-50 text-emerald-950 shadow-sm ring-2 ring-emerald-500/40"
                           : "border-neutral-200 bg-background text-neutral-600 hover:border-neutral-300"
@@ -206,23 +295,8 @@ function CartDrawer() {
                       <p className="mt-1 text-sm font-black text-emerald-950">
                         {format(Math.round(total * 0.85))}
                       </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("card")}
-                      className={`rounded-xl border p-2.5 text-left transition ${
-                        !isTransfer
-                          ? "border-primary bg-primary/5 text-secondary shadow-sm ring-2 ring-primary/40"
-                          : "border-neutral-200 bg-background text-neutral-600 hover:border-neutral-300"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase text-secondary">Tarjeta</span>
-                        <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[9px] font-bold text-neutral-700">3 cuotas</span>
-                      </div>
-                      <p className="mt-1 text-sm font-black text-secondary">
-                        {format(total)}
+                      <p className="mt-0.5 text-[10px] font-semibold text-emerald-700">
+                        Ahorrás {format(discountAmount)}
                       </p>
                     </button>
                   </div>
@@ -230,93 +304,175 @@ function CartDrawer() {
               )}
 
               {/* Desglose de importes */}
-              <div className="mb-4 space-y-1.5 border-t border-neutral-200/80 pt-3 text-sm">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Precio de lista</span>
-                  <span className={isTransfer ? "line-through text-neutral-400" : "font-bold text-secondary"}>
-                    {format(total)}
-                  </span>
-                </div>
-                {isTransfer && (
-                  <div className="flex justify-between text-xs font-bold text-emerald-700">
-                    <span>Descuento Transferencia (15%)</span>
-                    <span>-{format(discountAmount)}</span>
+              {items.length > 0 && (
+                <div className="space-y-1.5 rounded-xl bg-neutral-50 p-3.5 border border-neutral-200/70 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Precio de lista</span>
+                    <span className={isTransfer ? "line-through text-neutral-400 font-semibold" : "font-bold text-secondary"}>
+                      {format(total)}
+                    </span>
                   </div>
-                )}
-                <div className="flex items-baseline justify-between border-t border-neutral-200/80 pt-2">
-                  <span className="text-sm font-black uppercase tracking-wider text-secondary">Total a abonar</span>
-                  <span className="text-2xl font-black text-emerald-600">
+                  {isTransfer && (
+                    <div className="flex justify-between font-bold text-emerald-700">
+                      <span>Descuento Transferencia (15%)</span>
+                      <span>-{format(discountAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline justify-between border-t border-neutral-200/80 pt-2 text-sm">
+                    <span className="font-black uppercase tracking-wider text-secondary">Total a abonar</span>
+                    <span className="text-xl font-black text-emerald-600">
+                      {format(finalTotal)}
+                    </span>
+                  </div>
+                  {!isTransfer && total > 0 && (
+                    <p className="text-[11px] font-bold text-emerald-600 text-right">
+                      o 3 cuotas fijas sin interés de {format(Math.round(total / 3))}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Nota de garantía compacta */}
+              {items.length > 0 && (
+                <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-1 pb-2">
+                  <Lock className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Pago 100% seguro · Garantía oficial 5 años</span>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Fijo con el Botón Principal SIEMPRE visible */}
+            {items.length > 0 && (
+              <footer className="shrink-0 border-t p-4 sm:p-5 bg-card shadow-lg sticky bottom-0 z-10 space-y-2">
+                <div className="flex items-baseline justify-between text-xs">
+                  <span className="font-bold text-muted-foreground uppercase tracking-wider">Total</span>
+                  <span className="text-lg font-black text-secondary">
                     {format(finalTotal)}
+                    {!isTransfer && (
+                      <span className="text-xs font-bold text-emerald-600 ml-1.5">(3 cuotas sin interés)</span>
+                    )}
                   </span>
                 </div>
-                {!isTransfer && total > 0 && (
-                  <p className="text-[11px] font-bold text-emerald-600 text-right">
-                    o 3 cuotas fijas sin interés de {format(Math.round(total / 3))}
-                  </p>
+
+                {!isTransfer ? (
+                  <button
+                    onClick={() => setStep("form")}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] py-3.5 px-4 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-sky-500/25 hover:bg-[#0087c2] active:scale-[0.99] transition"
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    Pagar con Mercado Pago (3 cuotas) ➔
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setStep("form")}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#00A859] py-3.5 px-4 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-emerald-500/25 hover:bg-[#008f4c] active:scale-[0.99] transition"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Continuar con Transferencia (15% OFF) ➔
+                  </button>
                 )}
-              </div>
 
-              <button
-                disabled={items.length === 0}
-                onClick={() => setStep("form")}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#00A859] py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-md hover:bg-[#008f4c] disabled:opacity-50 transition"
-              >
-                <Lock className="h-4 w-4" /> Finalizar compra ({format(finalTotal)})
-              </button>
-
-              <div className="mt-3">
-                <PaymentMethodsWidget
-                  priceArs={isTransfer ? undefined : total}
-                  compact
-                  showTransferBadge={false}
-                />
-              </div>
-            </footer>
+                <p className="text-center text-[10px] text-muted-foreground">
+                  {!isTransfer ? "Aceptamos todas las tarjetas de crédito y débito vía Mercado Pago" : "Transferí con 15% OFF directo al Alias LERADIAL"}
+                </p>
+              </footer>
+            )}
           </>
         )}
 
         {step === "form" && (
-          <form onSubmit={handleSubmit} className="flex flex-1 flex-col">
-            <div className="flex-1 min-h-0 space-y-3 overflow-y-auto p-5">
-              <Field label="Nombre y apellido *" value={form.customer_name} onChange={v => setForm({ ...form, customer_name: v })} />
-              <Field label="Teléfono *" value={form.customer_phone} onChange={v => setForm({ ...form, customer_phone: v })} />
-              <Field label="Email" value={form.customer_email} onChange={v => setForm({ ...form, customer_email: v })} type="email" />
-              <Field label="Dirección de entrega" value={form.customer_address} onChange={v => setForm({ ...form, customer_address: v })} />
+          <form onSubmit={handleSubmit} className="flex flex-1 flex-col min-h-0 h-full overflow-hidden">
+            <div className="flex-1 min-h-0 space-y-3 overflow-y-auto p-4 sm:p-5">
+              <div className="rounded-xl bg-primary/5 border border-primary/15 p-3 text-xs text-secondary">
+                <p className="font-bold">Completá tus datos para el envío y facturación:</p>
+                <p className="text-muted-foreground mt-0.5">
+                  {!isTransfer ? "Luego te llevamos directo a Mercado Pago para abonar en 3 cuotas sin interés." : "Al confirmar te damos los datos de transferencia y link directo a WhatsApp."}
+                </p>
+              </div>
+
+              <Field label="Nombre y apellido *" value={form.customer_name} onChange={v => setForm({ ...form, customer_name: v })} placeholder="Ej: Juan Pérez" />
+              <Field label="Teléfono (WhatsApp) *" value={form.customer_phone} onChange={v => setForm({ ...form, customer_phone: v })} placeholder="Ej: 11 2345 6789" type="tel" />
+              <Field label="Email" value={form.customer_email} onChange={v => setForm({ ...form, customer_email: v })} type="email" placeholder="Para recibir tu comprobante" />
+              <Field label="Dirección / Localidad de entrega" value={form.customer_address} onChange={v => setForm({ ...form, customer_address: v })} placeholder="Ej: Av. Rivadavia 1234, CABA" />
+
               <label className="block">
-                <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">Notas</span>
-                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={3}
-                  className="w-full rounded-xl border border-input bg-background p-3 text-sm" />
+                <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">Notas (opcional)</span>
+                <textarea
+                  value={form.notes}
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  rows={2}
+                  placeholder="Horarios de entrega o aclaraciones..."
+                  className="w-full rounded-xl border border-input bg-background p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
               </label>
-              {error && <p className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
-              <div className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
-                Total a abonar: <strong className="text-secondary text-sm">{format(finalTotal)}</strong>
-                {isTransfer && <span className="ml-2 font-bold text-emerald-700">(15% OFF aplicado)</span>}<br />
-                {isTransfer
-                  ? "Al confirmar recibirás los datos de transferencia (Alias LERADIAL) y enlace a WhatsApp para enviar el comprobante."
-                  : "Al confirmar te llevamos a Mercado Pago para abonar con tarjeta en hasta 3 cuotas fijas sin interés."}
+
+              {error && <p className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive font-medium">{error}</p>}
+
+              <div className="rounded-xl bg-neutral-100 p-3 text-xs space-y-1">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-muted-foreground">Total a abonar:</span>
+                  <strong className="text-base text-secondary">{format(finalTotal)}</strong>
+                </div>
+                {!isTransfer ? (
+                  <p className="text-[11px] font-semibold text-[#009EE3]">
+                    💳 Financiación: 3 cuotas sin interés de {format(Math.round(total / 3))}
+                  </p>
+                ) : (
+                  <p className="text-[11px] font-semibold text-emerald-700">
+                    🏦 15% OFF por transferencia bancaria aplicado
+                  </p>
+                )}
               </div>
             </div>
-            <footer className="flex gap-2 border-t p-5">
-              <button type="button" onClick={() => setStep("cart")} className="flex-1 rounded-full border py-3 text-sm font-bold uppercase">Volver</button>
-              <button type="submit" disabled={sending} className="flex-[2] rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground disabled:opacity-50">
-                {sending ? "Enviando..." : "Confirmar pedido"}
+
+            <footer className="shrink-0 flex gap-2 border-t p-4 bg-card shadow-lg sticky bottom-0 z-10">
+              <button
+                type="button"
+                onClick={() => setStep("cart")}
+                className="flex-1 rounded-full border py-3 text-xs font-bold uppercase hover:bg-muted transition"
+              >
+                Volver
               </button>
+
+              {!isTransfer ? (
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="flex-[2] flex items-center justify-center gap-1.5 rounded-full bg-[#009EE3] py-3.5 text-xs font-black uppercase tracking-wider text-white hover:bg-[#0087c2] shadow-md shadow-sky-500/25 disabled:opacity-50 transition"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {sending ? "Conectando a MP..." : "Ir a Pagar a Mercado Pago ➔"}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="flex-[2] flex items-center justify-center gap-1.5 rounded-full bg-[#00A859] py-3.5 text-xs font-black uppercase tracking-wider text-white hover:bg-[#008f4c] shadow-md disabled:opacity-50 transition"
+                >
+                  <Lock className="h-4 w-4" />
+                  {sending ? "Enviando..." : "Confirmar Pedido (15% OFF) ➔"}
+                </button>
+              )}
             </footer>
           </form>
         )}
 
         {step === "done" && (
-          <div className="flex flex-1 flex-col overflow-y-auto p-6">
+          <div className="flex flex-1 flex-col min-h-0 h-full overflow-y-auto p-5 sm:p-6">
             <div className="flex flex-col items-center text-center">
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground">
+              <div className="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
                 <Check className="h-7 w-7" />
               </div>
-              <h3 className="mt-3 text-xl font-black text-secondary">¡Pedido confirmado!</h3>
+              <h3 className="mt-3 text-xl font-black text-secondary">¡Pedido registrado con éxito!</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Pedido{orderId ? ` #${orderId.slice(0, 8)}` : ""} · Total a abonar
+                Pedido{orderId ? ` #${orderId.slice(0, 8).toUpperCase()}` : ""} · Total
               </p>
               <p className="mt-1 text-3xl font-black text-primary">{format(orderTotal)}</p>
-              <p className="mt-2 text-[11px] text-muted-foreground">Total en pesos (ARS): $ {orderTotal.toLocaleString("es-AR")}</p>
+              {!isTransfer && (
+                <p className="mt-1 text-xs font-bold text-emerald-600">
+                  En hasta 3 cuotas fijas sin interés de {format(Math.round(orderTotal / 3))}
+                </p>
+              )}
             </div>
 
             {orderId && (
@@ -335,11 +491,11 @@ function CartDrawer() {
               />
             )}
 
-            <button onClick={close} className="mt-6 rounded-full bg-primary py-3 text-sm font-bold uppercase text-primary-foreground hover:bg-primary/90 transition-colors">
-              Cerrar
+            <button onClick={close} className="mt-6 rounded-full bg-neutral-900 py-3 text-sm font-bold uppercase text-white hover:bg-neutral-800 transition-colors">
+              Cerrar y volver a la tienda
             </button>
             <p className="mt-3 text-center text-[11px] text-muted-foreground">
-              Una vez recibido el pago o comprobante, despachamos tu pedido y te enviamos el remito oficial.
+              Una vez acreditado el pago, despachamos tu pedido en el día y te enviamos la guía de seguimiento.
             </p>
           </div>
         )}
@@ -348,12 +504,29 @@ function CartDrawer() {
   );
 }
 
-function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">{label}</span>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)}
-        className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm" />
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-10 w-full rounded-xl border border-input bg-background px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+      />
     </label>
   );
 }

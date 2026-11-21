@@ -87,9 +87,9 @@ export const createOrder = createServerFn({ method: "POST" })
           external_reference: orderId,
           statement_descriptor: "LE RADIAL",
           payer: {
-            name: data.customer_name || undefined,
-            email: data.customer_email || undefined,
-            phone: { number: data.customer_phone || undefined },
+            name: data.customer_name?.trim() || "Cliente Le Radial",
+            email: (data.customer_email && data.customer_email.includes("@")) ? data.customer_email.trim() : "ventas@leradial.com.ar",
+            phone: data.customer_phone ? { number: data.customer_phone.replace(/\D/g, "") || "1123951455" } : undefined,
           },
           back_urls: {
             success: `${base}/?pago=exito&ref=${shortRef}`,

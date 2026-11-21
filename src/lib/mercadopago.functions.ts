@@ -82,9 +82,9 @@ export const createMpPreference = createServerFn({ method: "POST" })
       external_reference: data.order_id,
       statement_descriptor: "LE RADIAL",
       payer: {
-        name: customerName || undefined,
-        email: customerEmail || undefined,
-        phone: customerPhone ? { number: customerPhone } : undefined,
+        name: customerName?.trim() || "Cliente Le Radial",
+        email: (customerEmail && customerEmail.includes("@")) ? customerEmail.trim() : "ventas@leradial.com.ar",
+        phone: customerPhone ? { number: customerPhone.replace(/\D/g, "") || "1123951455" } : undefined,
       },
       back_urls: {
         success: `${base}/?pago=exito&ref=${shortRef}`,

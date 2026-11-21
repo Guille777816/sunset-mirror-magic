@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { createFileRoute, Link, useParams, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Phone, ArrowLeft, ShoppingCart, MessageCircle, Download, CreditCard } from "lucide-react";
+import { Phone, ArrowLeft, ShoppingCart, MessageCircle, Download, CreditCard, Minus, Plus } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -456,6 +457,7 @@ function ProductDetail() {
   });
   const { data: s } = useQuery({ queryKey: ["settings"], queryFn: () => fetchS() });
   const cart = useCart();
+  const [selectedQty, setSelectedQty] = useState(1);
 
   if (!p) {
     const wa = (s?.whatsapp || "5491178292980").replace(/[^0-9]/g, "");
@@ -586,12 +588,156 @@ function ProductDetail() {
                 </span>
               </div>
             </div>
+
+            {/* Selector de Cantidad (1, 2 o 4 cubiertas) */}
+            <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+                  Cantidad de neumáticos:
+                </span>
+                <div className="flex items-center gap-1.5 bg-white border border-neutral-300 rounded-xl p-1 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-100 text-secondary hover:bg-neutral-200 active:scale-95 transition"
+                    title="Restar una unidad"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-10 text-center font-black text-base text-secondary">{selectedQty}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQty((q) => Math.min(99, q + 1))}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-100 text-secondary hover:bg-neutral-200 active:scale-95 transition"
+                    title="Sumar una unidad"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Botones de acceso rápido para cantidades habituales */}
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { label: "1 cubierta", q: 1 },
+                  { label: "2 cubiertas (par)", q: 2 },
+                  { label: "4 cubiertas (juego completo)", q: 4 },
+                ].map((item) => (
+                  <button
+                    key={item.q}
+                    type="button"
+                    onClick={() => setSelectedQty(item.q)}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                      selectedQty === item.q
+                        ? "bg-secondary text-white shadow-xs"
+                        : "bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {selectedQty > 1 && (
+                <div className="border-t border-neutral-200/80 pt-2 flex items-baseline justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Subtotal ({selectedQty} cubiertas):</span>
+                  <span className="font-black text-sm text-secondary">
+                    $ {(Number(p.price_ars) * selectedQty).toLocaleString("es-AR")}
+                    <span className="ml-1 text-emerald-700 font-bold">
+                      ($ {Math.round(Number(p.price_ars) * 0.85 * selectedQty).toLocaleString("es-AR")} transf.)
+                    </span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Botones de Compra y Pago Directo */}
+            <div className="mt-5 space-y-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    cart.add(
+                      {
+                        id: p.id,
+                        brand: cleanText(p.brand),
+                        model: cleanText(p.model),
+                        size: cleanText(p.size),
+                        price_ars: Number(p.price_ars),
+                        image_url: p.image_url,
+                      },
+                      selectedQty
+                    );
+                    cart.setPaymentMethod("card");
+                    cart.open();
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] px-6 py-3.5 text-sm font-black uppercase tracking-wider text-white shadow-md shadow-sky-500/25 hover:bg-[#0087c2] active:scale-[0.99] transition"
+                >
+                  <CreditCard className="h-4 w-4" /> Pagar en 3 cuotas MP
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    cart.add(
+                      {
+                        id: p.id,
+                        brand: cleanText(p.brand),
+                        model: cleanText(p.model),
+                        size: cleanText(p.size),
+                        price_ars: Number(p.price_ars),
+                        image_url: p.image_url,
+                      },
+                      selectedQty
+                    );
+                    cart.open();
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#00A859] px-6 py-3.5 text-sm font-black uppercase tracking-wider text-white shadow-md shadow-emerald-500/25 hover:bg-[#008f4c] active:scale-[0.99] transition"
+                >
+                  <ShoppingCart className="h-4 w-4" /> Comprar ({selectedQty})
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2.5 pt-1">
+                <a
+                  href={`https://wa.me/${wa}?text=${msg}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-4 py-2 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> Consultar por WhatsApp
+                </a>
+                {phone && (
+                  <a
+                    href={`tel:${phone.replace(/\s/g, "")}`}
+                    className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-4 py-2 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
+                  >
+                    <Phone className="h-3.5 w-3.5" /> {phone}
+                  </a>
+                )}
+                {catalogHref && (
+                  <a
+                    href={catalogHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    {...(catalogUrl ? { download: "" } : {})}
+                    className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-4 py-2 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Catálogo
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Widget de medios de pago estilizado y sin tapar */}
             {Number(p.price_ars) > 0 && (
               <PaymentMethodsWidget
                 priceArs={Number(p.price_ars)}
-                className="mt-4"
+                compact
+                className="mt-5"
               />
             )}
+
             <p className="mt-3 text-sm text-muted-foreground">
               {p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}
             </p>
@@ -605,54 +751,6 @@ function ProductDetail() {
                 {formatDescription(p.description)}
               </p>
             )}
-            <div className="mt-8 space-y-3">
-              <button
-                onClick={() => {
-                  cart.add({
-                    id: p.id,
-                    brand: cleanText(p.brand),
-                    model: cleanText(p.model),
-                    size: cleanText(p.size),
-                    price_ars: Number(p.price_ars),
-                    image_url: p.image_url,
-                  });
-                  cart.open();
-                }}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-full bg-[#00A859] px-10 py-4 text-base font-black uppercase tracking-wider text-white shadow-lg shadow-emerald-600/30 hover:bg-[#008f4c] hover:scale-[1.02] transition"
-              >
-                <ShoppingCart className="h-5 w-5" /> Comprar
-              </button>
-
-              <div className="flex flex-wrap gap-2.5">
-                <a
-                  href={`https://wa.me/${wa}?text=${msg}`}
-                  target="_blank"
-                  rel="noopener"
-                  className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
-                >
-                  <MessageCircle className="h-4 w-4" /> Consultar por WhatsApp
-                </a>
-                {phone && (
-                  <a
-                    href={`tel:${phone.replace(/\s/g, "")}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
-                  >
-                    <Phone className="h-4 w-4" /> {phone}
-                  </a>
-                )}
-                {catalogHref && (
-                  <a
-                    href={catalogHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    {...(catalogUrl ? { download: "" } : {})}
-                    className="inline-flex items-center gap-2 rounded-full border border-secondary/20 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-secondary hover:bg-secondary/5 transition"
-                  >
-                    <Download className="h-4 w-4" /> Descargar catálogo
-                  </a>
-                )}
-              </div>
-            </div>
             <div className="mt-8 flex items-center gap-6 border-t border-border/60 pt-6">
               <img src="/inmetro.webp" alt="INMETRO" className="h-14 w-auto object-contain" />
               <img src="/tuv.webp" alt="TÜV SÜD" className="h-14 w-auto object-contain" />
