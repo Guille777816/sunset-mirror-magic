@@ -125,6 +125,11 @@ function CartDrawer() {
       if (res.init_point) {
         setOrderInitPoint(res.init_point);
       }
+      if (!isTransfer && res.init_point) {
+        clear();
+        window.location.href = res.init_point;
+        return;
+      }
       setStep("done");
       clear();
     } catch (err: any) {
@@ -272,7 +277,7 @@ function CartDrawer() {
 
         {step === "form" && (
           <form onSubmit={handleSubmit} className="flex flex-1 flex-col">
-            <div className="flex-1 space-y-3 overflow-y-auto p-5">
+            <div className="flex-1 min-h-0 space-y-3 overflow-y-auto p-5">
               <Field label="Nombre y apellido *" value={form.customer_name} onChange={v => setForm({ ...form, customer_name: v })} />
               <Field label="Teléfono *" value={form.customer_phone} onChange={v => setForm({ ...form, customer_phone: v })} />
               <Field label="Email" value={form.customer_email} onChange={v => setForm({ ...form, customer_email: v })} type="email" />
@@ -441,95 +446,113 @@ function MercadoPagoBlock({
     }
   }
 
-  return (
-    <div className="mt-5 space-y-4">
-      {/* Opción 1: Transferencia Bancaria / WhatsApp (SIEMPRE DISPONIBLE Y RÁPIDA) */}
-      <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/70 p-4 text-left shadow-sm">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-            Opción recomendada: Transferencia Bancaria
-          </p>
-          <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white uppercase">
-            Inmediata
-          </span>
-        </div>
-        <p className="mt-1 text-xs text-emerald-950 font-medium">
-          Aboná sin recargos y envianos el comprobante para despachar en el día:
+  const mpCard = (
+    <div className={`rounded-2xl border ${!isTransfer ? "border-2 border-[#009EE3]/60 bg-[#009EE3]/10 shadow-md" : "border-[#009EE3]/30 bg-[#009EE3]/5"} p-4 text-left`}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold uppercase tracking-wider text-[#009EE3]">
+          Tarjeta o Mercado Pago
         </p>
+        <span className="rounded-full bg-[#009EE3] px-2 py-0.5 text-[10px] font-bold text-white uppercase">
+          3 cuotas sin interés
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-neutral-700 font-medium">
+        Aboná en hasta 3 cuotas fijas sin interés con todas las tarjetas de crédito o con débito y saldo MP.
+      </p>
+      <button
+        onClick={() => (initPoint ? (window.location.href = initPoint) : tryPay())}
+        disabled={loading}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] py-3 text-sm font-bold uppercase text-white shadow-md hover:bg-[#0081b8] disabled:opacity-60 transition"
+      >
+        <CreditCard className="h-4 w-4" />
+        {loading ? "Conectando con Mercado Pago..." : initPoint ? "Abrir Mercado Pago (3 cuotas)" : "Pagar con Mercado Pago (3 cuotas)"}
+      </button>
+      {error && (
+        <p className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 p-2.5 text-[11px] text-amber-900 font-medium">
+          ⚠️ {error}
+        </p>
+      )}
+    </div>
+  );
 
-        <div className="mt-3 space-y-2 rounded-xl bg-white p-3 border border-emerald-200/80 text-xs text-neutral-800">
-          <div className="flex items-center justify-between gap-2">
+  const transferCard = (
+    <div className={`rounded-2xl border-2 ${isTransfer ? "border-emerald-500/60 bg-emerald-50/80 shadow-sm" : "border-neutral-200 bg-neutral-50/60"} p-4 text-left`}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+          {isTransfer ? "Opción seleccionada: Transferencia Bancaria" : "Alternativa: Transferencia Bancaria"}
+        </p>
+        <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white uppercase">
+          Inmediata
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-emerald-950 font-medium">
+        Aboná sin recargos y envianos el comprobante para despachar en el día:
+      </p>
+
+      <div className="mt-3 space-y-2 rounded-xl bg-white p-3 border border-emerald-200/80 text-xs text-neutral-800">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <span className="text-[10px] font-bold text-neutral-500 uppercase block">Alias</span>
+            <span className="font-mono font-bold text-sm text-emerald-900">{bankAlias}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => copyToClipboard(bankAlias, "alias")}
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 transition"
+          >
+            {copiedKey === "alias" ? <CheckCheck className="h-3.5 w-3.5 text-emerald-700" /> : <Copy className="h-3.5 w-3.5" />}
+            {copiedKey === "alias" ? "¡Copiado!" : "Copiar"}
+          </button>
+        </div>
+
+        {bankCbu && (
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-neutral-100">
             <div>
-              <span className="text-[10px] font-bold text-neutral-500 uppercase block">Alias</span>
-              <span className="font-mono font-bold text-sm text-emerald-900">{bankAlias}</span>
+              <span className="text-[10px] font-bold text-neutral-500 uppercase block">CBU</span>
+              <span className="font-mono text-xs text-neutral-700">{bankCbu}</span>
             </div>
             <button
               type="button"
-              onClick={() => copyToClipboard(bankAlias, "alias")}
-              className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 transition"
+              onClick={() => copyToClipboard(bankCbu, "cbu")}
+              className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 text-[11px] font-bold text-neutral-700 transition"
             >
-              {copiedKey === "alias" ? <CheckCheck className="h-3.5 w-3.5 text-emerald-700" /> : <Copy className="h-3.5 w-3.5" />}
-              {copiedKey === "alias" ? "¡Copiado!" : "Copiar"}
+              {copiedKey === "cbu" ? <CheckCheck className="h-3.5 w-3.5 text-emerald-700" /> : <Copy className="h-3.5 w-3.5" />}
+              {copiedKey === "cbu" ? "¡Copiado!" : "Copiar"}
             </button>
           </div>
-
-          {bankCbu && (
-            <div className="flex items-center justify-between gap-2 pt-1 border-t border-neutral-100">
-              <div>
-                <span className="text-[10px] font-bold text-neutral-500 uppercase block">CBU</span>
-                <span className="font-mono text-xs text-neutral-700">{bankCbu}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => copyToClipboard(bankCbu, "cbu")}
-                className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 text-[11px] font-bold text-neutral-700 transition"
-              >
-                {copiedKey === "cbu" ? <CheckCheck className="h-3.5 w-3.5 text-emerald-700" /> : <Copy className="h-3.5 w-3.5" />}
-                {copiedKey === "cbu" ? "¡Copiado!" : "Copiar"}
-              </button>
-            </div>
-          )}
-
-          <div className="pt-1 text-[11px] text-neutral-600 border-t border-neutral-100 flex justify-between">
-            <span><strong>Titular:</strong> {bankHolder}</span>
-            {bankName && <span><strong>Banco:</strong> {bankName}</span>}
-          </div>
-        </div>
-
-        {/* Botón WhatsApp de confirmación directa */}
-        <a
-          href={waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-md hover:bg-emerald-700 transition-colors"
-        >
-          <MessageCircle className="h-4 w-4" />
-          Coordinar / Enviar comprobante
-        </a>
-      </div>
-
-      {/* Opción 2: Mercado Pago Online */}
-      <div className="rounded-2xl border border-[#009EE3]/30 bg-[#009EE3]/5 p-4 text-left">
-        <p className="mb-1 text-xs font-bold uppercase tracking-wider text-[#009EE3]">
-          Tarjeta o Mercado Pago
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Pagar con tarjeta de crédito, débito o dinero en cuenta MP.
-        </p>
-        <button
-          onClick={() => (initPoint ? (window.location.href = initPoint) : tryPay())}
-          disabled={loading}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] py-2.5 text-xs font-bold uppercase text-white shadow-sm hover:opacity-90 disabled:opacity-60 transition"
-        >
-          <CreditCard className="h-4 w-4" />
-          {loading ? "Conectando con Mercado Pago..." : initPoint ? "Abrir Mercado Pago" : "Pagar con Mercado Pago"}
-        </button>
-        {error && (
-          <p className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 p-2.5 text-[11px] text-amber-900 font-medium">
-            ⚠️ {error}
-          </p>
         )}
+
+        <div className="pt-1 text-[11px] text-neutral-600 border-t border-neutral-100 flex justify-between">
+          <span><strong>Titular:</strong> {bankHolder}</span>
+          {bankName && <span><strong>Banco:</strong> {bankName}</span>}
+        </div>
       </div>
+
+      <a
+        href={waHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-md hover:bg-emerald-700 transition-colors"
+      >
+        <MessageCircle className="h-4 w-4" />
+        Coordinar / Enviar comprobante
+      </a>
+    </div>
+  );
+
+  return (
+    <div className="mt-5 space-y-4">
+      {!isTransfer ? (
+        <>
+          {mpCard}
+          {transferCard}
+        </>
+      ) : (
+        <>
+          {transferCard}
+          {mpCard}
+        </>
+      )}
     </div>
   );
 }
