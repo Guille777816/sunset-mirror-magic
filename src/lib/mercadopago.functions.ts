@@ -78,6 +78,7 @@ export const createMpPreference = createServerFn({ method: "POST" })
       payment_methods: {
         installments: 3,
         default_installments: 3,
+        excluded_payment_types: [],
       },
       external_reference: data.order_id,
       statement_descriptor: "LE RADIAL",
