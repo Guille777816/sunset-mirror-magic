@@ -63,8 +63,7 @@ export const createOrder = createServerFn({ method: "POST" })
 
     const orderId = crypto.randomUUID();
 
-    const DEFAULT_MP_ACCESS_TOKEN = "APP_USR-6019246233127130-102812-247332aec0379521ac48b01770a7b6e4-2418423393";
-    const mpToken = process.env.MP_ACCESS_TOKEN || DEFAULT_MP_ACCESS_TOKEN;
+    const mpToken = process.env.MP_ACCESS_TOKEN;
     let initPoint: string | null = null;
     let mpPrefId: string | null = null;
 
@@ -83,6 +82,7 @@ export const createOrder = createServerFn({ method: "POST" })
           payment_methods: {
             installments: 3,
             default_installments: 3,
+            excluded_payment_types: [],
           },
           external_reference: orderId,
           statement_descriptor: "LE RADIAL",
