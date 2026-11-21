@@ -54,8 +54,8 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
     ? "https://www.gyscubiertas.com.py/userfiles/images/productos/600/bkt-tr-273-r.jpg"
     : "/images/featured/fastway.webp";
 
-  const customVehicleImg = settings?.category_images?.[`vehicle:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle:${p.slug}`] : null);
-  const customVehicleLabel = settings?.category_images?.[`vehicle_label:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle_label:${p.slug}`] : null);
+  const customVehicleImg = (p as any).vehicle_image_url || settings?.category_images?.[`vehicle:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle:${p.slug}`] : null);
+  const customVehicleLabel = (p as any).vehicle_tag || settings?.category_images?.[`vehicle_label:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle_label:${p.slug}`] : null);
 
   const defaultVehicleImg = isPickup
     ? "/images/featured/brutus-bg.jpg"

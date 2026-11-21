@@ -73,8 +73,8 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
               ? "/images/featured/xcurve.webp" 
               : "/images/featured/fastway.webp");
 
-            const customVehicleBg = settings?.category_images?.[`vehicle:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle:${p.slug}`] : null);
-            const customVehicleLabel = settings?.category_images?.[`vehicle_label:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle_label:${p.slug}`] : null);
+            const customVehicleBg = (p as any).vehicle_image_url || settings?.category_images?.[`vehicle:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle:${p.slug}`] : null);
+            const customVehicleLabel = (p as any).vehicle_tag || settings?.category_images?.[`vehicle_label:${p.id}`] || (p.slug ? settings?.category_images?.[`vehicle_label:${p.slug}`] : null);
 
             const vehicleBg = customVehicleBg || (isPickup
               ? "/images/featured/brutus-bg.jpg"

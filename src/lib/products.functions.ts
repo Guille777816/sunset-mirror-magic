@@ -33,7 +33,7 @@ export const listPublicProducts = createServerFn({ method: "GET" }).handler(asyn
       // Timeout seguro de 6.5s para no bloquear el Worker ni el renderizado
       const queryPromise = supabase
         .from("products")
-        .select("id,slug,brand,model,size,category,categories,price_ars,stock,image_url,is_featured,free_shipping,catalog_url")
+        .select("id,slug,brand,model,size,category,categories,price_ars,stock,image_url,vehicle_image_url,vehicle_tag,is_featured,free_shipping,catalog_url")
         .eq("is_active", true)
         .order("is_featured", { ascending: false })
         .order("created_at", { ascending: false });
@@ -47,7 +47,8 @@ export const listPublicProducts = createServerFn({ method: "GET" }).handler(asyn
 
       const mapped = (data ?? []).map((p: any) => ({
         ...p,
-        image_url: p.image_url && p.image_url.startsWith("data:") ? null : p.image_url,
+        image_url: p.image_url && p.image_url.startsWith("data:") && p.image_url.length > 350000 ? null : p.image_url,
+        vehicle_image_url: p.vehicle_image_url && p.vehicle_image_url.startsWith("data:") && p.vehicle_image_url.length > 350000 ? null : p.vehicle_image_url,
       }));
 
       cachedPublicProducts = mapped;

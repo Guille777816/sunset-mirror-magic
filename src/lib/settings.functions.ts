@@ -133,6 +133,44 @@ export const updateSettings = createServerFn({ method: "POST" })
       payload.hours = payload.business_hours;
     }
     delete payload.business_hours;
+
+    // Descongestiona site_settings si tiene fotos de vehículos base64 acumuladas (10+ MB)
+    if (payload.category_images && typeof payload.category_images === "object") {
+      const cleanCatImages: Record<string, string> = {};
+      const vehicleMigrationUpdates: Promise<any>[] = [];
+
+      for (const [k, v] of Object.entries(payload.category_images)) {
+        if (typeof v === "string" && k.startsWith("vehicle:")) {
+          const prodId = k.replace("vehicle:", "").trim();
+          if (prodId && v.startsWith("data:")) {
+            // Migrar la foto directo a la fila del producto en products
+            vehicleMigrationUpdates.push(
+              supabase.from("products").update({ vehicle_image_url: v }).eq("id", prodId)
+            );
+            continue; // Eliminar de category_images para evitar timeouts futuros
+          }
+        }
+        if (typeof v === "string" && k.startsWith("vehicle_label:")) {
+          const prodId = k.replace("vehicle_label:", "").trim();
+          if (prodId) {
+            vehicleMigrationUpdates.push(
+              supabase.from("products").update({ vehicle_tag: v.trim() }).eq("id", prodId)
+            );
+            continue;
+          }
+        }
+        cleanCatImages[k] = v as string;
+      }
+
+      if (vehicleMigrationUpdates.length > 0) {
+        // Ejecutar migraciones en lotes de 10 para no saturar conexiones
+        for (let i = 0; i < vehicleMigrationUpdates.length; i += 10) {
+          await Promise.allSettled(vehicleMigrationUpdates.slice(i, i + 10));
+        }
+      }
+      payload.category_images = cleanCatImages;
+    }
+
     const { error } = await supabase
       .from("site_settings")
       .update({ ...payload, updated_at: new Date().toISOString() })

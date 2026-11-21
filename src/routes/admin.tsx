@@ -38,6 +38,8 @@ type Product = {
   price_ars: number;
   stock: number;
   image_url: string | null;
+  vehicle_image_url?: string | null;
+  vehicle_tag?: string | null;
   description: string | null;
   catalog_url?: string | null;
   is_active: boolean;
@@ -234,27 +236,13 @@ function AdminPage() {
         ...p
       } = input;
       p.size = cleanTireSize(p.size);
-      const res = await save({ data: p });
-      const targetId = res?.id || p.id;
-      if (targetId && settings && (vehicle_image_url !== undefined || vehicle_label !== undefined)) {
-        const upImages = { ...(settings.category_images || {}) };
-        if (vehicle_image_url) {
-          upImages[`vehicle:${targetId}`] = vehicle_image_url;
-        } else if (vehicle_image_url === null) {
-          delete upImages[`vehicle:${targetId}`];
-        }
-        if (vehicle_label) {
-          upImages[`vehicle_label:${targetId}`] = vehicle_label.trim();
-        } else if (vehicle_label === null || vehicle_label === "") {
-          delete upImages[`vehicle_label:${targetId}`];
-        }
-        await saveSettingsAdmin({
-          data: {
-            ...settings,
-            category_images: upImages,
-          },
-        });
+      if (vehicle_image_url !== undefined) {
+        p.vehicle_image_url = vehicle_image_url;
       }
+      if (vehicle_label !== undefined) {
+        p.vehicle_tag = vehicle_label && vehicle_label.trim() ? vehicle_label.trim() : null;
+      }
+      const res = await save({ data: p });
       if ((applyCatalogAll || applyImageAll || applyDescAll) && p.brand.trim() && p.model.trim()) {
         const resApply = await applyBatchAssets({
           data: {
@@ -1064,8 +1052,26 @@ function ImageManager({
     setUploading(product.id);
     setMsg(null);
     try {
-      const dataUrl = await optimizeAndReadImage(file, 600, 0.88);
-      await saveProd({ data: { ...product, price_ars: Number(product.price_ars), image_url: dataUrl } });
+      let finalUrl = "";
+      try {
+        const ext = file.name.split(".").pop() || "webp";
+        const base = `${product.brand}-${product.model}`
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "prod";
+        const path = `products/${base}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+          if (urlData?.publicUrl) finalUrl = urlData.publicUrl + "?t=" + Date.now();
+        }
+      } catch {
+        // Fallback to optimized webp
+      }
+      if (!finalUrl) {
+        finalUrl = await optimizeAndReadImage(file, 600, 0.78);
+      }
+      await saveProd({ data: { ...product, price_ars: Number(product.price_ars), image_url: finalUrl } });
       onRefresh();
       setMsg({ type: "ok", text: `Imagen de cubierta "${product.brand} ${product.model}" actualizada ✓` });
     } catch (e: any) {
@@ -1092,27 +1098,20 @@ function ImageManager({
 
   // Manejo de foto del vehículo (al pasar el mouse)
   async function handleSaveVehicleImage(product: Product, dataUrl: string | null, customLabel?: string | null) {
-    if (!product.id || !settings) return;
+    if (!product.id) return;
     setUploading(product.id);
     setMsg(null);
     try {
-      const upImages = { ...categoryImages };
-      if (dataUrl) {
-        upImages[`vehicle:${product.id}`] = dataUrl;
-      } else {
-        delete upImages[`vehicle:${product.id}`];
-      }
-      if (customLabel !== undefined) {
-        if (customLabel && customLabel.trim()) {
-          upImages[`vehicle_label:${product.id}`] = customLabel.trim();
-        } else {
-          delete upImages[`vehicle_label:${product.id}`];
-        }
-      }
-      await saveSettingsFn({
+      const nextTag = customLabel !== undefined 
+        ? (customLabel && customLabel.trim() ? customLabel.trim() : null)
+        : (product.vehicle_tag ?? null);
+
+      await saveProd({
         data: {
-          ...settings,
-          category_images: upImages,
+          ...product,
+          price_ars: Number(product.price_ars),
+          vehicle_image_url: dataUrl,
+          vehicle_tag: nextTag,
         },
       });
       onRefresh();
@@ -1131,8 +1130,26 @@ function ImageManager({
 
   async function handleVehicleFile(product: Product, file: File) {
     try {
-      const dataUrl = await optimizeAndReadImage(file, 800, 0.88);
-      await handleSaveVehicleImage(product, dataUrl);
+      let finalUrl = "";
+      try {
+        const ext = file.name.split(".").pop() || "webp";
+        const base = `${product.brand}-${product.model}`
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "vehiculo";
+        const path = `vehicles/${base}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+          if (urlData?.publicUrl) finalUrl = urlData.publicUrl + "?t=" + Date.now();
+        }
+      } catch {
+        // Fallback
+      }
+      if (!finalUrl) {
+        finalUrl = await optimizeAndReadImage(file, 640, 0.78);
+      }
+      await handleSaveVehicleImage(product, finalUrl);
     } catch (e: any) {
       setMsg({ type: "err", text: e?.message ?? "Error al procesar la imagen" });
     }
@@ -1274,11 +1291,11 @@ function ImageManager({
                 ? "/images/featured/xcurve-bg.jpg"
                 : "/images/featured/fastway-bg.jpg";
 
-              const customVehicleImg = categoryImages[`vehicle:${p.id}`] || (p.slug ? categoryImages[`vehicle:${p.slug}`] : null);
+              const customVehicleImg = p.vehicle_image_url || categoryImages[`vehicle:${p.id}`] || (p.slug ? categoryImages[`vehicle:${p.slug}`] : null);
               const hasCustom = Boolean(customVehicleImg);
               const currentVehicleImg = customVehicleImg || defaultVehicleImg;
 
-              const customLabel = categoryImages[`vehicle_label:${p.id}`] || (p.slug ? categoryImages[`vehicle_label:${p.slug}`] : "");
+              const customLabel = p.vehicle_tag || categoryImages[`vehicle_label:${p.id}`] || (p.slug ? categoryImages[`vehicle_label:${p.slug}`] : "");
               const defaultLabel = isPickup ? "Camioneta / SUV" : isTruck ? "Camión Pesado" : "Auto / Calle";
               const currentLabel = customLabel || defaultLabel;
 
@@ -1581,15 +1598,33 @@ function ProductForm({
   const [applyImageAll, setApplyImageAll] = useState<boolean>(initDraft?.applyImageAll ?? false);
   const [applyDescriptionAll, setApplyDescriptionAll] = useState<boolean>(initDraft?.applyDescriptionAll ?? false);
 
-  const [vehicleImg, setVehicleImg] = useState<string | null>(() => initDraft ? (initDraft.vehicleImg ?? null) : (value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null));
-  const [vehicleLabel, setVehicleLabel] = useState<string>(() => initDraft ? (initDraft.vehicleLabel ?? "") : (value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : ""));
+  const [vehicleImg, setVehicleImg] = useState<string | null>(() => initDraft ? (initDraft.vehicleImg ?? null) : (value.vehicle_image_url || (value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null)));
+  const [vehicleLabel, setVehicleLabel] = useState<string>(() => initDraft ? (initDraft.vehicleLabel ?? "") : (value.vehicle_tag || (value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : "")));
   const [uploadingVehicle, setUploadingVehicle] = useState(false);
 
   async function handleVehicleUpload(file: File) {
     setUploadingVehicle(true);
     try {
-      const dataUrl = await optimizeAndReadImage(file, 800, 0.88);
-      setVehicleImg(dataUrl);
+      let finalUrl = "";
+      try {
+        const ext = file.name.split(".").pop() || "webp";
+        const base = `${p.brand}-${p.model}`
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "vehiculo";
+        const path = `vehicles/${base}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+          if (urlData?.publicUrl) finalUrl = urlData.publicUrl + "?t=" + Date.now();
+        }
+      } catch {
+        // Fallback
+      }
+      if (!finalUrl) {
+        finalUrl = await optimizeAndReadImage(file, 640, 0.78);
+      }
+      setVehicleImg(finalUrl);
     } catch (e: any) {
       alert(e?.message ?? "Error al procesar la foto del vehículo");
     } finally {
@@ -1614,8 +1649,8 @@ function ProductForm({
   function discardDraft() {
     clearDraft(formKey);
     setP(value);
-    setVehicleImg(value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null);
-    setVehicleLabel(value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : "");
+    setVehicleImg(value.vehicle_image_url || (value.id && categoryImages ? categoryImages[`vehicle:${value.id}`] || null : null));
+    setVehicleLabel(value.vehicle_tag || (value.id && categoryImages ? categoryImages[`vehicle_label:${value.id}`] || "" : ""));
     setCatalogKeyword(cleanFamily(value.model || ""));
     setApplyCatalogAll(false); setApplyImageAll(false); setApplyDescriptionAll(false);
   }
@@ -1624,8 +1659,26 @@ function ProductForm({
   async function handleFileUpload(file: File) {
     setUploading(true);
     try {
-      const dataUrl = await optimizeAndReadImage(file, 600, 0.88);
-      set("image_url", dataUrl);
+      let finalUrl = "";
+      try {
+        const ext = file.name.split(".").pop() || "webp";
+        const base = `${p.brand}-${p.model}`
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "prod";
+        const path = `products/${base}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("site-assets").upload(path, file, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("site-assets").getPublicUrl(path);
+          if (urlData?.publicUrl) finalUrl = urlData.publicUrl + "?t=" + Date.now();
+        }
+      } catch {
+        // Fallback
+      }
+      if (!finalUrl) {
+        finalUrl = await optimizeAndReadImage(file, 600, 0.78);
+      }
+      set("image_url", finalUrl);
     } catch (e: any) {
       alert(e?.message ?? "Error al procesar la imagen");
     } finally {

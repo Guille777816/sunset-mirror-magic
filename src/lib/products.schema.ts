@@ -24,6 +24,8 @@ export const productSchema = z
     price_ars: z.number().min(0),
     stock: z.number().int().min(0),
     image_url: z.string().max(2000000).nullable().optional(),
+    vehicle_image_url: z.string().max(2000000).nullable().optional(),
+    vehicle_tag: z.string().max(200).nullable().optional(),
     description: z.string().max(2000).nullable().optional(),
     catalog_url: z.string().max(2000).nullable().optional(),
     is_active: z.boolean(),
