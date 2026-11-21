@@ -26,7 +26,7 @@ export const productSchema = z
     image_url: z.string().max(2000000).nullable().optional(),
     vehicle_image_url: z.string().max(2000000).nullable().optional(),
     vehicle_tag: z.string().max(200).nullable().optional(),
-    description: z.string().max(2000).nullable().optional(),
+    description: z.string().max(5000).nullable().optional(),
     catalog_url: z.string().max(2000).nullable().optional(),
     is_active: z.boolean(),
     is_featured: z.boolean(),
