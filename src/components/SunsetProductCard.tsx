@@ -120,9 +120,9 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
           {/* Cara frontal: Neumático */}
           <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-neutral-50/80 p-3 [backface-visibility:hidden] border border-neutral-200/70 shadow-sm">
             {priceArs > 0 && (
-              <div className="absolute bottom-2 left-2 z-10 rounded-md bg-black/85 backdrop-blur-xs px-2 py-0.5 text-white shadow-sm border border-white/10">
-                <span className="text-[8px] font-black uppercase text-emerald-400 block leading-none">15% OFF Transf.</span>
-                <span className="text-[11px] font-black leading-tight text-white">{format(Math.round(priceArs * 0.85))}</span>
+              <div className="absolute bottom-2 left-2 z-10 rounded-md bg-[#009EE3] backdrop-blur-xs px-2 py-0.5 text-white shadow-sm border border-white/20">
+                <span className="text-[8px] font-black uppercase text-white block leading-none">6 Cuotas Sin Interés</span>
+                <span className="text-[11px] font-black leading-tight text-white">6x {format(Math.round(priceArs / 6))}</span>
               </div>
             )}
             <img
@@ -199,23 +199,20 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
       <div className="flex w-full md:w-auto flex-col items-center md:items-end justify-center border-t border-neutral-100 pt-4 md:border-t-0 md:pt-0">
         {/* Precio en ARS */}
         <div className="text-center md:text-right">
-          <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-            Transferencia (15% OFF)
+          <div className="text-xs font-black uppercase tracking-wider text-[#009EE3]">
+            6 cuotas sin interés
           </div>
-          <div className="text-2xl sm:text-3xl font-black tracking-tight text-emerald-600">
-            {format(Math.round(priceArs * 0.85))}
-          </div>
-          <div className="mt-0.5 text-xs text-neutral-500 font-medium">
-            Lista: {format(priceArs)}
+          <div className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900">
+            {format(priceArs)}
           </div>
           {priceArs > 0 && (
             <div className="mt-1 flex flex-col items-center md:items-end">
-              <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-200 shadow-xs">
-                <CreditCard className="h-3.5 w-3.5 text-emerald-600" />
-                <span><strong>3</strong> cuotas fijas de <strong>$ {Math.round(priceArs / 3).toLocaleString("es-AR")}</strong></span>
+              <div className="inline-flex items-center gap-1.5 rounded-lg bg-[#009EE3]/10 px-2.5 py-1 text-xs font-black text-[#0081b8] border border-[#009EE3]/30 shadow-xs">
+                <CreditCard className="h-3.5 w-3.5 text-[#009EE3]" />
+                <span><strong>6</strong> cuotas fijas de <strong>$ {Math.round(priceArs / 6).toLocaleString("es-AR")}</strong></span>
               </div>
               <p className="mt-1 text-[10px] font-semibold text-neutral-500">
-                Visa · Naranja X · SuCrédito · Cabal · Amex · Débito · Pix
+                Todas las tarjetas con Mercado Pago · Débito · Transferencia
               </p>
             </div>
           )}

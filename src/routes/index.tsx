@@ -746,12 +746,12 @@ function Index() {
       <section className="bg-primary py-4 text-primary-foreground">
         <div className="container mx-auto grid gap-3 px-4 text-center text-sm md:grid-cols-3 md:text-left">
           <div className="flex items-center justify-center gap-2 md:justify-start">
-            <span className="rounded-full bg-emerald-400 px-2 py-0.5 text-xs font-black uppercase text-black">15% OFF</span>
-            <span><strong>15% de descuento</strong> pagando por <strong>Transferencia</strong>.</span>
+            <span className="rounded-full bg-[#009EE3] px-2 py-0.5 text-xs font-black uppercase text-white">6 CUOTAS</span>
+            <span><strong>6 cuotas fijas sin interés</strong> con todas las tarjetas.</span>
           </div>
           <div className="flex items-center justify-center gap-2 md:justify-start">
             <CreditCard className="h-4 w-4 shrink-0" />
-            <span>Hasta <strong>3 cuotas sin interés</strong> con tarjetas de crédito.</span>
+            <span>Mercado Pago · Tarjetas de crédito, débito y transferencias.</span>
           </div>
           <div className="flex items-center justify-center gap-2 md:justify-start">
             <Truck className="h-4 w-4 shrink-0" />
@@ -979,12 +979,12 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
           </span>
         )}
         {Number(p.price_ars) > 0 && (
-          <div className="absolute bottom-2.5 left-2.5 z-10 rounded-lg bg-black/85 backdrop-blur-md px-2 py-1 text-white shadow-md border border-white/15">
-            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 block leading-tight">
-              15% OFF Transferencia
+          <div className="absolute bottom-2.5 left-2.5 z-10 rounded-lg bg-[#009EE3] backdrop-blur-md px-2 py-1 text-white shadow-md border border-white/20">
+            <span className="text-[9px] font-black uppercase tracking-wider text-white block leading-tight">
+              6 Cuotas Sin Interés
             </span>
             <span className="text-xs font-black tracking-tight text-white block">
-              {format(Math.round(Number(p.price_ars) * 0.85))}
+              6x {format(Math.round(Number(p.price_ars) / 6))}
             </span>
           </div>
         )}
@@ -1019,16 +1019,14 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
           <p className="mt-1 text-xs text-muted-foreground">{cleanTireSize(p.size)}</p>
         </Link>
         <div className="mt-auto pt-4">
-          <div className="flex items-baseline justify-between text-xs text-muted-foreground">
-            <span>Lista / Tarjetas</span>
-            <span className="line-through">{format(Number(p.price_ars))}</span>
+          <div className="flex items-baseline justify-between text-xs text-[#009EE3] font-black uppercase">
+            <span>6 Cuotas Sin Interés</span>
           </div>
           <div className="flex items-baseline gap-1.5 mt-0.5">
-            <span className="text-lg font-black text-emerald-600">{format(Math.round(Number(p.price_ars) * 0.85))}</span>
-            <span className="text-[9px] font-black uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">15% OFF Transf.</span>
+            <span className="text-lg font-black text-secondary">{format(Number(p.price_ars))}</span>
           </div>
-          <p className="mt-1 text-[10px] font-semibold text-muted-foreground">
-            o 3 cuotas fijas de {format(Math.round(Number(p.price_ars) / 3))}
+          <p className="mt-1 text-[11px] font-bold text-emerald-600">
+            6 cuotas fijas de {format(Math.round(Number(p.price_ars) / 6))}
           </p>
           <div className="mt-3 flex gap-2">
             <Link

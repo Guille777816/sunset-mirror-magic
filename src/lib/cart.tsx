@@ -87,8 +87,8 @@ function CartDrawer() {
   const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
 
   const isTransfer = paymentMethod === "transfer";
-  const discountAmount = isTransfer ? Math.round(total * 0.15) : 0;
-  const finalTotal = Math.max(0, total - discountAmount);
+  const discountAmount = 0;
+  const finalTotal = total;
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -113,8 +113,8 @@ function CartDrawer() {
       setConfirmedItems(itemsSnapshot);
       const origin = typeof window !== "undefined" ? window.location.origin : "https://www.leradial.com.ar";
       const paymentNote = isTransfer 
-        ? "Forma de pago: Transferencia Bancaria (15% OFF aplicado)" 
-        : "Forma de pago: Tarjeta de Crédito / Mercado Pago";
+        ? "Forma de pago: Transferencia Bancaria (Directa)" 
+        : "Forma de pago: Tarjeta de Crédito / Mercado Pago (6 cuotas sin interés)";
       const notesWithPayment = form.notes ? `${form.notes} | ${paymentNote}` : paymentNote;
 
       const res = await submit({ data: {
@@ -269,13 +269,13 @@ function CartDrawer() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black uppercase text-[#009EE3]">Tarjeta / MP</span>
-                        <span className="rounded bg-[#009EE3] px-1.5 py-0.5 text-[9px] font-black text-white uppercase">3 cuotas</span>
+                        <span className="rounded bg-[#009EE3] px-1.5 py-0.5 text-[9px] font-black text-white uppercase">6 cuotas</span>
                       </div>
                       <p className="mt-1 text-sm font-black text-secondary">
                         {format(total)}
                       </p>
                       <p className="mt-0.5 text-[10px] font-semibold text-emerald-700">
-                        3 de {format(Math.round(total / 3))} sin interés
+                        6 de {format(Math.round(total / 6))} sin interés
                       </p>
                     </button>
 
@@ -290,13 +290,13 @@ function CartDrawer() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black uppercase text-emerald-800">Transferencia</span>
-                        <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] font-black text-white uppercase">15% OFF</span>
+                        <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[9px] font-black text-neutral-700 uppercase">Directa</span>
                       </div>
                       <p className="mt-1 text-sm font-black text-emerald-950">
-                        {format(Math.round(total * 0.85))}
+                        {format(total)}
                       </p>
-                      <p className="mt-0.5 text-[10px] font-semibold text-emerald-700">
-                        Ahorrás {format(discountAmount)}
+                      <p className="mt-0.5 text-[10px] font-semibold text-muted-foreground">
+                        Alias directo LERADIAL
                       </p>
                     </button>
                   </div>
@@ -307,17 +307,11 @@ function CartDrawer() {
               {items.length > 0 && (
                 <div className="space-y-1.5 rounded-xl bg-neutral-50 p-3.5 border border-neutral-200/70 text-xs">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Precio de lista</span>
-                    <span className={isTransfer ? "line-through text-neutral-400 font-semibold" : "font-bold text-secondary"}>
+                    <span>Precio total</span>
+                    <span className="font-bold text-secondary">
                       {format(total)}
                     </span>
                   </div>
-                  {isTransfer && (
-                    <div className="flex justify-between font-bold text-emerald-700">
-                      <span>Descuento Transferencia (15%)</span>
-                      <span>-{format(discountAmount)}</span>
-                    </div>
-                  )}
                   <div className="flex items-baseline justify-between border-t border-neutral-200/80 pt-2 text-sm">
                     <span className="font-black uppercase tracking-wider text-secondary">Total a abonar</span>
                     <span className="text-xl font-black text-emerald-600">
@@ -326,7 +320,7 @@ function CartDrawer() {
                   </div>
                   {!isTransfer && total > 0 && (
                     <p className="text-[11px] font-bold text-emerald-600 text-right">
-                      o 3 cuotas fijas sin interés de {format(Math.round(total / 3))}
+                      o 6 cuotas fijas sin interés de {format(Math.round(total / 6))}
                     </p>
                   )}
                 </div>
@@ -349,7 +343,7 @@ function CartDrawer() {
                   <span className="text-lg font-black text-secondary">
                     {format(finalTotal)}
                     {!isTransfer && (
-                      <span className="text-xs font-bold text-emerald-600 ml-1.5">(3 cuotas sin interés)</span>
+                      <span className="text-xs font-bold text-emerald-600 ml-1.5">(6 cuotas sin interés)</span>
                     )}
                   </span>
                 </div>
@@ -360,7 +354,7 @@ function CartDrawer() {
                     className="flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] py-3.5 px-4 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-sky-500/25 hover:bg-[#0087c2] active:scale-[0.99] transition"
                   >
                     <CreditCard className="h-5 w-5" />
-                    Pagar con Mercado Pago (3 cuotas) ➔
+                    Pagar con Mercado Pago (6 cuotas) ➔
                   </button>
                 ) : (
                   <button
@@ -368,12 +362,12 @@ function CartDrawer() {
                     className="flex w-full items-center justify-center gap-2 rounded-full bg-[#00A859] py-3.5 px-4 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-emerald-500/25 hover:bg-[#008f4c] active:scale-[0.99] transition"
                   >
                     <Lock className="h-4 w-4" />
-                    Continuar con Transferencia (15% OFF) ➔
+                    Continuar con Transferencia ➔
                   </button>
                 )}
 
                 <p className="text-center text-[10px] text-muted-foreground">
-                  {!isTransfer ? "Aceptamos todas las tarjetas de crédito y débito vía Mercado Pago" : "Transferí con 15% OFF directo al Alias LERADIAL"}
+                  {!isTransfer ? "Aceptamos todas las tarjetas de crédito y débito vía Mercado Pago" : "Transferí directo al Alias oficial LERADIAL"}
                 </p>
               </footer>
             )}
@@ -386,7 +380,7 @@ function CartDrawer() {
               <div className="rounded-xl bg-primary/5 border border-primary/15 p-3 text-xs text-secondary">
                 <p className="font-bold">Completá tus datos para el envío y facturación:</p>
                 <p className="text-muted-foreground mt-0.5">
-                  {!isTransfer ? "Luego te llevamos directo a Mercado Pago para abonar en 3 cuotas sin interés." : "Al confirmar te damos los datos de transferencia y link directo a WhatsApp."}
+                  {!isTransfer ? "Luego te llevamos directo a Mercado Pago para abonar en 6 cuotas sin interés." : "Al confirmar te damos los datos de transferencia y link directo a WhatsApp."}
                 </p>
               </div>
 
@@ -415,11 +409,11 @@ function CartDrawer() {
                 </div>
                 {!isTransfer ? (
                   <p className="text-[11px] font-semibold text-[#009EE3]">
-                    💳 Financiación: 3 cuotas sin interés de {format(Math.round(total / 3))}
+                    💳 Financiación: 6 cuotas sin interés de {format(Math.round(total / 6))}
                   </p>
                 ) : (
                   <p className="text-[11px] font-semibold text-emerald-700">
-                    🏦 15% OFF por transferencia bancaria aplicado
+                    🏦 Pago por transferencia bancaria directa
                   </p>
                 )}
               </div>
@@ -450,7 +444,7 @@ function CartDrawer() {
                   className="flex-[2] flex items-center justify-center gap-1.5 rounded-full bg-[#00A859] py-3.5 text-xs font-black uppercase tracking-wider text-white hover:bg-[#008f4c] shadow-md disabled:opacity-50 transition"
                 >
                   <Lock className="h-4 w-4" />
-                  {sending ? "Enviando..." : "Confirmar Pedido (15% OFF) ➔"}
+                  {sending ? "Enviando..." : "Confirmar Pedido ➔"}
                 </button>
               )}
             </footer>
@@ -470,7 +464,7 @@ function CartDrawer() {
               <p className="mt-1 text-3xl font-black text-primary">{format(orderTotal)}</p>
               {!isTransfer && (
                 <p className="mt-1 text-xs font-bold text-emerald-600">
-                  En hasta 3 cuotas fijas sin interés de {format(Math.round(orderTotal / 3))}
+                  En hasta 6 cuotas fijas sin interés de {format(Math.round(orderTotal / 6))}
                 </p>
               )}
             </div>
@@ -626,11 +620,11 @@ function MercadoPagoBlock({
           Tarjeta o Mercado Pago
         </p>
         <span className="rounded-full bg-[#009EE3] px-2 py-0.5 text-[10px] font-bold text-white uppercase">
-          3 cuotas sin interés
+          6 cuotas sin interés
         </span>
       </div>
       <p className="mt-1 text-xs text-neutral-700 font-medium">
-        Aboná en hasta 3 cuotas fijas sin interés con todas las tarjetas de crédito o con débito y saldo MP.
+        Aboná en hasta 6 cuotas fijas sin interés con todas las tarjetas de crédito o con débito y saldo MP.
       </p>
       <button
         onClick={() => (initPoint ? (window.location.href = initPoint) : tryPay())}
@@ -638,7 +632,7 @@ function MercadoPagoBlock({
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#009EE3] py-3 text-sm font-bold uppercase text-white shadow-md hover:bg-[#0081b8] disabled:opacity-60 transition"
       >
         <CreditCard className="h-4 w-4" />
-        {loading ? "Conectando con Mercado Pago..." : initPoint ? "Abrir Mercado Pago (3 cuotas)" : "Pagar con Mercado Pago (3 cuotas)"}
+        {loading ? "Conectando con Mercado Pago..." : initPoint ? "Abrir Mercado Pago (6 cuotas)" : "Pagar con Mercado Pago (6 cuotas)"}
       </button>
       {error && (
         <p className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 p-2.5 text-[11px] text-amber-900 font-medium">
