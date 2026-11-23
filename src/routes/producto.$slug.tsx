@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSettings } from "@/lib/settings.functions";
 import { useCart } from "@/lib/cart";
 import { PaymentMethodsWidget } from "@/components/PaymentMethodsWidget";
+import { ProductShippingCalculator } from "@/components/ProductShippingCalculator";
 import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo.constants";
 import tireCar from "@/assets/tire-car.jpg";
 import tireSuv from "@/assets/tire-suv.jpg";
@@ -736,6 +737,12 @@ function ProductDetail() {
                 className="mt-5"
               />
             )}
+
+            {/* Cuadro de Medidas y Cotizador de Envíos */}
+            <ProductShippingCalculator
+              size={p.size}
+              selectedQty={selectedQty}
+            />
 
             <p className="mt-3 text-sm text-muted-foreground">
               {p.stock > 0 ? `Stock disponible: ${p.stock}` : "Sin stock — consultar"}
