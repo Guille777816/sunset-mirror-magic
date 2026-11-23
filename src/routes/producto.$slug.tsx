@@ -574,7 +574,6 @@ function ProductDetail() {
             </p>
             <div className="mt-6 flex flex-wrap items-baseline gap-4">
               <div>
-                <span className="text-xs font-black uppercase tracking-wider text-[#009EE3] block">6 Cuotas Sin Interés</span>
                 <span className="text-3xl font-black text-secondary">
                   $ {Number(p.price_ars).toLocaleString("es-AR")}
                 </span>

@@ -166,9 +166,6 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                   {/* Precio */}
                   <div className="mt-4 flex items-baseline justify-between border-t border-neutral-200/60 pt-3 transition-colors group-hover:border-white/20">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-wider text-[#009EE3] transition-colors group-hover:text-sky-300">
-                        6 cuotas fijas sin interés
-                      </p>
                       <p className="text-2xl font-black text-neutral-900 transition-colors group-hover:text-white">
                         {format(Number(p.price_ars))}
                       </p>

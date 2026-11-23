@@ -199,9 +199,6 @@ export function SunsetProductCard({ product: p, eager = false }: SunsetProductCa
       <div className="flex w-full md:w-auto flex-col items-center md:items-end justify-center border-t border-neutral-100 pt-4 md:border-t-0 md:pt-0">
         {/* Precio en ARS */}
         <div className="text-center md:text-right">
-          <div className="text-xs font-black uppercase tracking-wider text-[#009EE3]">
-            6 cuotas sin interés
-          </div>
           <div className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900">
             {format(priceArs)}
           </div>

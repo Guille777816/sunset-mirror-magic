@@ -1019,9 +1019,6 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
           <p className="mt-1 text-xs text-muted-foreground">{cleanTireSize(p.size)}</p>
         </Link>
         <div className="mt-auto pt-4">
-          <div className="flex items-baseline justify-between text-xs text-[#009EE3] font-black uppercase">
-            <span>6 Cuotas Sin Interés</span>
-          </div>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span className="text-lg font-black text-secondary">{format(Number(p.price_ars))}</span>
           </div>
