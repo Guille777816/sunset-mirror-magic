@@ -56,8 +56,8 @@ export function ProductShippingCalculator({ size, selectedQty = 1 }: ProductShip
 
   const couriers = [
     {
-      name: "Correo Argentino",
-      url: "https://www.correoargentino.com.ar/servicios/paqueteria/paqueteria-e-commerce",
+      name: "Correo Argentino (MiCorreo)",
+      url: "https://micorreo.correoargentino.com.ar/",
       logo: "/images/shipping/correo-argentino.png",
       borderColor: "hover:border-amber-400",
     },
