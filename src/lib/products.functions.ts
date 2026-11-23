@@ -9,13 +9,11 @@ import { assertAdmin } from "@/lib/products.server";
 // de 7.800+ productos a Supabase en cada visita (elimina tiempos de 4-8s y timeouts 500)
 let cachedPublicProducts: any[] | null = null;
 let cachedPublicProductsTime = 0;
-let inflightPublicProductsPromise: Promise<any[]> | null = null;
-const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutos de caché en memoria del servidor
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché en memoria del servidor
 
 export function invalidatePublicProductsCache() {
   cachedPublicProducts = null;
   cachedPublicProductsTime = 0;
-  inflightPublicProductsPromise = null;
 }
 
 export const listPublicProducts = createServerFn({ method: "GET" }).handler(async () => {
@@ -24,50 +22,40 @@ export const listPublicProducts = createServerFn({ method: "GET" }).handler(asyn
     return cachedPublicProducts;
   }
 
-  if (inflightPublicProductsPromise) {
-    return inflightPublicProductsPromise;
-  }
+  try {
+    // Timeout seguro de 12s para no bloquear el Worker ni el renderizado
+    const queryPromise = supabase
+      .from("products")
+      .select("id,slug,brand,model,size,category,categories,price_ars,stock,image_url,vehicle_image_url,vehicle_tag,is_featured,free_shipping,catalog_url")
+      .eq("is_active", true)
+      .order("is_featured", { ascending: false })
+      .order("created_at", { ascending: false });
 
-  inflightPublicProductsPromise = (async () => {
-    try {
-      // Timeout seguro de 6.5s para no bloquear el Worker ni el renderizado
-      const queryPromise = supabase
-        .from("products")
-        .select("id,slug,brand,model,size,category,categories,price_ars,stock,image_url,vehicle_image_url,vehicle_tag,is_featured,free_shipping,catalog_url")
-        .eq("is_active", true)
-        .order("is_featured", { ascending: false })
-        .order("created_at", { ascending: false });
+    const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
+      setTimeout(() => reject(new Error("Supabase public products query timed out")), 12000)
+    );
 
-      const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
-        setTimeout(() => reject(new Error("Supabase public products query timed out")), 6500)
-      );
+    const { data, error } = await (Promise.race([queryPromise, timeoutPromise]) as any);
+    if (error) throw new Error(error.message);
 
-      const { data, error } = await (Promise.race([queryPromise, timeoutPromise]) as any);
-      if (error) throw new Error(error.message);
+    const mapped = (data ?? []).map((p: any) => ({
+      ...p,
+      image_url: p.image_url && p.image_url.startsWith("data:") && p.image_url.length > 350000 ? null : p.image_url,
+      vehicle_image_url: p.vehicle_image_url && p.vehicle_image_url.startsWith("data:") && p.vehicle_image_url.length > 350000 ? null : p.vehicle_image_url,
+    }));
 
-      const mapped = (data ?? []).map((p: any) => ({
-        ...p,
-        image_url: p.image_url && p.image_url.startsWith("data:") && p.image_url.length > 350000 ? null : p.image_url,
-        vehicle_image_url: p.vehicle_image_url && p.vehicle_image_url.startsWith("data:") && p.vehicle_image_url.length > 350000 ? null : p.vehicle_image_url,
-      }));
-
-      cachedPublicProducts = mapped;
-      cachedPublicProductsTime = Date.now();
-      return mapped;
-    } catch (err) {
-      console.error("[listPublicProducts] Error fetching from Supabase:", err);
-      // Resiliencia crítica: si la base de datos se satura o demora, devolvemos la última caché disponible
-      if (cachedPublicProducts && cachedPublicProducts.length > 0) {
-        console.warn("[listPublicProducts] Devolviendo catálogo en caché previo como salvavidas");
-        return cachedPublicProducts;
-      }
-      throw err;
-    } finally {
-      inflightPublicProductsPromise = null;
+    cachedPublicProducts = mapped;
+    cachedPublicProductsTime = Date.now();
+    return mapped;
+  } catch (err) {
+    console.error("[listPublicProducts] Error fetching from Supabase:", err);
+    // Resiliencia crítica: si la base de datos se satura o demora, devolvemos la última caché disponible
+    if (cachedPublicProducts && cachedPublicProducts.length > 0) {
+      console.warn("[listPublicProducts] Devolviendo catálogo en caché previo como salvavidas");
+      return cachedPublicProducts;
     }
-  })();
-
-  return inflightPublicProductsPromise;
+    throw err;
+  }
 });
 export const listAllProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
