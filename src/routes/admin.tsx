@@ -818,9 +818,8 @@ function AdminPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <BrandLogo brand={p.brand} className="h-4 max-w-[70px]" />
-                          <span className="font-bold text-secondary text-sm">{p.brand}</span>
+                        <div className="flex items-center mb-1">
+                          <BrandLogo brand={p.brand} className="h-5 max-w-[100px]" />
                         </div>
                         <div className="text-xs text-muted-foreground">{p.model}</div>
                       </td>
@@ -2582,7 +2581,8 @@ function BrandLogosPanel() {
   const defaultBrands = [
     "XBRI", "Linglong", "Sunset Tires", "Firemax", "Pirelli", "Michelin", "Goodyear",
     "Hankook", "Continental", "Bridgestone", "Dunlop", "Yokohama", "Firestone", "Kumho",
-    "Maxxis", "Toyo", "Cooper", "Nexen", "Falken", "BFGoodrich", "Fate"
+    "Maxxis", "Toyo", "Cooper", "Nexen", "Falken", "BFGoodrich", "Fate",
+    "Duraturn", "Durable", "Triangle", "Wanli", "Windforce", "Westlake", "Membat"
   ];
   
   // Custom brands stored in category_images with key `brand:...`

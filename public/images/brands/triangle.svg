@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 44">
+  <g transform="translate(4, 6)">
+    <!-- Yellow & Black triangle emblem -->
+    <polygon points="14,2 26,26 2,26" fill="#FDB813" stroke="#111111" stroke-width="2.5" stroke-linejoin="round" />
+    <polygon points="14,10 20,22 8,22" fill="#111111" />
+    <text x="32" y="24" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20" fill="#111111" letter-spacing="1">TRIANGLE</text>
+  </g>
+</svg>
