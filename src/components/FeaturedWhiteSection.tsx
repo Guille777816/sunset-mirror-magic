@@ -124,12 +124,12 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                   className="relative z-10 my-4 block aspect-square w-full select-none"
                 >
                   {Number(p.price_ars) > 0 && (
-                    <div className="absolute bottom-2 left-2 z-20 rounded-lg bg-[#009EE3] backdrop-blur-md px-2.5 py-1 text-white shadow-md border border-white/20">
-                      <span className="text-[9px] font-black uppercase tracking-wider text-white block leading-tight">
-                        6 Cuotas Sin Interés
+                    <div className="absolute bottom-2 left-2 z-20 rounded-lg bg-black/85 backdrop-blur-md px-2.5 py-1 text-white shadow-md border border-white/10">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 block leading-tight">
+                        15% OFF Transferencia
                       </span>
                       <span className="text-xs font-black tracking-tight text-white block">
-                        6x {format(Math.round(Number(p.price_ars) / 6))}
+                        {format(Math.round(Number(p.price_ars) * 0.85))}
                       </span>
                     </div>
                   )}
@@ -166,11 +166,14 @@ export function FeaturedWhiteSection({ products }: FeaturedWhiteSectionProps) {
                   {/* Precio */}
                   <div className="mt-4 flex items-baseline justify-between border-t border-neutral-200/60 pt-3 transition-colors group-hover:border-white/20">
                     <div>
-                      <p className="text-2xl font-black text-neutral-900 transition-colors group-hover:text-white">
-                        {format(Number(p.price_ars))}
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 transition-colors group-hover:text-emerald-300">
+                        Transferencia (15% OFF)
                       </p>
-                      <p className="mt-0.5 text-xs font-bold text-emerald-600 transition-colors group-hover:text-emerald-300">
-                        6 cuotas fijas de {format(Math.round(Number(p.price_ars) / 6))}
+                      <p className="text-2xl font-black text-emerald-600 transition-colors group-hover:text-emerald-300">
+                        {format(Math.round(Number(p.price_ars) * 0.85))}
+                      </p>
+                      <p className="mt-0.5 text-xs font-medium text-neutral-500 transition-colors group-hover:text-neutral-300">
+                        Lista: {format(Number(p.price_ars))} · 6 cuotas fijas de {format(Math.round(Number(p.price_ars) / 6))}
                       </p>
                     </div>
                   </div>

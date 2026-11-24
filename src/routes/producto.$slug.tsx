@@ -575,8 +575,17 @@ function ProductDetail() {
             </p>
             <div className="mt-6 flex flex-wrap items-baseline gap-4">
               <div>
-                <span className="text-3xl font-black text-secondary">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">Precio de lista (Tarjetas)</span>
+                <span className="text-2xl font-black text-secondary line-through">
                   $ {Number(p.price_ars).toLocaleString("es-AR")}
+                </span>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-300 px-4 py-2 shadow-xs">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-800 block">
+                  15% OFF Pagando por Transferencia
+                </span>
+                <span className="text-3xl font-black text-emerald-700">
+                  $ {Math.round(Number(p.price_ars) * 0.85).toLocaleString("es-AR")}
                 </span>
               </div>
               <div className="rounded-2xl bg-[#009EE3]/10 border border-[#009EE3]/30 px-4 py-2 shadow-xs">
@@ -643,6 +652,9 @@ function ProductDetail() {
                   <span className="text-muted-foreground font-medium">Subtotal ({selectedQty} cubiertas):</span>
                   <span className="font-black text-sm text-secondary">
                     $ {(Number(p.price_ars) * selectedQty).toLocaleString("es-AR")}
+                    <span className="ml-1.5 text-emerald-700 font-bold">
+                      ($ {Math.round(Number(p.price_ars) * 0.85 * selectedQty).toLocaleString("es-AR")} transf.)
+                    </span>
                     <span className="ml-1.5 text-[#009EE3] font-bold">
                       (6 cuotas de $ {Math.round((Number(p.price_ars) * selectedQty) / 6).toLocaleString("es-AR")})
                     </span>

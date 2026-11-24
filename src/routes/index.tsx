@@ -1019,11 +1019,16 @@ function ProductCard({ p, eager = false }: { p: any; eager?: boolean }) {
           <p className="mt-1 text-xs text-muted-foreground">{cleanTireSize(p.size)}</p>
         </Link>
         <div className="mt-auto pt-4">
-          <div className="flex items-baseline gap-1.5 mt-0.5">
-            <span className="text-lg font-black text-secondary">{format(Number(p.price_ars))}</span>
+          <div className="flex items-baseline justify-between text-xs text-muted-foreground">
+            <span>Lista / Tarjetas</span>
+            <span className="line-through">{format(Number(p.price_ars))}</span>
           </div>
-          <p className="mt-1 text-[11px] font-bold text-emerald-600">
-            6 cuotas fijas de {format(Math.round(Number(p.price_ars) / 6))}
+          <div className="flex items-baseline gap-1.5 mt-0.5">
+            <span className="text-lg font-black text-emerald-600">{format(Math.round(Number(p.price_ars) * 0.85))}</span>
+            <span className="text-[9px] font-black uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">15% OFF Transf.</span>
+          </div>
+          <p className="mt-1 text-[11px] font-bold text-[#0081b8]">
+            o 6 cuotas fijas de {format(Math.round(Number(p.price_ars) / 6))}
           </p>
           <div className="mt-3 flex gap-2">
             <Link

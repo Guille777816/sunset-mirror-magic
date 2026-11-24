@@ -87,8 +87,8 @@ function CartDrawer() {
   const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
 
   const isTransfer = paymentMethod === "transfer";
-  const discountAmount = 0;
-  const finalTotal = total;
+  const discountAmount = isTransfer ? Math.round(total * 0.15) : 0;
+  const finalTotal = Math.max(0, total - discountAmount);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -113,7 +113,7 @@ function CartDrawer() {
       setConfirmedItems(itemsSnapshot);
       const origin = typeof window !== "undefined" ? window.location.origin : "https://www.leradial.com.ar";
       const paymentNote = isTransfer 
-        ? "Forma de pago: Transferencia Bancaria (Directa)" 
+        ? "Forma de pago: Transferencia Bancaria (15% OFF aplicado)" 
         : "Forma de pago: Tarjeta de Crédito / Mercado Pago (6 cuotas sin interés)";
       const notesWithPayment = form.notes ? `${form.notes} | ${paymentNote}` : paymentNote;
 
@@ -290,13 +290,13 @@ function CartDrawer() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black uppercase text-emerald-800">Transferencia</span>
-                        <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[9px] font-black text-neutral-700 uppercase">Directa</span>
+                        <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] font-black text-white uppercase">15% OFF</span>
                       </div>
                       <p className="mt-1 text-sm font-black text-emerald-950">
-                        {format(total)}
+                        {format(Math.round(total * 0.85))}
                       </p>
-                      <p className="mt-0.5 text-[10px] font-semibold text-muted-foreground">
-                        Alias directo LERADIAL
+                      <p className="mt-0.5 text-[10px] font-semibold text-emerald-700">
+                        Ahorrás {format(discountAmount)}
                       </p>
                     </button>
                   </div>
@@ -307,11 +307,17 @@ function CartDrawer() {
               {items.length > 0 && (
                 <div className="space-y-1.5 rounded-xl bg-neutral-50 p-3.5 border border-neutral-200/70 text-xs">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Precio total</span>
-                    <span className="font-bold text-secondary">
+                    <span>Precio de lista</span>
+                    <span className={isTransfer ? "line-through text-neutral-400 font-semibold" : "font-bold text-secondary"}>
                       {format(total)}
                     </span>
                   </div>
+                  {isTransfer && (
+                    <div className="flex justify-between font-bold text-emerald-700">
+                      <span>Descuento Transferencia (15%)</span>
+                      <span>-{format(discountAmount)}</span>
+                    </div>
+                  )}
                   <div className="flex items-baseline justify-between border-t border-neutral-200/80 pt-2 text-sm">
                     <span className="font-black uppercase tracking-wider text-secondary">Total a abonar</span>
                     <span className="text-xl font-black text-emerald-600">
@@ -342,8 +348,10 @@ function CartDrawer() {
                   <span className="font-bold text-muted-foreground uppercase tracking-wider">Total</span>
                   <span className="text-lg font-black text-secondary">
                     {format(finalTotal)}
-                    {!isTransfer && (
+                    {!isTransfer ? (
                       <span className="text-xs font-bold text-emerald-600 ml-1.5">(6 cuotas sin interés)</span>
+                    ) : (
+                      <span className="text-xs font-bold text-emerald-600 ml-1.5">(15% OFF aplicado)</span>
                     )}
                   </span>
                 </div>
@@ -362,12 +370,12 @@ function CartDrawer() {
                     className="flex w-full items-center justify-center gap-2 rounded-full bg-[#00A859] py-3.5 px-4 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-emerald-500/25 hover:bg-[#008f4c] active:scale-[0.99] transition"
                   >
                     <Lock className="h-4 w-4" />
-                    Continuar con Transferencia ➔
+                    Continuar con Transferencia (15% OFF) ➔
                   </button>
                 )}
 
                 <p className="text-center text-[10px] text-muted-foreground">
-                  {!isTransfer ? "Aceptamos todas las tarjetas de crédito y débito vía Mercado Pago" : "Transferí directo al Alias oficial LERADIAL"}
+                  {!isTransfer ? "Aceptamos todas las tarjetas de crédito y débito vía Mercado Pago" : "Transferí con 15% OFF directo al Alias oficial LERADIAL"}
                 </p>
               </footer>
             )}
@@ -413,7 +421,7 @@ function CartDrawer() {
                   </p>
                 ) : (
                   <p className="text-[11px] font-semibold text-emerald-700">
-                    🏦 Pago por transferencia bancaria directa
+                    🏦 15% OFF por transferencia bancaria aplicado (-{format(discountAmount)})
                   </p>
                 )}
               </div>
@@ -444,7 +452,7 @@ function CartDrawer() {
                   className="flex-[2] flex items-center justify-center gap-1.5 rounded-full bg-[#00A859] py-3.5 text-xs font-black uppercase tracking-wider text-white hover:bg-[#008f4c] shadow-md disabled:opacity-50 transition"
                 >
                   <Lock className="h-4 w-4" />
-                  {sending ? "Enviando..." : "Confirmar Pedido ➔"}
+                  {sending ? "Enviando..." : "Confirmar Pedido (15% OFF) ➔"}
                 </button>
               )}
             </footer>
@@ -646,14 +654,14 @@ function MercadoPagoBlock({
     <div className={`rounded-2xl border-2 ${isTransfer ? "border-emerald-500/60 bg-emerald-50/80 shadow-sm" : "border-neutral-200 bg-neutral-50/60"} p-4 text-left`}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-          {isTransfer ? "Opción seleccionada: Transferencia Bancaria" : "Alternativa: Transferencia Bancaria"}
+          {isTransfer ? "Opción seleccionada: Transferencia (15% OFF)" : "Alternativa: Transferencia Bancaria (15% OFF)"}
         </p>
         <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white uppercase">
-          Inmediata
+          15% OFF
         </span>
       </div>
       <p className="mt-1 text-xs text-emerald-950 font-medium">
-        Aboná sin recargos y envianos el comprobante para despachar en el día:
+        Aboná con el 15% de descuento directo y envianos el comprobante para despachar en el día:
       </p>
 
       <div className="mt-3 space-y-2 rounded-xl bg-white p-3 border border-emerald-200/80 text-xs text-neutral-800">

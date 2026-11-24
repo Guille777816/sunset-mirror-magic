@@ -31,7 +31,7 @@ export function PaymentMethodsWidget({
   const [showDetails, setShowDetails] = useState(false);
 
   const installmentVal = priceArs && priceArs > 0 ? Math.round(priceArs / 6) : null;
-  const transferVal = priceArs && priceArs > 0 ? priceArs : null;
+  const transferVal = priceArs && priceArs > 0 ? Math.round(priceArs * 0.85) : null;
 
   return (
     <div
@@ -41,26 +41,44 @@ export function PaymentMethodsWidget({
     >
       {/* Header con cuotas destacadas si hay precio */}
       {installmentVal && (
-        <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200/70 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#009EE3]/15 text-[#009EE3] shrink-0">
-              <CreditCard className="h-4 w-4" />
+        <div className="mb-3.5 space-y-2.5 border-b border-neutral-200/70 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#009EE3]/15 text-[#009EE3] shrink-0">
+                <CreditCard className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 leading-tight">
+                  Financiación en cuotas
+                </p>
+                <p className="text-sm sm:text-base font-black text-neutral-900 leading-snug">
+                  <span className="text-[#009EE3]">6 cuotas fijas</span> sin interés de{" "}
+                  <span className="text-[#0081b8]">${installmentVal.toLocaleString("es-AR")}</span>
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 leading-tight">
-                Financiación en cuotas
-              </p>
-              <p className="text-sm sm:text-base font-black text-neutral-900 leading-snug">
-                <span className="text-[#009EE3]">6 cuotas fijas</span> sin interés de{" "}
-                <span className="text-[#0081b8]">${installmentVal.toLocaleString("es-AR")}</span>
-              </p>
+
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[#009EE3]/10 px-3 py-1 text-xs font-bold text-[#0081b8] border border-[#009EE3]/20">
+              <Sparkles className="h-3 w-3 text-[#009EE3]" />
+              <span>Con todas las tarjetas</span>
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-[#009EE3]/10 px-3 py-1 text-xs font-bold text-[#0081b8] border border-[#009EE3]/20">
-            <Sparkles className="h-3 w-3 text-[#009EE3]" />
-            <span>Con todas las tarjetas</span>
-          </div>
+          {showTransferBadge && transferVal && (
+            <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200/80 px-3 py-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-emerald-600 px-1.5 py-0.5 text-[10px] font-black uppercase text-white">
+                  15% OFF
+                </span>
+                <span className="font-bold text-emerald-900">
+                  Transferencia bancaria:
+                </span>
+              </div>
+              <span className="text-sm font-black text-emerald-700">
+                ${transferVal.toLocaleString("es-AR")}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -128,7 +146,7 @@ export function PaymentMethodsWidget({
           <div className="flex items-start gap-2">
             <Sparkles className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
             <p>
-              <strong className="text-neutral-800">Transferencia Bancaria:</strong> Directa acreditando al Alias oficial <strong>LERADIAL</strong>.
+              <strong className="text-neutral-800">Transferencia Bancaria:</strong> 15% de descuento directo acreditando al Alias oficial <strong>LERADIAL</strong>.
             </p>
           </div>
         </div>
