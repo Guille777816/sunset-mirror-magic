@@ -7,7 +7,10 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const token = process.env.MP_ACCESS_TOKEN;
+        const token =
+          process.env.MP_ACCESS_TOKEN && process.env.MP_ACCESS_TOKEN !== "CONFIGURAR_EN_CLOUDFLARE_COMO_SECRET"
+            ? process.env.MP_ACCESS_TOKEN
+            : "APP_USR-6019246233127130-102812-247332aec0379521ac48b01770a7b6e4-2418423393";
         if (!token) return new Response("mp not configured", { status: 500 });
 
         const url = new URL(request.url);

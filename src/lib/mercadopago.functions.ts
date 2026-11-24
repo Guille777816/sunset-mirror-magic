@@ -21,7 +21,10 @@ const inputSchema = z.object({
 export const createMpPreference = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => inputSchema.parse(i))
   .handler(async ({ data }) => {
-    const token = process.env.MP_ACCESS_TOKEN;
+    const token =
+      process.env.MP_ACCESS_TOKEN && process.env.MP_ACCESS_TOKEN !== "CONFIGURAR_EN_CLOUDFLARE_COMO_SECRET"
+        ? process.env.MP_ACCESS_TOKEN
+        : "APP_USR-6019246233127130-102812-247332aec0379521ac48b01770a7b6e4-2418423393";
 
     if (!token) {
       return {
@@ -75,8 +78,8 @@ export const createMpPreference = createServerFn({ method: "POST" })
     const payload = {
       items: mpItems,
       payment_methods: {
-        installments: 3,
-        default_installments: 3,
+        installments: 6,
+        default_installments: 6,
         excluded_payment_types: [],
       },
       external_reference: data.order_id,
