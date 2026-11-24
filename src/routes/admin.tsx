@@ -3027,6 +3027,18 @@ const STATUS_STYLE: Record<OrderStatus, string> = {
   cancelado:  "bg-red-100 text-red-800",
 };
 
+function parseOrderDni(notes?: string | null) {
+  if (!notes) return { dni: null, cleanNotes: null };
+  const match = notes.match(/DNI(?:\/CUIT)?:\s*([^\s|]+)/i);
+  const dni = match ? match[1].trim() : null;
+  let cleanNotes = notes;
+  if (dni) {
+    cleanNotes = cleanNotes.replace(/DNI(?:\/CUIT)?:\s*[^|]+\s*\|?\s*/i, "").trim();
+    cleanNotes = cleanNotes.replace(/^\|\s*|\s*\|$/g, "").trim();
+  }
+  return { dni, cleanNotes: cleanNotes || null };
+}
+
 function OrdersPanel() {
   const qc = useQueryClient();
   const fetchOrders = useServerFn(listOrders);
@@ -3080,7 +3092,7 @@ function OrdersPanel() {
             <thead className="bg-muted text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">Pedido</th>
-                <th className="px-4 py-3">Cliente</th>
+                <th className="px-4 py-3">Cliente / DNI</th>
                 <th className="px-4 py-3">Teléfono</th>
                 <th className="px-4 py-3 text-right">Total</th>
                 <th className="px-4 py-3">Estado</th>
@@ -3092,6 +3104,7 @@ function OrdersPanel() {
                 const date = new Date(o.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
                 const isOpen = openId === o.id;
                 const wa = String(o.customer_phone || "").replace(/\D/g, "");
+                const { dni, cleanNotes } = parseOrderDni(o.notes);
                 return (
                   <Fragment key={o.id}>
                     <tr key={o.id} className="border-t">
@@ -3101,7 +3114,16 @@ function OrdersPanel() {
                           <p className="text-xs text-muted-foreground">{date}</p>
                         </button>
                       </td>
-                      <td className="px-4 py-3 font-semibold text-secondary">{o.customer_name}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-bold text-secondary leading-tight">{o.customer_name}</p>
+                        {dni ? (
+                          <span className="inline-block mt-1 rounded bg-neutral-100 border border-neutral-300 px-1.5 py-0.5 text-[11px] font-mono font-bold text-neutral-800">
+                            DNI: {dni}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground italic">Sin DNI</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         {wa ? (
                           <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{o.customer_phone}</a>
@@ -3145,11 +3167,21 @@ function OrdersPanel() {
                                 ))}
                               </ul>
                             </div>
-                            <div className="space-y-1 text-sm">
+                            <div className="space-y-1.5 text-sm">
+                              <p><strong>Cliente:</strong> <span className="font-bold text-secondary">{o.customer_name}</span></p>
+                              {dni && (
+                                <p>
+                                  <strong>DNI / CUIT:</strong>{" "}
+                                  <span className="font-mono font-bold text-secondary bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
+                                    {dni}
+                                  </span>
+                                </p>
+                              )}
+                              {o.customer_phone && <p><strong>Teléfono:</strong> {o.customer_phone}</p>}
                               {o.customer_email && <p><strong>Email:</strong> {o.customer_email}</p>}
                               {o.customer_address && <p><strong>Dirección:</strong> {o.customer_address}</p>}
-                              {o.notes && <p><strong>Notas:</strong> {o.notes}</p>}
-                              <p className="text-xs text-muted-foreground">Referencia para el cliente: LR-{o.id.slice(0, 8).toUpperCase()}</p>
+                              {cleanNotes && <p><strong>Notas:</strong> {cleanNotes}</p>}
+                              <p className="text-xs text-muted-foreground pt-1">Referencia para el cliente: LR-{o.id.slice(0, 8).toUpperCase()}</p>
                             </div>
                           </div>
                         </td>

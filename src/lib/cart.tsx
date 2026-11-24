@@ -84,7 +84,14 @@ function CartDrawer() {
   const { format } = useCurrency();
   const submit = useServerFn(createOrder);
   const [step, setStep] = useState<"cart" | "form" | "done">("cart");
-  const [form, setForm] = useState({ customer_name: "", customer_phone: "", customer_email: "", customer_address: "", notes: "" });
+  const [form, setForm] = useState({
+    customer_name: "",
+    customer_dni: "",
+    customer_phone: "",
+    customer_email: "",
+    customer_address: "",
+    notes: "",
+  });
 
   const isTransfer = paymentMethod === "transfer";
   const discountAmount = isTransfer ? Math.round(total * 0.15) : 0;
@@ -104,21 +111,28 @@ function CartDrawer() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!form.customer_name.trim() || !form.customer_phone.trim()) {
-      setError("Nombre y teléfono son obligatorios para despachar tu pedido."); return;
+    if (!form.customer_name.trim() || !form.customer_dni.trim() || !form.customer_phone.trim()) {
+      setError("Nombre, DNI / CUIT y teléfono son obligatorios para despachar tu pedido."); return;
     }
     setSending(true);
     try {
       const itemsSnapshot = [...items];
       setConfirmedItems(itemsSnapshot);
       const origin = typeof window !== "undefined" ? window.location.origin : "https://www.leradial.com.ar";
+      const dniNote = `DNI/CUIT: ${form.customer_dni.trim()}`;
       const paymentNote = isTransfer 
         ? "Forma de pago: Transferencia Bancaria (15% OFF aplicado)" 
         : "Forma de pago: Tarjeta de Crédito / Mercado Pago (6 cuotas sin interés)";
-      const notesWithPayment = form.notes ? `${form.notes} | ${paymentNote}` : paymentNote;
+      const parts = [dniNote];
+      if (form.notes?.trim()) parts.push(form.notes.trim());
+      parts.push(paymentNote);
+      const notesWithPayment = parts.join(" | ");
 
       const res = await submit({ data: {
-        ...form,
+        customer_name: form.customer_name.trim(),
+        customer_phone: form.customer_phone.trim(),
+        customer_email: form.customer_email.trim(),
+        customer_address: form.customer_address.trim(),
         notes: notesWithPayment,
         items: itemsSnapshot.map(i => ({ id: i.id, qty: i.qty })),
         back_url_base: origin,
@@ -393,6 +407,7 @@ function CartDrawer() {
               </div>
 
               <Field label="Nombre y apellido *" value={form.customer_name} onChange={v => setForm({ ...form, customer_name: v })} placeholder="Ej: Juan Pérez" />
+              <Field label="DNI o CUIT (para despacho y factura) *" value={form.customer_dni} onChange={v => setForm({ ...form, customer_dni: v })} placeholder="Ej: 35.123.456 o 20-35123456-8" />
               <Field label="Teléfono (WhatsApp) *" value={form.customer_phone} onChange={v => setForm({ ...form, customer_phone: v })} placeholder="Ej: 11 2345 6789" type="tel" />
               <Field label="Email" value={form.customer_email} onChange={v => setForm({ ...form, customer_email: v })} type="email" placeholder="Para recibir tu comprobante" />
               <Field label="Dirección / Localidad de entrega" value={form.customer_address} onChange={v => setForm({ ...form, customer_address: v })} placeholder="Ej: Av. Rivadavia 1234, CABA" />
