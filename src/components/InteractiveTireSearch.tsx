@@ -17,10 +17,10 @@ const DEFAULT_COMMERCIAL_WIDTHS = [
   "7.50", "8.25", "9.00", "10.00", "11.00", "12.00", "295", "315", "385"
 ];
 const DEFAULT_ASPECTS = [
-  "40", "45", "50", "55", "60", "65", "70", "75", "80", "85"
+  "25", "30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80", "85"
 ];
 const DEFAULT_RIMS = [
-  "13", "14", "15", "16", "17", "18", "19", "20", "22.5"
+  "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "22.5", "24"
 ];
 
 export function InteractiveTireSearch({ products, onSearch, className = "" }: InteractiveTireSearchProps) {

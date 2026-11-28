@@ -125,8 +125,8 @@ export function SunsetStoreView({
       if (p.brand) brands.add(p.brand.trim());
 
       const s = cleanTireSize(p.size);
-      // Match 185/70R13, 265/70 R16, 295/80R22.5
-      const m = s.match(/([0-9]{3})\s*(?:\/|\s*-\s*)([0-9]{2})\s*R\s*([0-9]{2}(?:\.[0-9])?)/i);
+      // Match 185/70R13, 265/70 R16, 295/80R22.5, 245/30ZR20
+      const m = s.match(/([0-9]{3})\s*(?:\/|\s*-\s*)([0-9]{2}(?:\.[0-9]+)?)\s*(?:Z?R|\-|\s)?\s*([0-9]{2}(?:\.[0-9])?)/i);
       if (m) {
         widths.add(m[1]);
         aspects.add(m[2]);

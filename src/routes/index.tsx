@@ -260,14 +260,18 @@ function parseCategoryAndMeasureFromPath(pathname: string): { category?: string;
 
 function parseMeasureDetails(raw?: string | null): { w?: string; h?: string; r?: string } {
   if (!raw) return {};
-  const s = String(raw).trim();
+  let s = String(raw).trim();
+  try {
+    s = decodeURIComponent(s);
+  } catch {}
+  s = s.replace(/%2f/gi, "/").replace(/%20/g, " ").trim();
   // Imperial: 31x10.50xr15, 31x10.50r15, 33x12.50R15
   const mImp = s.match(/(\d{1,2}(?:\.\d+)?)\s*[xX\s]\s*(\d{1,2}(?:\.\d+)?)\s*(?:[xXR\-\s]*)\s*(\d{1,2})\b/i);
   if (mImp) {
     return { w: mImp[1], h: mImp[2], r: mImp[3] };
   }
-  // Metric: 205/55R16, 205-55r16, 185 60 15
-  const mMet = s.match(/(\d{3})\s*(?:[\/\-\s]+)\s*(\d{2})\s*(?:Z?R)?\s*(\d{2})\b/i);
+  // Metric: 205/55R16, 205-55r16, 185 60 15, 245/30ZR20, 235/75R15
+  const mMet = s.match(/(\d{3})\s*(?:[\/\-\s]+)\s*(\d{2}(?:\.\d+)?)\s*(?:Z?R|\-|\s)?\s*(\d{2}(?:\.[0-9])?)\b/i);
   if (mMet) {
     return { w: mMet[1], h: mMet[2], r: mMet[3] };
   }
@@ -308,14 +312,16 @@ function syncUrl(category: string | null, w?: string, h?: string, r?: string) {
 
 function Index() {
   const searchParams = Route.useSearch();
-  const [w, setW] = useState("Todos");
-  const [h, setH] = useState("Todos");
-  const [r, setR] = useState("Todos");
-  const [searchActive, setSearchActive] = useState(false);
+  const rawCat = (searchParams?.categoria as string) || (searchParams?.cat as string) || null;
+  const rawMed = (searchParams?.medida as string) || (searchParams?.size as string) || null;
+  const initMeasure = rawMed ? parseMeasureDetails(rawMed) : {};
+
+  const [w, setW] = useState(() => initMeasure.w || "Todos");
+  const [h, setH] = useState(() => initMeasure.h || "Todos");
+  const [r, setR] = useState(() => initMeasure.r || "Todos");
+  const [searchActive, setSearchActive] = useState(() => !!initMeasure.w);
   const [authed, setAuthed] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(
-    (searchParams?.categoria as string) || null
-  );
+  const [activeCategory, setActiveCategory] = useState<string | null>(() => rawCat);
   const [viewAllSizes, setViewAllSizes] = useState(false);
   const [isSearchingTires, setIsSearchingTires] = useState(false);
   const triggerDocSearch = (duration = 700) => {
@@ -332,13 +338,18 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    let targetCat: string | null = (searchParams?.categoria as string) || null;
-    let targetMed: string | null = (searchParams?.medida as string) || null;
+    let targetCat: string | null = (searchParams?.categoria as string) || (searchParams?.cat as string) || null;
+    let targetMed: string | null = (searchParams?.medida as string) || (searchParams?.size as string) || null;
 
     if (typeof window !== "undefined") {
       const fromPath = parseCategoryAndMeasureFromPath(window.location.pathname);
       if (fromPath?.category && !targetCat) targetCat = fromPath.category;
       if (fromPath?.medida && !targetMed) targetMed = fromPath.medida;
+      if (!targetMed) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const qMed = urlParams.get("medida") || urlParams.get("size");
+        if (qMed) targetMed = qMed;
+      }
     }
 
     if (targetMed) {
